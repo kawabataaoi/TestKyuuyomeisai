@@ -286,6 +286,21 @@ nav.tabbar button svg{width:20px;height:20px;}
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="create-user-modal">
+  <div class="modal-sheet" style="max-height:80vh;">
+    <header>
+      <h3>新規ユーザー作成の確認</h3>
+      <button class="x-btn" id="create-user-modal-close">×</button>
+    </header>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <p id="create-user-modal-target" style="font-size:15px;font-weight:700;"></p>
+      <p class="muted" style="font-size:12px;">共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</p>
+      <button class="btn" id="btn-confirm-create-user" style="margin-top:10px;width:100%;">この内容で作成しますか？</button>
+      <p class="muted" id="create-user-modal-status" style="margin-top:8px;"></p>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="contact-modal">
   <div class="modal-sheet" style="max-height:92vh;">
     <header>
@@ -649,7 +664,7 @@ nav.tabbar button svg{width:20px;height:20px;}
     <div class="card">
       <div class="row" style="margin-bottom:2px;">
         <div class="section-title" style="margin-bottom:0;">新規ユーザー追加（管理者用）</div>
-        <button class="link-btn" id="btn-new-user-toggle">追加</button>
+        <button class="btn ghost small" id="btn-new-user-toggle">追加</button>
       </div>
       <div id="new-user-form" style="display:none;margin-top:10px;">
         <label class="field" style="margin-top:0;">社員ID</label>
@@ -685,7 +700,7 @@ nav.tabbar button svg{width:20px;height:20px;}
     <div class="card" id="card-admin-users">
       <div class="row" style="margin-bottom:2px;">
         <div class="section-title" style="margin-bottom:0;">ユーザー管理（管理者用）</div>
-        <button class="link-btn" id="btn-admin-reset">リセット</button>
+        <button class="btn ghost small" id="btn-admin-reset">リセット</button>
       </div>
       <label class="field" style="margin-top:0;">社員ID または 苗字（ひらがな）</label>
       <input type="text" id="admin-search-id" placeholder="例：009 または とみなが">
@@ -1505,15 +1520,8 @@ document.getElementById('btn-create-user').addEventListener('click', async ()=>{
   const status = document.getElementById('create-user-status');
   const newId = document.getElementById('new-user-id').value.trim();
   const newPw = document.getElementById('new-user-password').value.trim();
-  const role = document.getElementById('new-user-role').value;
   const sei = document.getElementById('new-user-sei').value.trim();
   const mei = document.getElementById('new-user-mei').value.trim();
-  const seiKana = document.getElementById('new-user-sei-kana').value.trim();
-  const meiKana = document.getElementById('new-user-mei-kana').value.trim();
-  const dobRaw = document.getElementById('new-user-dob').value;
-  const dob = dobRaw ? dobRaw.replace(/-/g,'/') : '';
-  const baseSalary = document.getElementById('new-user-base-salary').value || '0';
-  const isExecutive = document.getElementById('new-user-executive').checked ? '1' : '0';
   if(!newId || !newPw || !sei || !mei){
     status.textContent = '社員ID・パスワード・苗字・名前は必須です。';
     return;
@@ -1524,13 +1532,36 @@ document.getElementById('btn-create-user').addEventListener('click', async ()=>{
     status.textContent = 'パスワードは英字と数字を組み合わせて8文字以上にしてください。';
     return;
   }
-  if(!confirm(`社員ID「${newId}」（${sei}${mei}）を新規作成しますか？`)) return;
+  status.textContent = '';
+  document.getElementById('create-user-modal-target').textContent = `社員ID「${newId}」（${sei}${mei}）`;
+  document.getElementById('create-user-modal-status').textContent = '';
+  document.getElementById('create-user-modal').classList.remove('hidden');
+});
+
+document.getElementById('create-user-modal-close').addEventListener('click', ()=>{
+  document.getElementById('create-user-modal').classList.add('hidden');
+});
+
+document.getElementById('btn-confirm-create-user').addEventListener('click', async ()=>{
+  const status = document.getElementById('create-user-modal-status');
+  const newId = document.getElementById('new-user-id').value.trim();
+  const newPw = document.getElementById('new-user-password').value.trim();
+  const role = document.getElementById('new-user-role').value;
+  const sei = document.getElementById('new-user-sei').value.trim();
+  const mei = document.getElementById('new-user-mei').value.trim();
+  const seiKana = document.getElementById('new-user-sei-kana').value.trim();
+  const meiKana = document.getElementById('new-user-mei-kana').value.trim();
+  const dobRaw = document.getElementById('new-user-dob').value;
+  const dob = dobRaw ? dobRaw.replace(/-/g,'/') : '';
+  const baseSalary = document.getElementById('new-user-base-salary').value || '0';
+  const isExecutive = document.getElementById('new-user-executive').checked ? '1' : '0';
   status.textContent = '作成しています…（フォルダとドキュメントの作成のため少し時間がかかります）';
   try{
     const url = `${COMPANY_SCRIPT_URL}?action=adminCreateUser&newId=${encodeURIComponent(newId)}&newPassword=${encodeURIComponent(newPw)}&role=${encodeURIComponent(role)}&sei=${encodeURIComponent(sei)}&mei=${encodeURIComponent(mei)}&seiKana=${encodeURIComponent(seiKana)}&meiKana=${encodeURIComponent(meiKana)}&dob=${encodeURIComponent(dob)}&baseSalary=${encodeURIComponent(baseSalary)}&isExecutive=${encodeURIComponent(isExecutive)}`;
     const data = await jsonpRequest(url);
     if(data.error){ status.textContent = data.error; return; }
     status.textContent = `社員ID「${data.id}」を作成しました。`;
+    document.getElementById('create-user-status').textContent = `社員ID「${data.id}」を作成しました。`;
     document.getElementById('new-user-id').value = '';
     document.getElementById('new-user-password').value = '';
     document.getElementById('new-user-sei').value = '';
@@ -1541,6 +1572,9 @@ document.getElementById('btn-create-user').addEventListener('click', async ()=>{
     document.getElementById('new-user-base-salary').value = '';
     document.getElementById('new-user-executive').checked = false;
     logEvent('admin_change', `新規ユーザー作成：${data.id}（${sei}${mei}）`);
+    setTimeout(()=>{
+      document.getElementById('create-user-modal').classList.add('hidden');
+    }, 1200);
   }catch(e){
     status.textContent = '作成に失敗しました：' + e.message;
   }
@@ -2426,7 +2460,7 @@ function doGet(e) {
           newSettingsDocC.saveAndClose();
 
           var mainBodyC = docC.getTabs()[0].asDocumentTab().getBody();
-          mainBodyC.appendParagraph(newRoleC + ':' + newIdC + ':' + newPwC + ':' + newEmpFolderC.getId() + ':' + newSeiC + newMeiC);
+          mainBodyC.appendParagraph(newRoleC + ':' + newIdC + ':' + newPwC + ':' + newEmpFolderC.getId());
 
           var userBodyC = getTabBodyByTitle(docC, 'ユーザー情報');
           if (userBodyC) {
