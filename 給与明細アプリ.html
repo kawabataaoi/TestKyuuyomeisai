@@ -112,6 +112,65 @@ nav.tabbar button svg{width:20px;height:20px;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
 .link-btn{background:none;border:none;color:var(--accent);font-size:12px;font-weight:500;padding:10px 0 0;width:100%;text-align:center;}
+
+/* --- utility classes (extracted from inline style attributes) ---
+   !important preserves inline-style-equivalent precedence so these
+   still win when combined with existing multi-class rules (e.g. .btn.small). */
+.mt-0{margin-top:0!important;}
+.mt-6{margin-top:6px!important;}
+.mt-8{margin-top:8px!important;}
+.mt-10{margin-top:10px!important;}
+.mt-12{margin-top:12px!important;}
+.mt-14{margin-top:14px!important;}
+.mb-0{margin-bottom:0!important;}
+.mb-2{margin-bottom:2px!important;}
+.w-full{width:100%!important;}
+.w-auto{width:auto!important;}
+.flex-1{flex:1!important;}
+.fs-10{font-size:10px!important;}
+.fs-11{font-size:11px!important;}
+.fs-12{font-size:12px!important;}
+.fs-13{font-size:13px!important;}
+.pos-relative{position:relative!important;}
+.opacity-70{opacity:0.7!important;}
+.is-hidden{display:none!important;}
+.text-center{text-align:center!important;}
+
+/* --- component classes (extracted from inline style attributes) --- */
+.input-icon-pad{padding-right:44px!important;}
+.modal-body{padding:16px 18px!important;overflow-y:auto!important;}
+.modal-sheet-80vh{max-height:80vh!important;}
+.modal-sheet-92vh{max-height:92vh!important;}
+.divider-16{border-top:1px dashed var(--border)!important;margin:16px 0!important;}
+.divider-20{border-top:1px dashed var(--border)!important;margin:20px 0!important;}
+.divider-mb-14{border-top:1px dashed var(--border)!important;margin-bottom:14px!important;}
+.legend-item{display:flex!important;align-items:center!important;gap:6px!important;font-size:11px!important;}
+.inline-row-8{display:flex!important;align-items:center!important;gap:8px!important;}
+.row-start-between{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;}
+.row-wrap-6{display:flex!important;gap:6px!important;flex-wrap:wrap!important;}
+.row-noshrink-8{display:flex!important;gap:8px!important;flex-shrink:0!important;}
+.tag-row{flex-wrap:wrap!important;gap:8px!important;justify-content:flex-start!important;margin-bottom:4px!important;}
+.readable-text{font-size:14px!important;line-height:1.7!important;white-space:pre-wrap!important;}
+.value-emphasis{font-size:15px!important;font-weight:700!important;}
+.section-heading{font-size:16px!important;font-weight:700!important;margin:6px 0 12px!important;}
+.value-lg{font-size:18px!important;font-weight:700!important;}
+.money-value-lg{font-size:18px!important;font-weight:700!important;color:var(--money)!important;}
+.userid-display-value{font-size:28px!important;font-weight:700!important;color:var(--accent)!important;font-family:'JetBrains Mono',monospace!important;letter-spacing:0.03em!important;}
+.action-row-gap{gap:8px!important;margin-top:8px!important;}
+.center-row-gap-10{justify-content:center!important;gap:10px!important;margin-bottom:6px!important;}
+.action-row-wrap{margin-top:10px!important;gap:12px!important;justify-content:flex-start!important;flex-wrap:wrap!important;}
+.btn-success-full{margin-top:10px!important;width:100%!important;background:#1e8449!important;}
+.btn-danger-full{margin-top:10px!important;width:100%!important;background:#c0392b!important;}
+.modal-footer{padding:16px 18px!important;border-top:1px solid var(--border)!important;}
+.eye-toggle-btn{position:absolute!important;right:6px!important;top:50%!important;transform:translateY(-50%)!important;background:none!important;border:none!important;outline:none!important;color:var(--text-2)!important;padding:6px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;}
+.userid-display-box{text-align:center!important;background:var(--accent-soft)!important;border-radius:10px!important;padding:12px!important;margin-bottom:12px!important;}
+.legend-dot-info{width:10px!important;height:10px!important;border-radius:3px!important;background:#3B6FD6!important;display:inline-block!important;}
+.legend-dot-danger{width:10px!important;height:10px!important;border-radius:3px!important;background:#D64545!important;display:inline-block!important;}
+.legend-dot-money{width:10px!important;height:10px!important;border-radius:3px!important;background:var(--money)!important;display:inline-block!important;}
+.legend-dash{width:14px!important;height:0!important;border-top:2px dashed var(--text)!important;display:inline-block!important;}
+.pdf-frame{width:100%!important;min-height:50vh!important;background:#3a3a38!important;padding:8px!important;box-sizing:border-box!important;}
+.news-icon-badge{background:rgba(255,255,255,0.2)!important;border:none!important;color:#fff!important;width:38px!important;height:38px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-shrink:0!important;margin-top:2px!important;}
+.loading-text{color:#eee!important;text-align:center!important;margin-top:40px!important;}
 </style>
 </head>
 <body>
@@ -119,32 +178,32 @@ nav.tabbar button svg{width:20px;height:20px;}
   <div class="login-card">
     <h1>給与台帳</h1>
     <p class="sub">社員IDとパスワードを入力してください</p>
-    <label class="field" style="margin-top:0;">社員ID</label>
+    <label class="field mt-0">社員ID</label>
     <input type="text" id="login-id" autocomplete="username">
     <label class="field">パスワード</label>
-    <div style="position:relative;">
-      <input type="password" id="login-password" autocomplete="current-password" style="padding-right:44px;">
-      <button type="button" id="btn-toggle-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
+    <div class="pos-relative">
+      <input class="input-icon-pad" type="password" id="login-password" autocomplete="current-password">
+      <button class="eye-toggle-btn" type="button" id="btn-toggle-password">
         <svg id="icon-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg id="icon-eye-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
       </button>
     </div>
-    <button class="btn" id="btn-employee-login" style="margin-top:14px;">ログイン</button>
-    <p class="muted" id="login-status" style="margin-top:10px;text-align:center;"></p>
-    <div style="border-top:1px dashed var(--border);margin:20px 0;"></div>
+    <button class="btn mt-14" id="btn-employee-login">ログイン</button>
+    <p class="muted mt-10 text-center" id="login-status"></p>
+    <div class="divider-20"></div>
     <button class="link-btn" id="btn-forgot-toggle" type="button">ID・パスワードを忘れた場合</button>
-    <button class="link-btn" id="btn-login-inquiry-open" type="button" style="margin-top:8px;">お問い合わせ（ログインできない・その他）</button>
+    <button class="link-btn mt-8" id="btn-login-inquiry-open" type="button">お問い合わせ（ログインできない・その他）</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="login-inquiry-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>お問い合わせ</h3>
       <button class="x-btn" id="login-inquiry-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <label class="field" style="margin-top:0;">お名前</label>
+    <div class="modal-body">
+      <label class="field mt-0">お名前</label>
       <input type="text" id="login-inquiry-name" placeholder="お名前">
       <label class="field">種別</label>
       <select id="login-inquiry-category">
@@ -153,70 +212,70 @@ nav.tabbar button svg{width:20px;height:20px;}
       </select>
       <label class="field">内容</label>
       <textarea id="login-inquiry-message" rows="4" class="contact-textarea" placeholder="例：社員ID008ですが、パスワードが合っているのにログインできません"></textarea>
-      <button class="btn" id="btn-login-inquiry-send" style="margin-top:10px;width:100%;">送信する</button>
-      <p class="muted" id="login-inquiry-status" style="margin-top:8px;"></p>
+      <button class="btn mt-10 w-full" id="btn-login-inquiry-send">送信する</button>
+      <p class="muted mt-8" id="login-inquiry-status"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="forgot-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>本人確認</h3>
       <button class="x-btn" id="forgot-modal-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
+    <div class="modal-body">
       <p class="muted">苗字・名前・生年月日を入力して本人確認を行います。</p>
-      <label class="field" style="margin-top:0;">苗字</label>
+      <label class="field mt-0">苗字</label>
       <input type="text" id="forgot-sei" placeholder="例：山田">
       <label class="field">名前</label>
       <input type="text" id="forgot-mei" placeholder="例：太郎">
       <label class="field">生年月日</label>
       <input type="date" id="forgot-dob">
-      <button class="btn ghost small" id="btn-forgot-find" style="margin-top:10px;width:100%;">本人確認する</button>
-      <p class="muted" id="forgot-status" style="margin-top:8px;"></p>
+      <button class="btn ghost small mt-10 w-full" id="btn-forgot-find">本人確認する</button>
+      <p class="muted mt-8" id="forgot-status"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="forgot-reset-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>パスワードの再発行</h3>
       <button class="x-btn" id="forgot-reset-modal-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <div style="text-align:center;background:var(--accent-soft);border-radius:10px;padding:12px;margin-bottom:12px;">
-        <div class="muted" style="font-size:11px;">あなたの社員ID</div>
-        <div id="forgot-userid-display" style="font-size:28px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;letter-spacing:0.03em;"></div>
+    <div class="modal-body">
+      <div class="userid-display-box">
+        <div class="muted fs-11">あなたの社員ID</div>
+        <div class="userid-display-value" id="forgot-userid-display"></div>
       </div>
-      <label class="field" style="margin-top:0;">新しいパスワード</label>
-      <div style="position:relative;">
-        <input type="password" id="forgot-new-password" autocomplete="new-password" style="padding-right:44px;">
-        <button type="button" id="btn-toggle-forgot-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
+      <label class="field mt-0">新しいパスワード</label>
+      <div class="pos-relative">
+        <input class="input-icon-pad" type="password" id="forgot-new-password" autocomplete="new-password">
+        <button class="eye-toggle-btn" type="button" id="btn-toggle-forgot-password">
           <svg id="icon-eye-open-forgot" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           <svg id="icon-eye-closed-forgot" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
         </button>
       </div>
       <p id="forgot-password-rule" style="font-size:11px;color:var(--text-2);margin-top:6px;">パスワードは英字と数字を組み合わせて8文字以上にしてください。</p>
-      <button class="btn" id="btn-forgot-reset" style="margin-top:10px;width:100%;">パスワードを再発行する</button>
-      <p class="muted" id="forgot-reset-status" style="margin-top:8px;"></p>
+      <button class="btn mt-10 w-full" id="btn-forgot-reset">パスワードを再発行する</button>
+      <p class="muted mt-8" id="forgot-reset-status"></p>
     </div>
   </div>
 </div>
 
 <div id="app">
 
-<header class="top" style="display:flex;align-items:flex-start;justify-content:space-between;">
+<header class="top row-start-between">
   <div>
     <h1>給与台帳</h1>
     <p id="header-sub">明細・有給・残業を一つにまとめて管理</p>
   </div>
-  <div style="display:flex;gap:8px;flex-shrink:0;">
-  <button id="btn-contact-open" title="お問い合わせ" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+  <div class="row-noshrink-8">
+  <button class="news-icon-badge" id="btn-contact-open" title="お問い合わせ">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
   </button>
-  <button id="btn-employee-logout" title="ログアウト" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+  <button class="news-icon-badge" id="btn-employee-logout" title="ログアウト">
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
   </button>
   </div>
@@ -224,91 +283,91 @@ nav.tabbar button svg{width:20px;height:20px;}
 
 <div class="news-banner" id="news-banner" style="display:none;">
   <span class="dot"></span>
-  <span id="news-banner-text" style="flex:1;">新着情報があります</span>
-  <span style="font-size:10px;">開く ›</span>
+  <span class="flex-1" id="news-banner-text">新着情報があります</span>
+  <span class="fs-10">開く ›</span>
 </div>
 
 <div class="modal-overlay hidden" id="news-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3 id="news-modal-title">新着のお知らせ</h3>
       <button class="x-btn" id="news-modal-close">×</button>
     </header>
-    <div id="news-modal-body" style="padding:16px 18px;overflow-y:auto;"></div>
+    <div class="modal-body" id="news-modal-body"></div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="news-detail-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>お知らせ</h3>
       <button class="x-btn" id="news-detail-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <p class="muted" id="news-detail-date" style="font-size:11px;margin-top:0;"></p>
-      <div id="news-detail-title" style="font-size:16px;font-weight:700;margin:6px 0 12px;"></div>
-      <div id="news-detail-message" style="font-size:14px;line-height:1.7;white-space:pre-wrap;"></div>
+    <div class="modal-body">
+      <p class="muted fs-11 mt-0" id="news-detail-date"></p>
+      <div class="section-heading" id="news-detail-title"></div>
+      <div class="readable-text" id="news-detail-message"></div>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="delete-user-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>ユーザー削除の確認</h3>
       <button class="x-btn" id="delete-user-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <p id="delete-user-target" style="font-size:15px;font-weight:700;"></p>
-      <p class="muted" style="font-size:12px;">この操作を行うと、社員一覧に削除予定として記録されます。すぐには消えず、保存期間が過ぎた後に自動で完全削除されます（削除完了の1か月前に管理者へ通知が届きます）。取り消したい場合は、いつでもユーザー管理から「削除を取り消す」ことができます。</p>
-      <label class="field" style="margin-top:0;">削除理由（必須）</label>
+    <div class="modal-body">
+      <p class="value-emphasis" id="delete-user-target"></p>
+      <p class="muted fs-12">この操作を行うと、社員一覧に削除予定として記録されます。すぐには消えず、保存期間が過ぎた後に自動で完全削除されます（削除完了の1か月前に管理者へ通知が届きます）。取り消したい場合は、いつでもユーザー管理から「削除を取り消す」ことができます。</p>
+      <label class="field mt-0">削除理由（必須）</label>
       <textarea id="delete-user-reason" rows="3" class="contact-textarea" placeholder="例：本人の退職のため"></textarea>
-      <button class="btn" id="btn-confirm-delete-user" style="margin-top:10px;width:100%;background:#c0392b;">本当に削除しますか？</button>
-      <p class="muted" id="delete-user-status" style="margin-top:8px;"></p>
+      <button class="btn btn-danger-full" id="btn-confirm-delete-user">本当に削除しますか？</button>
+      <p class="muted mt-8" id="delete-user-status"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="restore-user-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>削除の取り消し</h3>
       <button class="x-btn" id="restore-user-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <p id="restore-user-target" style="font-size:15px;font-weight:700;"></p>
-      <p class="muted" style="font-size:12px;">この操作を行うと、削除予定が解除され、通常のアカウントに戻ります。</p>
-      <label class="field" style="margin-top:0;">復元理由（必須）</label>
+    <div class="modal-body">
+      <p class="value-emphasis" id="restore-user-target"></p>
+      <p class="muted fs-12">この操作を行うと、削除予定が解除され、通常のアカウントに戻ります。</p>
+      <label class="field mt-0">復元理由（必須）</label>
       <textarea id="restore-user-reason" rows="3" class="contact-textarea" placeholder="例：削除の誤操作のため"></textarea>
-      <button class="btn" id="btn-confirm-restore-user" style="margin-top:10px;width:100%;background:#1e8449;">削除を取り消しますか？</button>
-      <p class="muted" id="restore-user-status" style="margin-top:8px;"></p>
+      <button class="btn btn-success-full" id="btn-confirm-restore-user">削除を取り消しますか？</button>
+      <p class="muted mt-8" id="restore-user-status"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="create-user-modal">
-  <div class="modal-sheet" style="max-height:80vh;">
+  <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>新規ユーザー作成の確認</h3>
       <button class="x-btn" id="create-user-modal-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <p id="create-user-modal-target" style="font-size:15px;font-weight:700;"></p>
-      <p class="muted" style="font-size:12px;">共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</p>
-      <button class="btn" id="btn-confirm-create-user" style="margin-top:10px;width:100%;">この内容で作成しますか？</button>
-      <p class="muted" id="create-user-modal-status" style="margin-top:8px;"></p>
+    <div class="modal-body">
+      <p class="value-emphasis" id="create-user-modal-target"></p>
+      <p class="muted fs-12">共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</p>
+      <button class="btn mt-10 w-full" id="btn-confirm-create-user">この内容で作成しますか？</button>
+      <p class="muted mt-8" id="create-user-modal-status"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="contact-modal">
-  <div class="modal-sheet" style="max-height:92vh;">
+  <div class="modal-sheet modal-sheet-92vh">
     <header>
       <h3>お問い合わせ</h3>
       <button class="x-btn" id="contact-close">×</button>
     </header>
-    <div style="padding:16px 18px;overflow-y:auto;">
-      <label class="field" style="margin-top:0;">お名前</label>
+    <div class="modal-body">
+      <label class="field mt-0">お名前</label>
       <input type="text" id="contact-name" placeholder="お名前">
       <label class="field">優先希望度（Sが最優先）</label>
       <select id="contact-priority">
@@ -319,17 +378,17 @@ nav.tabbar button svg{width:20px;height:20px;}
         <option value="D">D</option>
         <option value="E">E（低め）</option>
       </select>
-      <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:14px;">
-        <input type="checkbox" id="contact-reply-needed" style="width:auto;" checked>
+      <label class="field inline-row-8 mt-14">
+        <input class="w-auto" type="checkbox" id="contact-reply-needed" checked>
         返信希望
       </label>
       <div id="contact-reply-email-wrap">
         <label class="field">返信希望のメールアドレス</label>
         <input type="email" id="contact-reply-email" placeholder="you@example.com">
       </div>
-      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-      <label class="field" style="margin-top:0;">お問い合わせ種別</label>
-      <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:flex-start;margin-bottom:4px;" id="contact-category-buttons">
+      <div class="divider-16"></div>
+      <label class="field mt-0">お問い合わせ種別</label>
+      <div class="row tag-row" id="contact-category-buttons">
         <button class="btn small outline contact-cat-btn" data-cat="salary">給与間違い</button>
         <button class="btn small outline contact-cat-btn" data-cat="leave">有給間違い</button>
         <button class="btn small outline contact-cat-btn" data-cat="other">その他問い合わせ</button>
@@ -375,8 +434,8 @@ nav.tabbar button svg{width:20px;height:20px;}
         <textarea id="contact-bug-detail" rows="4" class="contact-textarea" placeholder="例：画面が真っ白になって進めなくなります"></textarea>
       </div>
 
-      <button class="btn" id="contact-send" style="margin-top:14px;">送信する</button>
-      <p class="muted" id="contact-status" style="margin-top:8px;">送信先：a_aoyama@dsbz.jp（お使いのメールアプリが開きます）</p>
+      <button class="btn mt-14" id="contact-send">送信する</button>
+      <p class="muted mt-8" id="contact-status">送信先：a_aoyama@dsbz.jp（お使いのメールアプリが開きます）</p>
     </div>
   </div>
 </div>
@@ -397,14 +456,14 @@ nav.tabbar button svg{width:20px;height:20px;}
       </table>
     </div>
     <div class="card">
-      <div class="row" style="margin-bottom:2px;">
-        <div class="section-title" style="margin-bottom:0;">直近3か月の明細</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="row mb-2">
+        <div class="section-title mb-0">直近3か月の明細</div>
+        <div class="row-wrap-6">
           <button class="btn small ghost" id="btn-refresh-drive">Drive更新</button>
           <button class="btn small ghost" id="btn-add-file">＋ PDFを追加</button>
         </div>
       </div>
-      <input type="file" id="file-input" accept="application/pdf,image/*" multiple style="display:none;">
+      <input class="is-hidden" type="file" id="file-input" accept="application/pdf,image/*" multiple>
       <p class="muted" id="meisai-status">まだ明細が登録されていません。「＋ PDFを追加」からスキャン済みのPDFを選んでください。</p>
       <div id="meisai-list"></div>
       <button class="link-btn" id="btn-show-all">すべての明細を表示</button>
@@ -451,11 +510,11 @@ nav.tabbar button svg{width:20px;height:20px;}
       <div class="section-title">今年の累計支給額（<span id="ytd-month-label"></span>月度まで）</div>
       <div class="row">
         <span class="muted">総支給額</span>
-        <span class="mono" id="ytd-gross" style="font-size:18px;font-weight:700;">¥0</span>
+        <span class="mono value-lg" id="ytd-gross">¥0</span>
       </div>
-      <div class="row" style="margin-top:6px;">
+      <div class="row mt-6">
         <span class="muted">総差引支給額</span>
-        <span class="mono" id="ytd-net" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
+        <span class="mono money-value-lg" id="ytd-net">¥0</span>
       </div>
     </div>
     <div class="card">
@@ -465,31 +524,31 @@ nav.tabbar button svg{width:20px;height:20px;}
       <label class="field">対象月の残業時間（時間）</label>
       <input type="number" id="ot-hours" step="0.5" min="0" value="0">
       <div class="formula" id="ot-formula">基本給と所定労働時間を設定タブで入力してください。</div>
-      <div class="row" style="margin-top:14px;">
+      <div class="row mt-14">
         <span class="muted">残業代</span>
-        <span class="mono" id="ot-pay" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
+        <span class="mono money-value-lg" id="ot-pay">¥0</span>
       </div>
       <div class="row">
         <span class="muted">支給見込み合計</span>
-        <span class="mono" id="ot-total" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
+        <span class="mono money-value-lg" id="ot-total">¥0</span>
       </div>
-      <p class="muted" id="ot-payday-label" style="margin-top:8px;"></p>
-      <button class="btn" style="margin-top:12px;" id="ot-save">この月の残業時間を保存</button>
+      <p class="muted mt-8" id="ot-payday-label"></p>
+      <button class="btn mt-12" id="ot-save">この月の残業時間を保存</button>
     </div>
     <div class="card">
       <div class="section-title">給与推移（基本給＋残業代）</div>
-      <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;">
+      <div class="row center-row-gap-10">
         <button class="btn small outline" id="chart-prev">‹ 前の月</button>
         <button class="btn small outline" id="chart-next">次の月 ›</button>
       </div>
       <div id="salary-chart"></div>
-      <div class="row" style="margin-top:10px;gap:12px;justify-content:flex-start;flex-wrap:wrap;">
-        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:#3B6FD6;display:inline-block;"></span>基本給</span>
-        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:#D64545;display:inline-block;"></span>残業代</span>
-        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:14px;height:0;border-top:2px dashed var(--text);display:inline-block;"></span>総支給額</span>
-        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--money);display:inline-block;"></span>賞与</span>
+      <div class="row action-row-wrap">
+        <span class="muted legend-item"><span class="legend-dot-info"></span>基本給</span>
+        <span class="muted legend-item"><span class="legend-dot-danger"></span>残業代</span>
+        <span class="muted legend-item"><span class="legend-dash"></span>総支給額</span>
+        <span class="muted legend-item"><span class="legend-dot-money"></span>賞与</span>
       </div>
-      <p class="muted" style="margin-top:8px;font-size:11px;">色が薄い月は残業時間からの推定値、濃い月は明細から入力した実績です。同じ月に給与と賞与の両方がある場合は横に並べて表示します。縦の目盛りは5万円ごとです。</p>
+      <p class="muted mt-8 fs-11">色が薄い月は残業時間からの推定値、濃い月は明細から入力した実績です。同じ月に給与と賞与の両方がある場合は横に並べて表示します。縦の目盛りは5万円ごとです。</p>
     </div>
     <div class="card">
       <div class="section-title">明細の実績を手入力</div>
@@ -507,7 +566,7 @@ nav.tabbar button svg{width:20px;height:20px;}
         <label class="field">残業代（時間外手当）</label>
         <input type="text" inputmode="numeric" class="man-amount" id="man-otpay">
       </div>
-      <div id="man-bonus-fields" style="display:none;">
+      <div class="is-hidden" id="man-bonus-fields">
         <label class="field">賞与額</label>
         <input type="text" inputmode="numeric" class="man-amount" id="man-bonus">
       </div>
@@ -515,8 +574,8 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" inputmode="numeric" class="man-amount" id="man-total">
       <label class="field">差引支給額（手取り・グラフに使用）</label>
       <input type="text" inputmode="numeric" class="man-amount" id="man-net">
-      <button class="btn" id="man-save" style="margin-top:12px;">この内容をグラフに反映</button>
-      <p class="muted" id="man-status" style="margin-top:8px;"></p>
+      <button class="btn mt-12" id="man-save">この内容をグラフに反映</button>
+      <p class="muted mt-8" id="man-status"></p>
     </div>
   </section>
 
@@ -524,59 +583,59 @@ nav.tabbar button svg{width:20px;height:20px;}
   <section class="view" id="view-settings">
     <div class="card">
       <div class="section-title">アカウント</div>
-      <label class="field" style="margin-top:0;">パスワードの変更</label>
-      <div style="position:relative;">
-        <input type="password" id="set-new-password" autocomplete="new-password" placeholder="新しいパスワード" style="padding-right:44px;">
-        <button type="button" id="btn-toggle-set-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
+      <label class="field mt-0">パスワードの変更</label>
+      <div class="pos-relative">
+        <input class="input-icon-pad" type="password" id="set-new-password" autocomplete="new-password" placeholder="新しいパスワード">
+        <button class="eye-toggle-btn" type="button" id="btn-toggle-set-password">
           <svg id="icon-eye-open-set" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           <svg id="icon-eye-closed-set" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
         </button>
       </div>
       <div class="helptext">英字と数字を組み合わせて8文字以上にしてください。本人確認は不要です（ログイン済みのため）。</div>
-      <button class="btn ghost small" id="btn-change-password" style="margin-top:8px;width:100%;">パスワードを変更</button>
-      <p class="muted" id="change-password-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-8 w-full" id="btn-change-password">パスワードを変更</button>
+      <p class="muted mt-6" id="change-password-status"></p>
     </div>
     <div class="card">
-      <div class="row" style="margin-bottom:2px;">
-        <div class="section-title" style="margin-bottom:0;">お知らせ履歴</div>
+      <div class="row mb-2">
+        <div class="section-title mb-0">お知らせ履歴</div>
         <button class="link-btn" id="btn-news-show-all" style="display:none;">すべて見る</button>
       </div>
       <div id="news-log-list"><div class="empty">お知らせはまだありません。</div></div>
     </div>
     <div class="card" id="card-admin-system" style="display:none;">
       <div class="section-title">システム設定（管理者用）</div>
-      <label class="field" style="margin-top:0;">お問い合わせメールの受信先</label>
+      <label class="field mt-0">お問い合わせメールの受信先</label>
       <input type="email" id="admin-inquiry-email" placeholder="a_aoyama@dsbz.jp">
       <label class="field">宛名</label>
       <input type="text" id="admin-inquiry-name" placeholder="青山">
-      <button class="btn ghost small" id="btn-save-inquiry-contact" style="margin-top:6px;width:100%;">受信先を変更</button>
-      <p class="muted" id="admin-inquiry-contact-status" style="margin-top:6px;"></p>
-      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-      <label class="field" style="margin-top:0;">共通フォルダID（社員一覧の場所）</label>
+      <button class="btn ghost small mt-6 w-full" id="btn-save-inquiry-contact">受信先を変更</button>
+      <p class="muted mt-6" id="admin-inquiry-contact-status"></p>
+      <div class="divider-16"></div>
+      <label class="field mt-0">共通フォルダID（社員一覧の場所）</label>
       <input type="text" id="admin-master-folder" placeholder="1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-      <button class="btn ghost small" id="btn-save-master-folder" style="margin-top:6px;width:100%;">共通フォルダIDを変更</button>
-      <p class="muted" id="admin-master-folder-status" style="margin-top:6px;"></p>
-      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-      <label class="field" style="margin-top:0;">Apps ScriptのURL</label>
+      <button class="btn ghost small mt-6 w-full" id="btn-save-master-folder">共通フォルダIDを変更</button>
+      <p class="muted mt-6" id="admin-master-folder-status"></p>
+      <div class="divider-16"></div>
+      <label class="field mt-0">Apps ScriptのURL</label>
       <input type="text" id="admin-script-url" placeholder="https://script.google.com/macros/s/xxxx/exec">
-      <button class="btn ghost small" id="btn-save-script-url" style="margin-top:6px;width:100%;">GAS URLを変更</button>
-      <p class="muted" id="admin-script-url-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-6 w-full" id="btn-save-script-url">GAS URLを変更</button>
+      <p class="muted mt-6" id="admin-script-url-status"></p>
       <div class="helptext">変更すると全員に反映されます（次回起動時に自動で切り替わります）。URLを間違えると全員がログインできなくなるので、変更前に必ずダブルチェックしてください。</div>
-      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-      <label class="field" style="margin-top:0;">退職者データの保存期間（日数）</label>
+      <div class="divider-16"></div>
+      <label class="field mt-0">退職者データの保存期間（日数）</label>
       <input type="number" id="admin-retention-days" placeholder="1826">
-      <button class="btn ghost small" id="btn-save-retention-days" style="margin-top:6px;width:100%;">保存期間を変更</button>
-      <p class="muted" id="admin-retention-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-6 w-full" id="btn-save-retention-days">保存期間を変更</button>
+      <p class="muted mt-6" id="admin-retention-status"></p>
       <div class="helptext">初期値は1826日（5年）です。法令に基づいた正しい期間は、社労士等にご確認の上、必要であれば変更してください。ユーザー削除後、この日数が経過すると自動的に完全削除されます。</div>
     </div>
     <div class="card" id="card-drive-sync" style="display:none;">
       <div class="section-title">Google Drive連携</div>
-      <label class="field" style="margin-top:0;">現在のフォルダID（ログインすると自動設定されます）</label>
+      <label class="field mt-0">現在のフォルダID（ログインすると自動設定されます）</label>
       <input type="text" id="set-drive-folder" placeholder="1kHB__0s1hetSuXEQWVqtyllw7P6BVRdJ">
       <div class="helptext">基本給・給料日・有給日数などの設定は「給与明細設定値」というGoogleドキュメントに自動で保存・同期されます。「設定を保存」を押すたび、また有給を記録するたびに自動で同期されます。</div>
-      <p class="muted" id="sync-status" style="margin-top:6px;"></p>
+      <p class="muted mt-6" id="sync-status"></p>
     </div>
-    <div class="card" style="display:none;">
+    <div class="card is-hidden">
       <textarea id="gas-code" readonly></textarea>
       <button class="btn ghost small" id="btn-copy-gas">コードをコピー</button>
       <input type="text" id="set-script-url" readonly>
@@ -593,9 +652,9 @@ nav.tabbar button svg{width:20px;height:20px;}
     <div class="card" id="card-yukyu-rules-display">
       <div class="section-title">有給ルール（全社共通）</div>
       <label class="field">次回付与日</label>
-      <input type="date" id="set-grant-date" readonly style="opacity:0.7;">
+      <input class="opacity-70" type="date" id="set-grant-date" readonly>
       <label class="field">付与日数</label>
-      <input type="number" id="set-grant-days" min="0" step="0.5" placeholder="10" readonly style="opacity:0.7;">
+      <input class="opacity-70" type="number" id="set-grant-days" min="0" step="0.5" placeholder="10" readonly>
       <div class="helptext">付与日が来ると自動で残日数に加算され、次回付与日は1年後に更新されます。付与された日数は付与日から2年で失効します。これらは管理者が設定した全社共通の値です（変更したい場合は管理者にお問い合わせください）。</div>
     </div>
     <div class="card" id="card-pay-rules">
@@ -618,18 +677,18 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="date" id="set-grant-date-company">
       <label class="field">付与日数</label>
       <input type="number" id="set-grant-days-company" step="0.5" placeholder="20">
-      <button class="btn ghost small" id="btn-save-company-rules" style="margin-top:8px;width:100%;">この内容を全員に反映</button>
-      <p class="muted" id="company-rules-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-8 w-full" id="btn-save-company-rules">この内容を全員に反映</button>
+      <p class="muted mt-6" id="company-rules-status"></p>
       <div class="helptext">ここで変更すると、次回ログイン時から全員に反映されます（個人の基本給・有給残高などは変わりません）。土日にあたる場合は自動で前営業日に繰り上げます。祝日は判定していないため、祝日と重なる場合はご自身で読み替えてください。</div>
-      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-      <div class="section-title" style="font-size:13px;">特定月の給料日を修正（管理者用・一時的）</div>
-      <p class="muted" style="font-size:12px;">正月休みなどで、その月だけ給料日を繰り上げたい場合に使います。この月以外には影響しません。</p>
+      <div class="divider-16"></div>
+      <div class="section-title fs-13">特定月の給料日を修正（管理者用・一時的）</div>
+      <p class="muted fs-12">正月休みなどで、その月だけ給料日を繰り上げたい場合に使います。この月以外には影響しません。</p>
       <label class="field">対象年月</label>
       <input type="month" id="payday-override-ym">
       <label class="field">支給日（空欄で通常の給料日に戻す）</label>
       <input type="date" id="payday-override-date">
-      <button class="btn ghost small" id="btn-save-payday-override" style="margin-top:8px;width:100%;">この月の給料日を保存</button>
-      <p class="muted" id="payday-override-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-8 w-full" id="btn-save-payday-override">この月の給料日を保存</button>
+      <p class="muted mt-6" id="payday-override-status"></p>
     </div>
     <button class="btn" id="btn-save-settings">設定を保存</button>
   </section>
@@ -637,7 +696,7 @@ nav.tabbar button svg{width:20px;height:20px;}
   <section class="view" id="view-maintenance">
     <div class="card" id="card-admin-news" style="display:none;">
       <div class="section-title">ニュースを送信（管理者用）</div>
-      <label class="field" style="margin-top:0;">対象</label>
+      <label class="field mt-0">対象</label>
       <select id="news-scope">
         <option value="all">全員に通知</option>
         <option value="admin">管理者のみに通知</option>
@@ -652,22 +711,22 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" id="news-title" placeholder="例：GASバージョンアップのお知らせ">
       <label class="field">内容</label>
       <textarea id="news-message" rows="3" class="contact-textarea" placeholder="例：GASのバージョンを更新しました"></textarea>
-      <button class="btn ghost small" id="btn-post-news" style="margin-top:8px;width:100%;">送信する</button>
-      <p class="muted" id="post-news-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-8 w-full" id="btn-post-news">送信する</button>
+      <p class="muted mt-6" id="post-news-status"></p>
     </div>
     <div class="card" id="card-admin-logs" style="display:none;">
       <div class="section-title">操作ログ（管理者用）</div>
-      <button class="btn ghost small" id="btn-load-logs" style="width:100%;">最新のログを読み込む</button>
-      <button class="btn ghost small" id="btn-copy-logs" style="width:100%;margin-top:6px;">クリップボードにコピー</button>
+      <button class="btn ghost small w-full" id="btn-load-logs">最新のログを読み込む</button>
+      <button class="btn ghost small w-full mt-6" id="btn-copy-logs">クリップボードにコピー</button>
       <pre id="log-list" style="white-space:pre-wrap;font-size:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px;max-height:260px;overflow:auto;"></pre>
     </div>
     <div class="card">
-      <div class="row" style="margin-bottom:2px;">
-        <div class="section-title" style="margin-bottom:0;">新規ユーザー追加（管理者用）</div>
+      <div class="row mb-2">
+        <div class="section-title mb-0">新規ユーザー追加（管理者用）</div>
         <button class="btn ghost small" id="btn-new-user-toggle">追加</button>
       </div>
       <div id="new-user-form" style="display:none;margin-top:10px;">
-        <label class="field" style="margin-top:0;">社員ID</label>
+        <label class="field mt-0">社員ID</label>
         <input type="text" id="new-user-id" placeholder="例：010">
         <label class="field">パスワード</label>
         <input type="text" id="new-user-password" placeholder="英字と数字を組み合わせて8文字以上">
@@ -688,30 +747,30 @@ nav.tabbar button svg{width:20px;height:20px;}
         <input type="date" id="new-user-dob">
         <label class="field">基本給（後から変更できます）</label>
         <input type="number" id="new-user-base-salary" placeholder="0">
-        <label class="field" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="new-user-executive" style="width:auto;">
+        <label class="field inline-row-8">
+          <input class="w-auto" type="checkbox" id="new-user-executive">
           役員（有給付与の対象外）
         </label>
-        <button class="btn" id="btn-create-user" style="margin-top:8px;width:100%;">新規ユーザーを作成</button>
-        <p class="muted" id="create-user-status" style="margin-top:6px;"></p>
+        <button class="btn mt-8 w-full" id="btn-create-user">新規ユーザーを作成</button>
+        <p class="muted mt-6" id="create-user-status"></p>
         <div class="helptext">作成すると、「管理情報」ドキュメントへの登録に加えて、共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</div>
       </div>
     </div>
     <div class="card" id="card-admin-users">
-      <div class="row" style="margin-bottom:2px;">
-        <div class="section-title" style="margin-bottom:0;">ユーザー管理（管理者用）</div>
+      <div class="row mb-2">
+        <div class="section-title mb-0">ユーザー管理（管理者用）</div>
         <button class="btn ghost small" id="btn-admin-reset">リセット</button>
       </div>
-      <label class="field" style="margin-top:0;">社員ID または 苗字（ひらがな）</label>
+      <label class="field mt-0">社員ID または 苗字（ひらがな）</label>
       <input type="text" id="admin-search-id" placeholder="例：009 または とみなが">
-      <button class="btn ghost small" id="btn-admin-search" style="margin-top:6px;width:100%;">検索</button>
-      <p class="muted" id="admin-search-status" style="margin-top:6px;"></p>
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
+      <p class="muted mt-6" id="admin-search-status"></p>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
       <div id="admin-user-panel" style="display:none;margin-top:14px;">
-        <div style="border-top:1px dashed var(--border);margin-bottom:14px;"></div>
+        <div class="divider-mb-14"></div>
         <div id="admin-user-name-display" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
         <div id="admin-user-deleted-banner" style="display:none;background:#FDECEA;border:1px solid #F5B7B1;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#a93226;"></div>
-        <label class="field" style="margin-top:0;">苗字</label>
+        <label class="field mt-0">苗字</label>
         <input type="text" id="admin-user-sei">
         <label class="field">名前</label>
         <input type="text" id="admin-user-mei">
@@ -722,25 +781,25 @@ nav.tabbar button svg{width:20px;height:20px;}
           <option value="0">一般社員</option>
           <option value="1">管理者</option>
         </select>
-        <label class="field" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="admin-user-executive" style="width:auto;">
+        <label class="field inline-row-8">
+          <input class="w-auto" type="checkbox" id="admin-user-executive">
           役員（有給付与の対象外）
         </label>
-        <button class="btn ghost small" id="btn-admin-save-userinfo" style="margin-top:8px;width:100%;">ユーザー情報を保存</button>
-        <p class="muted" id="admin-userinfo-status" style="margin-top:6px;"></p>
-        <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
-        <div class="section-title" style="font-size:13px;">有給残日数の修正</div>
+        <button class="btn ghost small mt-8 w-full" id="btn-admin-save-userinfo">ユーザー情報を保存</button>
+        <p class="muted mt-6" id="admin-userinfo-status"></p>
+        <div class="divider-16"></div>
+        <div class="section-title fs-13">有給残日数の修正</div>
         <div id="admin-leave-years"></div>
-        <div class="row" style="gap:8px;margin-top:8px;">
-          <input type="number" id="admin-leave-new-year" placeholder="年（例：2026）" style="flex:1;">
-          <input type="number" id="admin-leave-new-value" placeholder="日数" style="flex:1;">
+        <div class="row action-row-gap">
+          <input class="flex-1" type="number" id="admin-leave-new-year" placeholder="年（例：2026）">
+          <input class="flex-1" type="number" id="admin-leave-new-value" placeholder="日数">
         </div>
-        <button class="btn ghost small" id="btn-admin-add-leave-year" style="margin-top:6px;width:100%;">この年を追加・保存</button>
-        <p class="muted" id="admin-leave-status" style="margin-top:6px;"></p>
-        <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+        <button class="btn ghost small mt-6 w-full" id="btn-admin-add-leave-year">この年を追加・保存</button>
+        <p class="muted mt-6" id="admin-leave-status"></p>
+        <div class="divider-16"></div>
         <button class="btn ghost small" id="btn-admin-delete-user" style="width:100%;color:#c0392b;">このユーザーを削除する</button>
         <button class="btn ghost small" id="btn-admin-restore-user" style="width:100%;display:none;">削除を取り消す</button>
-        <p class="muted" id="admin-delete-action-status" style="margin-top:6px;"></p>
+        <p class="muted mt-6" id="admin-delete-action-status"></p>
       </div>
     </div>
   </section>
@@ -777,11 +836,11 @@ nav.tabbar button svg{width:20px;height:20px;}
       <button class="x-btn" id="modal-close">×</button>
     </header>
     <div class="frame">
-      <div id="modal-viewer" style="width:100%;min-height:50vh;background:#3a3a38;padding:8px;box-sizing:border-box;">
-        <p style="color:#eee;text-align:center;margin-top:40px;" id="viewer-loading">読み込み中…</p>
+      <div class="pdf-frame" id="modal-viewer">
+        <p class="loading-text" id="viewer-loading">読み込み中…</p>
       </div>
     </div>
-    <div style="padding:16px 18px;border-top:1px solid var(--border);">
+    <div class="modal-footer">
       <div class="section-title">この明細の実績を入力</div>
       <label class="field">種別</label>
       <select id="modal-man-type">
@@ -790,13 +849,14 @@ nav.tabbar button svg{width:20px;height:20px;}
       </select>
       <label class="field">対象年月</label>
       <input type="month" id="modal-man-month">
+      <input type="hidden" id="modal-man-paykey">
       <div id="modal-man-salary-fields">
         <label class="field">基本給</label>
         <input type="text" inputmode="numeric" class="man-amount" id="modal-man-base">
         <label class="field">残業代（時間外手当）</label>
         <input type="text" inputmode="numeric" class="man-amount" id="modal-man-otpay">
       </div>
-      <div id="modal-man-bonus-fields" style="display:none;">
+      <div class="is-hidden" id="modal-man-bonus-fields">
         <label class="field">賞与額</label>
         <input type="text" inputmode="numeric" class="man-amount" id="modal-man-bonus">
       </div>
@@ -804,8 +864,8 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" inputmode="numeric" class="man-amount" id="modal-man-total">
       <label class="field">差引支給額（手取り・グラフに使用）</label>
       <input type="text" inputmode="numeric" class="man-amount" id="modal-man-net">
-      <button class="btn" id="modal-man-save" style="margin-top:12px;">この内容をグラフに反映</button>
-      <p class="muted" id="modal-man-status" style="margin-top:8px;"></p>
+      <button class="btn mt-12" id="modal-man-save">この内容をグラフに反映</button>
+      <p class="muted mt-8" id="modal-man-status"></p>
     </div>
   </div>
 </div>
@@ -1160,11 +1220,14 @@ document.getElementById('login-inquiry-close').addEventListener('click', ()=>{
 });
 document.getElementById('btn-login-inquiry-send').addEventListener('click', async ()=>{
   const status = document.getElementById('login-inquiry-status');
+  const sendBtn = document.getElementById('btn-login-inquiry-send');
+  if(sendBtn.disabled) return;
   const name = document.getElementById('login-inquiry-name').value.trim() || '（名前未入力）';
   const category = document.getElementById('login-inquiry-category').value;
   const message = document.getElementById('login-inquiry-message').value.trim();
   if(!message){ status.textContent = '内容を入力してください。'; return; }
   const categoryLabel = category === 'cannot_login' ? 'ログインできない' : 'その他問い合わせ';
+  sendBtn.disabled = true;
   status.textContent = '送信しています…';
   await bootstrapScriptUrl();
   const body =
@@ -1181,10 +1244,18 @@ ${categoryLabel}の件について、以下の内容をご確認ください。
   try{
     const url = `${COMPANY_SCRIPT_URL}?action=sendInquiry&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     const data = await jsonpRequest(url);
-    if(data.error){ status.textContent = data.error; return; }
+    if(data.error){ status.textContent = data.error; sendBtn.disabled = false; return; }
     status.textContent = '送信しました。ご確認ありがとうございました。';
+    setTimeout(()=>{
+      document.getElementById('login-inquiry-name').value = '';
+      document.getElementById('login-inquiry-category').selectedIndex = 0;
+      document.getElementById('login-inquiry-message').value = '';
+      status.textContent = '';
+      sendBtn.disabled = false;
+    }, 1400);
   }catch(e){
     status.textContent = '送信に失敗しました：' + e.message;
+    sendBtn.disabled = false;
   }
 });
 
@@ -2088,6 +2159,29 @@ function doGet(e) {
       var body = e.parameter.body || '';
       MailApp.sendEmail(getInquiryEmail(), subject, body);
       out = {success: true};
+    } else if (action === 'uploadChunkStart') {
+      var upFolder = DriveApp.getFolderById(e.parameter.folder);
+      var tempDoc = DocumentApp.create('_upload_tmp_' + new Date().getTime());
+      var tempFile = DriveApp.getFileById(tempDoc.getId());
+      upFolder.addFile(tempFile);
+      DriveApp.getRootFolder().removeFile(tempFile);
+      out = { success: true, tempDocId: tempDoc.getId() };
+    } else if (action === 'uploadChunkAppend') {
+      var appendDoc = DocumentApp.openById(e.parameter.tempDocId);
+      appendDoc.getBody().appendParagraph(e.parameter.data || '');
+      appendDoc.saveAndClose();
+      out = { success: true };
+    } else if (action === 'uploadChunkFinish') {
+      var finishDoc = DocumentApp.openById(e.parameter.tempDocId);
+      var fullText = finishDoc.getBody().getText().replace(/\\n/g, '').replace(/\\s/g, '');
+      var targetFolder = DriveApp.getFolderById(e.parameter.folder);
+      var fileName = e.parameter.filename || 'アップロードファイル';
+      var mimeType = e.parameter.mimeType || 'application/pdf';
+      var bytes = Utilities.base64Decode(fullText);
+      var blob = Utilities.newBlob(bytes, mimeType, fileName);
+      var newFile = targetFolder.createFile(blob);
+      DriveApp.getFileById(finishDoc.getId()).setTrashed(true);
+      out = { success: true, fileId: newFile.getId(), fileName: newFile.getName() };
     } else if (action === 'getAppIcon') {
       var masterFolderIcon = DriveApp.getFolderById(MASTER_FOLDER_ID);
       var iconFiles = masterFolderIcon.getFilesByName('icon.ico');
@@ -3007,11 +3101,45 @@ function genId(){ return 'f_'+Date.now()+'_'+Math.random().toString(36).slice(2,
 document.getElementById('btn-add-file').addEventListener('click', ()=>{
   document.getElementById('file-input').click();
 });
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const result = reader.result;
+      const base64 = result.substring(result.indexOf(',')+1);
+      resolve(base64);
+    };
+    reader.onerror = ()=>reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFileToDrive(file, filename, onProgress){
+  if(!settings.scriptUrl || !settings.driveFolderId) throw new Error('フォルダが未設定です');
+  const base64 = await fileToBase64(file);
+  const startUrl = `${settings.scriptUrl}?action=uploadChunkStart&folder=${encodeURIComponent(settings.driveFolderId)}`;
+  const startData = await jsonpRequest(startUrl);
+  if(startData.error) throw new Error(startData.error);
+  const tempDocId = startData.tempDocId;
+  const CHUNK_SIZE = 6000;
+  const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
+  for(let i=0; i<totalChunks; i++){
+    const chunk = base64.substring(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
+    const appendUrl = `${settings.scriptUrl}?action=uploadChunkAppend&tempDocId=${encodeURIComponent(tempDocId)}&data=${encodeURIComponent(chunk)}`;
+    const appendData = await jsonpRequest(appendUrl);
+    if(appendData.error) throw new Error(appendData.error);
+    if(onProgress) onProgress(i+1, totalChunks);
+  }
+  const finishUrl = `${settings.scriptUrl}?action=uploadChunkFinish&tempDocId=${encodeURIComponent(tempDocId)}&folder=${encodeURIComponent(settings.driveFolderId)}&filename=${encodeURIComponent(filename)}&mimeType=${encodeURIComponent(file.type||'application/pdf')}`;
+  const finishData = await jsonpRequest(finishUrl);
+  if(finishData.error) throw new Error(finishData.error);
+  return finishData;
+}
+
 document.getElementById('file-input').addEventListener('change', async (e)=>{
   const files = [...e.target.files];
   const status = document.getElementById('meisai-status');
   for(const file of files){
-    status.textContent = `${file.name} を追加しています…`;
     let ym = parseYearMonth(file.name);
     let displayName = file.name;
     if(!ym){
@@ -3025,8 +3153,23 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
       await idbPut(id, file);
       documents.push({id, name:displayName, y: ym.y, mo: ym.mo, type, addedAt: Date.now()});
       saveJSON('documents', documents);
+      renderMeisaiLists();
     }catch(err){
       alert(`${file.name} の保存に失敗しました：${err.message}`);
+      continue;
+    }
+    try{
+      status.textContent = `${displayName} をDriveにアップロードしています…`;
+      await uploadFileToDrive(file, displayName, (done, total)=>{
+        status.textContent = `${displayName} をDriveにアップロードしています…（${done}/${total}）`;
+      });
+      status.textContent = `${displayName} をDriveにアップロードしました。`;
+      documents = documents.filter(d=>d.id!==id);
+      saveJSON('documents', documents);
+      try{ await idbDelete(id); }catch(err){}
+      await refreshDriveDocs();
+    }catch(uploadErr){
+      status.textContent = `${displayName} はこの端末に保存されましたが、Driveへのアップロードに失敗しました：${uploadErr.message}`;
     }
     logEvent('pdf_add', displayName);
     try{
@@ -3095,12 +3238,12 @@ async function fetchFileBytes(doc){
   doc._mimeType = blob.type;
   return await blob.arrayBuffer();
 }
-async function openFile(doc, label){
+async function openFile(doc, label, payKey){
   currentOcrFile = doc;
   document.getElementById('modal-title').textContent = label;
   document.getElementById('modal').classList.remove('hidden');
-  const ym = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : '';
-  fillManualEntryForm('modal-man-', ym, doc);
+  const plainYm = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : '';
+  fillManualEntryForm('modal-man-', plainYm, doc, payKey || plainYm);
   const viewer = document.getElementById('modal-viewer');
   viewer.innerHTML = '<p style="color:#eee;text-align:center;margin-top:40px;">読み込み中…</p>';
   try{
@@ -3205,6 +3348,8 @@ function buildContactItems(){
 
 document.getElementById('contact-send').addEventListener('click', async ()=>{
   const status = document.getElementById('contact-status');
+  const sendBtn = document.getElementById('contact-send');
+  if(sendBtn.disabled) return;
   const replyNeeded = document.getElementById('contact-reply-needed').checked;
   const replyEmail = document.getElementById('contact-reply-email').value.trim();
   if(replyNeeded && !replyEmail){
@@ -3244,27 +3389,46 @@ ${numbered}
 
 給与台帳　お問い合わせ機能より本件は自動メールで送信されました。`;
   const subject = `【給与台帳】【${priority}】${title}のお問い合わせ`;
+  sendBtn.disabled = true;
   status.textContent = '送信しています…';
   try{
     const url = `${settings.scriptUrl}?action=sendInquiry&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     const data = await jsonpRequest(url);
     if(data.error){
       status.textContent = '送信に失敗しました：' + data.error;
+      sendBtn.disabled = false;
       return;
     }
     status.textContent = '送信しました。ご確認ありがとうございました。';
+    setTimeout(()=>{
+      document.getElementById('contact-modal').classList.add('hidden');
+      document.querySelectorAll('.contact-fields input, .contact-fields textarea, .contact-fields select').forEach(el=>{
+        if(el.tagName==='SELECT') el.selectedIndex = 0; else el.value = '';
+      });
+      document.getElementById('contact-reply-email').value = '';
+      document.getElementById('contact-reply-needed').checked = true;
+      document.getElementById('contact-reply-email-wrap').style.display = 'block';
+      status.textContent = '';
+      sendBtn.disabled = false;
+    }, 1400);
   }catch(e){
     status.textContent = '送信に失敗しました：' + e.message;
+    sendBtn.disabled = false;
   }
 });
 
-function renderLedgerRow(container, doc, ym, labelOverride){
+function payKeyFor(y, mo, index){
+  const base = `${y}-${String(mo).padStart(2,'0')}`;
+  return index > 0 ? `${base}#${index+1}` : base;
+}
+
+function renderLedgerRow(container, doc, ym, labelOverride, payKey){
   const row = document.createElement('div');
   const label = labelOverride || `${ym.y}年${ym.mo}月度の明細`;
   if(doc){
     row.className = 'ledger-row';
     const delBtn = (doc.source==='drive' || doc.source==='localfolder') ? '' : `<button class="x-btn" style="font-size:16px;" data-del="${doc.id}">×</button>`;
-    const ymKey = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null;
+    const ymKey = payKey || ((doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null);
     const rec = ymKey ? payHistory[ymKey] : null;
     const registered = doc.type==='bonus' ? !!(rec && rec.bonus) : !!(rec && rec.salary);
     const unregTag = registered ? '' : '<span class="tag warn">未登録</span>';
@@ -3279,8 +3443,8 @@ function renderLedgerRow(container, doc, ym, labelOverride){
       <span class="tag ok">閲覧</span>
       ${delBtn}
     `;
-    row.querySelector('.info').addEventListener('click', ()=>openFile(doc, label));
-    row.querySelector('.tag').addEventListener('click', ()=>openFile(doc, label));
+    row.querySelector('.info').addEventListener('click', ()=>openFile(doc, label, ymKey));
+    row.querySelector('.tag').addEventListener('click', ()=>openFile(doc, label, ymKey));
     const delEl = row.querySelector('[data-del]');
     if(delEl) delEl.addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteDocument(doc.id); });
   }else{
@@ -3316,6 +3480,25 @@ function getFullMonthRange(docs){
   return months;
 }
 
+const CIRCLED_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+function numberedLabel(baseLabel, index, total){
+  if(total <= 1) return baseLabel;
+  const num = CIRCLED_NUMS[index] || `(${index+1})`;
+  return `${baseLabel}${num}`;
+}
+function renderMonthDocs(container, docsForMonth, ym, baseLabel){
+  if(docsForMonth.length === 0){
+    renderLedgerRow(container, null, ym, baseLabel);
+    return;
+  }
+  const sorted = docsForMonth.slice().sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
+  sorted.forEach((doc, i)=>{
+    const plainYm = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null;
+    const payKey = (sorted.length > 1 && plainYm) ? `${plainYm}#${i}` : plainYm;
+    renderLedgerRow(container, doc, ym, numberedLabel(baseLabel, i, sorted.length), payKey);
+  });
+}
+
 function renderMeisaiLists(){
   const allDocs = [...documents, ...driveDocs];
   const salaryDocs = allDocs.filter(d=>d.type==='salary');
@@ -3325,10 +3508,10 @@ function renderMeisaiLists(){
   const listEl = document.getElementById('meisai-list');
   listEl.innerHTML = '';
   recent.forEach(ym=>{
-    const doc = salaryDocs.find(d=>d.y===ym.y && d.mo===ym.mo);
-    renderLedgerRow(listEl, doc, ym);
-    const bonusDoc = bonusDocs.find(d=>d.y===ym.y && d.mo===ym.mo);
-    if(bonusDoc) renderLedgerRow(listEl, bonusDoc, ym, `${ym.y}年${ym.mo}月度の賞与明細`);
+    const docsThisMonth = salaryDocs.filter(d=>d.y===ym.y && d.mo===ym.mo);
+    renderMonthDocs(listEl, docsThisMonth, ym, `${ym.y}年${ym.mo}月度の明細`);
+    const bonusDocsThisMonth = bonusDocs.filter(d=>d.y===ym.y && d.mo===ym.mo);
+    if(bonusDocsThisMonth.length>0) renderMonthDocs(listEl, bonusDocsThisMonth, ym, `${ym.y}年${ym.mo}月度の賞与明細`);
   });
 
   const allEl = document.getElementById('meisai-all');
@@ -3353,11 +3536,11 @@ function renderMeisaiLists(){
       const items = byYear[y].sort((a,b)=> b.mo - a.mo || (a.kind==='salary'?-1:1));
       items.forEach(item=>{
         if(item.kind==='salary'){
-          const doc = salaryDocs.find(d=>d.y===y && d.mo===item.mo);
-          renderLedgerRow(allEl, doc, {y,mo:item.mo});
+          const docsThisMonth = salaryDocs.filter(d=>d.y===y && d.mo===item.mo);
+          renderMonthDocs(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の明細`);
         }else{
-          const doc = bonusDocs.find(d=>d.y===y && d.mo===item.mo);
-          renderLedgerRow(allEl, doc, {y,mo:item.mo}, `${y}年${item.mo}月度の賞与明細`);
+          const docsThisMonth = bonusDocs.filter(d=>d.y===y && d.mo===item.mo);
+          renderMonthDocs(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の賞与明細`);
         }
       });
     });
@@ -3480,18 +3663,18 @@ function parseSettingsText(text){
       section = null;
     }
     if(section === 'pay'){
-      m = line.match(/^(\d{6}):bonus:([\d.]+):([\d.]+)$/);
+      m = line.match(/^(\d{6})(#\d+)?:bonus:([\d.]+):([\d.]+)$/);
       if(m){
-        const ym = `${m[1].slice(0,4)}-${m[1].slice(4,6)}`;
+        const ym = `${m[1].slice(0,4)}-${m[1].slice(4,6)}${m[2]||''}`;
         if(!result.payHistory[ym]) result.payHistory[ym] = {};
-        result.payHistory[ym].bonus = {total: parseFloat(m[2]), net: parseFloat(m[3])};
+        result.payHistory[ym].bonus = {total: parseFloat(m[3]), net: parseFloat(m[4])};
         return;
       }
-      m = line.match(/^(\d{6}):salary:([\d.]+):([\d.]+):([\d.]+):([\d.]+)$/);
+      m = line.match(/^(\d{6})(#\d+)?:salary:([\d.]+):([\d.]+):([\d.]+):([\d.]+)$/);
       if(m){
-        const ym = `${m[1].slice(0,4)}-${m[1].slice(4,6)}`;
+        const ym = `${m[1].slice(0,4)}-${m[1].slice(4,6)}${m[2]||''}`;
         if(!result.payHistory[ym]) result.payHistory[ym] = {};
-        result.payHistory[ym].salary = {base: parseFloat(m[2]), otPay: parseFloat(m[3]), total: parseFloat(m[4]), net: parseFloat(m[5])};
+        result.payHistory[ym].salary = {base: parseFloat(m[3]), otPay: parseFloat(m[4]), total: parseFloat(m[5]), net: parseFloat(m[6])};
         return;
       }
       section = null;
@@ -3662,18 +3845,20 @@ function setupManualEntryForm(prefix){
   el('save').addEventListener('click', async ()=>{
     const ym = el('month').value;
     if(!ym){ alert('対象年月を入力してください。'); return; }
+    const paykeyEl = document.getElementById(prefix+'paykey');
+    const key = (paykeyEl && paykeyEl.value) ? paykeyEl.value : ym;
     const type = el('type').value;
     const net = parseAmount(el('net').value);
-    if(!payHistory[ym]) payHistory[ym] = {};
+    if(!payHistory[key]) payHistory[key] = {};
     if(type === 'bonus'){
       const bonus = parseAmount(el('bonus').value);
-      payHistory[ym].bonus = { total: bonus, net: net || bonus };
+      payHistory[key].bonus = { total: bonus, net: net || bonus };
     }else{
       const base = parseAmount(el('base').value);
       const otPay = parseAmount(el('otpay').value);
       const totalField = parseAmount(el('total').value);
       const total = totalField || (base+otPay);
-      payHistory[ym].salary = { base, otPay, total, net: net || total };
+      payHistory[key].salary = { base, otPay, total, net: net || total };
     }
     saveJSON('payHistory', payHistory);
     renderSalaryChart();
@@ -3695,10 +3880,13 @@ document.querySelectorAll('.man-amount').forEach(input=>{
 setupManualEntryForm('man-');
 setupManualEntryForm('modal-man-');
 
-function fillManualEntryForm(prefix, ym, doc){
+function fillManualEntryForm(prefix, ym, doc, payKey){
   const el = id => document.getElementById(prefix+id);
   el('month').value = ym || '';
-  const rec = ym ? payHistory[ym] : null;
+  const key = payKey || ym;
+  const paykeyEl = document.getElementById(prefix+'paykey');
+  if(paykeyEl) paykeyEl.value = key || '';
+  const rec = key ? payHistory[key] : null;
   const isBonus = (doc && doc.type==='bonus') || (rec && rec.bonus && !rec.salary);
   el('type').value = isBonus ? 'bonus' : 'salary';
   el('salary-fields').style.display = isBonus ? 'none' : 'block';
@@ -3708,7 +3896,7 @@ function fillManualEntryForm(prefix, ym, doc){
   el('total').value = rec && rec.salary ? rec.salary.total.toLocaleString('en-US') : (rec && rec.bonus ? rec.bonus.total.toLocaleString('en-US') : '');
   el('net').value = rec && rec.salary ? (rec.salary.net!==undefined?rec.salary.net:rec.salary.total).toLocaleString('en-US') : (rec && rec.bonus ? (rec.bonus.net!==undefined?rec.bonus.net:rec.bonus.total).toLocaleString('en-US') : '');
   el('bonus').value = rec && rec.bonus ? rec.bonus.total.toLocaleString('en-US') : '';
-  el('status').textContent = '';
+  el('status').textContent = payKey && payKey !== ym ? 'この明細専用の実績です（同月の他の明細とは別に保存されます）' : '';
 }
 
 function isoDate(d){
@@ -4040,22 +4228,30 @@ function renderSalaryChart(){
   const allDocsForRange = [...documents, ...driveDocs].filter(d=>d.y && d.mo);
   const dataMonths = [
     ...allDocsForRange.map(d=>({y:d.y, mo:d.mo})),
-    ...Object.keys(payHistory).map(k=>{ const [y,mo]=k.split('-').map(Number); return {y,mo}; }),
+    ...Object.keys(payHistory).map(k=>{ const [y,mo]=k.split('#')[0].split('-').map(Number); return {y,mo}; }),
     ...Object.keys(otHoursByMonth).map(k=>{ const [y,mo]=k.split('-').map(Number); return {y,mo}; })
   ];
   const fullRange = getFullMonthRange(dataMonths);
   const entries = fullRange.map(({y,mo:m})=>{
     const k = `${y}-${String(m).padStart(2,'0')}`;
-    const rec = payHistory[k] || {};
+    const matchingKeys = Object.keys(payHistory).filter(pk => pk === k || pk.startsWith(k+'#'));
     let salary = null;
-    if(rec.salary){
-      salary = { base: rec.salary.base||0, otPay: rec.salary.otPay||0, total: rec.salary.total||0, isEstimate:false };
+    const salaryKeys = matchingKeys.filter(pk => payHistory[pk].salary);
+    if(salaryKeys.length>0){
+      const base = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.base||0), 0);
+      const otPay = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.otPay||0), 0);
+      const total = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.total||0), 0);
+      salary = { base, otPay, total, isEstimate:false };
     }else if(otHoursByMonth[k] !== undefined){
       const hours = otHoursByMonth[k]||0;
       const otPay = (settingsBase && std) ? Math.round((settingsBase/std)*rate*hours) : 0;
       salary = { base:settingsBase, otPay, total:settingsBase+otPay, isEstimate:true };
     }
-    const bonus = rec.bonus ? { total: rec.bonus.total||0, net: (rec.bonus.net!==undefined ? rec.bonus.net : (rec.bonus.total||0)) } : null;
+    const bonusKeys = matchingKeys.filter(pk => payHistory[pk].bonus);
+    const bonus = bonusKeys.length>0 ? {
+      total: bonusKeys.reduce((s,pk)=>s+(payHistory[pk].bonus.total||0), 0),
+      net: bonusKeys.reduce((s,pk)=>s+((payHistory[pk].bonus.net!==undefined?payHistory[pk].bonus.net:payHistory[pk].bonus.total)||0), 0)
+    } : null;
     const isGap = !salary && !bonus;
     return {y, m, key:k, salary, bonus, isGap, gapBase: settingsBase};
   });
@@ -4148,7 +4344,7 @@ function renderYTDTotals(){
   const curMonth = now.getMonth()+1;
   let gross = 0, net = 0;
   Object.keys(payHistory).forEach(ym=>{
-    const [y, mo] = ym.split('-').map(Number);
+    const [y, mo] = ym.split('#')[0].split('-').map(Number);
     if(y !== curYear || mo > curMonth) return;
     const rec = payHistory[ym];
     if(rec.salary){
