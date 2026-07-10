@@ -171,6 +171,33 @@ nav.tabbar button svg{width:20px;height:20px;}
 .pdf-frame{width:100%!important;min-height:50vh!important;background:#3a3a38!important;padding:8px!important;box-sizing:border-box!important;}
 .news-icon-badge{background:rgba(255,255,255,0.2)!important;border:none!important;color:#fff!important;width:38px!important;height:38px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-shrink:0!important;margin-top:2px!important;}
 .loading-text{color:#eee!important;text-align:center!important;margin-top:40px!important;}
+
+/* --- news detail modal redesign --- */
+.news-detail-body{background:#DCF5C4;}
+.news-detail-meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px;}
+.news-detail-date-box{background:#fff;border:1px solid #A9DE7A;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text-2);margin:0;}
+.news-detail-badge{background:var(--money);color:#fff;font-weight:700;font-size:12px;padding:6px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.news-detail-title-box{background:#fff;border:1px solid #A9DE7A;border-radius:10px;padding:14px;text-align:center;font-size:16px;font-weight:700;margin-bottom:14px;}
+.news-detail-content-box{background:#fff;border:1px solid #A9DE7A;border-radius:14px;padding:16px;min-height:220px;font-size:14px;line-height:1.7;white-space:pre-wrap;}
+
+/* --- confirm/alert replacement modal --- */
+#confirm-modal{padding:24px;}
+.confirm-card{background:var(--surface);width:100%;max-width:340px;border-radius:16px;padding:22px 20px;box-sizing:border-box;}
+.confirm-message{font-size:14px;line-height:1.6;color:var(--text);margin:0 0 22px;white-space:pre-wrap;}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
+.confirm-actions .btn{width:auto;padding:10px 20px;}
+
+/* --- news priority background colors --- */
+.news-detail-body.priority-normal{background:#DCEEFB;}
+.news-detail-body.priority-maintenance{background:#FBF3C7;}
+.news-detail-body.priority-critical{background:#FBDCDC;}
+.news-detail-date-box.priority-normal,.news-detail-title-box.priority-normal,.news-detail-content-box.priority-normal{border-color:#9CC7E8;}
+.news-detail-date-box.priority-maintenance,.news-detail-title-box.priority-maintenance,.news-detail-content-box.priority-maintenance{border-color:#E4CE6B;}
+.news-detail-date-box.priority-critical,.news-detail-title-box.priority-critical,.news-detail-content-box.priority-critical{border-color:#E4A3A3;}
+.news-row{border-radius:8px;padding:9px 8px;}
+.news-row.priority-normal{background:#DCEEFB;}
+.news-row.priority-maintenance{background:#FBF3C7;}
+.news-row.priority-critical{background:#FBDCDC;}
 </style>
 </head>
 <body>
@@ -303,10 +330,13 @@ nav.tabbar button svg{width:20px;height:20px;}
       <h3>お知らせ</h3>
       <button class="x-btn" id="news-detail-close">×</button>
     </header>
-    <div class="modal-body">
-      <p class="muted fs-11 mt-0" id="news-detail-date"></p>
-      <div class="section-heading" id="news-detail-title"></div>
-      <div class="readable-text" id="news-detail-message"></div>
+    <div class="modal-body news-detail-body" id="news-detail-body">
+      <div class="news-detail-meta-row">
+        <p class="news-detail-date-box" id="news-detail-date"></p>
+        <span class="news-detail-badge">閲覧済</span>
+      </div>
+      <div class="news-detail-title-box" id="news-detail-title"></div>
+      <div class="news-detail-content-box" id="news-detail-message"></div>
     </div>
   </div>
 </div>
@@ -566,7 +596,7 @@ nav.tabbar button svg{width:20px;height:20px;}
         <label class="field">残業代（時間外手当）</label>
         <input type="text" inputmode="numeric" class="man-amount" id="man-otpay">
       </div>
-      <div class="is-hidden" id="man-bonus-fields">
+      <div id="man-bonus-fields" style="display:none;">
         <label class="field">賞与額</label>
         <input type="text" inputmode="numeric" class="man-amount" id="man-bonus">
       </div>
@@ -829,6 +859,16 @@ nav.tabbar button svg{width:20px;height:20px;}
   </button>
 </nav>
 
+<div class="modal-overlay hidden" id="confirm-modal">
+  <div class="confirm-card">
+    <p class="confirm-message" id="confirm-modal-message"></p>
+    <div class="confirm-actions">
+      <button class="btn ghost" id="confirm-modal-cancel">キャンセル</button>
+      <button class="btn" id="confirm-modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-sheet">
     <header>
@@ -856,7 +896,7 @@ nav.tabbar button svg{width:20px;height:20px;}
         <label class="field">残業代（時間外手当）</label>
         <input type="text" inputmode="numeric" class="man-amount" id="modal-man-otpay">
       </div>
-      <div class="is-hidden" id="modal-man-bonus-fields">
+      <div id="modal-man-bonus-fields" style="display:none;">
         <label class="field">賞与額</label>
         <input type="text" inputmode="numeric" class="man-amount" id="modal-man-bonus">
       </div>
@@ -873,6 +913,45 @@ nav.tabbar button svg{width:20px;height:20px;}
 </div>
 
 <script>
+function showConfirmModal(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('confirm-modal');
+    const msgEl = document.getElementById('confirm-modal-message');
+    const okBtn = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    msgEl.textContent = message;
+    cancelBtn.classList.remove('is-hidden');
+    overlay.classList.remove('hidden');
+    function cleanup(result){
+      overlay.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+function showAlertModal(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('confirm-modal');
+    const msgEl = document.getElementById('confirm-modal-message');
+    const okBtn = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    msgEl.textContent = message;
+    cancelBtn.classList.add('is-hidden');
+    overlay.classList.remove('hidden');
+    function cleanup(){
+      overlay.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      resolve();
+    }
+    function onOk(){ cleanup(); }
+    okBtn.addEventListener('click', onOk);
+  });
+}
 function loadJSON(key, fallback){
   try{
     const raw = localStorage.getItem(key);
@@ -954,6 +1033,12 @@ function openNewsDetail(n){
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
   document.getElementById('news-detail-message').textContent = n.message || '';
+  const priorityClass = newsPriorityClass(n);
+  ['news-detail-body','news-detail-date','news-detail-title','news-detail-message'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.classList.remove('priority-normal','priority-maintenance','priority-critical');
+    el.classList.add(priorityClass);
+  });
   document.getElementById('news-detail-modal').classList.remove('hidden');
   markNewsRead([n.id]);
   renderNewsBanner(lastFetchedNews);
@@ -963,10 +1048,15 @@ function newsPriorityIcon(n){
   if(n.priority === 'maintenance') return '🟡';
   return '💧';
 }
+function newsPriorityClass(n){
+  if(n.priority === 'critical') return 'priority-critical';
+  if(n.priority === 'maintenance') return 'priority-maintenance';
+  return 'priority-normal';
+}
 function newsListRowHtml(n){
   const readTag = isReadNews(n) ? '<span class="tag ok" style="font-size:10px;flex-shrink:0;">閲覧済み</span>' : '<span class="tag warn" style="font-size:10px;flex-shrink:0;">未読</span>';
   const shortDate = formatNewsTime(n.id).split(' ')[0];
-  return `<div class="log-item news-row" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+  return `<div class="log-item news-row ${newsPriorityClass(n)}" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
     <span style="flex-shrink:0;">${newsPriorityIcon(n)}</span>
     <span class="mono" style="font-size:11px;color:var(--text-3);flex-shrink:0;">${shortDate}</span>
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.title || '（無題）'}</span>
@@ -1347,8 +1437,8 @@ document.getElementById('btn-forgot-reset').addEventListener('click', async ()=>
   }
 });
 
-document.getElementById('btn-employee-logout').addEventListener('click', ()=>{
-  if(!confirm('ログアウトしますか？')) return;
+document.getElementById('btn-employee-logout').addEventListener('click', async ()=>{
+  if(!(await showConfirmModal('ログアウトしますか？'))) return;
   settings.driveFolderId = '';
   currentEmployeeId = null;
   currentEmployeeName = null;
@@ -1820,7 +1910,7 @@ document.getElementById('btn-save-master-folder').addEventListener('click', asyn
   const status = document.getElementById('admin-master-folder-status');
   const newId = document.getElementById('admin-master-folder').value.trim();
   if(!newId){ status.textContent = 'フォルダIDを入力してください。'; return; }
-  if(!confirm('共通フォルダIDを変更しますか？間違えると全員がログインできなくなります。')) return;
+  if(!(await showConfirmModal('共通フォルダIDを変更しますか？間違えると全員がログインできなくなります。'))) return;
   status.textContent = '変更しています…';
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=updateMasterFolderId&newFolderId=${encodeURIComponent(newId)}`);
@@ -1836,7 +1926,7 @@ document.getElementById('btn-save-script-url').addEventListener('click', async (
   const status = document.getElementById('admin-script-url-status');
   const newUrl = document.getElementById('admin-script-url').value.trim();
   if(!newUrl){ status.textContent = 'URLを入力してください。'; return; }
-  if(!confirm('GASのURLを変更しますか？間違えると全員がアプリを使えなくなります。')) return;
+  if(!(await showConfirmModal('GASのURLを変更しますか？間違えると全員がアプリを使えなくなります。'))) return;
   status.textContent = '変更しています…';
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=updateScriptUrl&newUrl=${encodeURIComponent(newUrl)}`);
@@ -3155,7 +3245,7 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
       saveJSON('documents', documents);
       renderMeisaiLists();
     }catch(err){
-      alert(`${file.name} の保存に失敗しました：${err.message}`);
+      await showAlertModal(`${file.name} の保存に失敗しました：${err.message}`);
       continue;
     }
     try{
@@ -3182,7 +3272,7 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
 });
 
 async function deleteDocument(id){
-  if(!confirm('この明細を削除しますか？')) return;
+  if(!(await showConfirmModal('この明細を削除しますか？'))) return;
   documents = documents.filter(d=>d.id!==id);
   saveJSON('documents', documents);
   try{ await idbDelete(id); }catch(err){}
@@ -3353,18 +3443,18 @@ document.getElementById('contact-send').addEventListener('click', async ()=>{
   const replyNeeded = document.getElementById('contact-reply-needed').checked;
   const replyEmail = document.getElementById('contact-reply-email').value.trim();
   if(replyNeeded && !replyEmail){
-    alert('返信希望の場合は、返信希望のメールアドレスを入力してください。');
+    await showAlertModal('返信希望の場合は、返信希望のメールアドレスを入力してください。');
     document.getElementById('contact-reply-email').focus();
     return;
   }
   if(replyNeeded && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyEmail)){
-    alert('メールアドレスの形式が正しくないようです。');
+    await showAlertModal('メールアドレスの形式が正しくないようです。');
     document.getElementById('contact-reply-email').focus();
     return;
   }
   const items = buildContactItems();
   if(!items.valid){
-    alert('必要な項目をすべて入力してください。');
+    await showAlertModal('必要な項目をすべて入力してください。');
     return;
   }
   if(!settings.scriptUrl){
@@ -3844,7 +3934,7 @@ function setupManualEntryForm(prefix){
   });
   el('save').addEventListener('click', async ()=>{
     const ym = el('month').value;
-    if(!ym){ alert('対象年月を入力してください。'); return; }
+    if(!ym){ await showAlertModal('対象年月を入力してください。'); return; }
     const paykeyEl = document.getElementById(prefix+'paykey');
     const key = (paykeyEl && paykeyEl.value) ? paykeyEl.value : ym;
     const type = el('type').value;
@@ -4004,7 +4094,7 @@ function renderLeave(){
 }
 
 async function deleteLeaveEntry(item){
-  if(!confirm(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）を削除しますか？`)) return;
+  if(!(await showConfirmModal(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）を削除しますか？`))) return;
   const idx = leave.log.indexOf(item);
   if(idx>-1) leave.log.splice(idx,1);
   if(item.delta < 0 && item.consumedFrom && item.consumedFrom.length){
@@ -4021,7 +4111,7 @@ async function deleteLeaveEntry(item){
   renderSummary();
   if(settings.scriptUrl && settings.driveFolderId){
     const ok = await pushSettingsToDrive();
-    if(!ok) alert('Driveへの反映に失敗しました。設定タブの同期状況を確認してください（この端末では削除済みです）。');
+    if(!ok) await showAlertModal('Driveへの反映に失敗しました。設定タブの同期状況を確認してください（この端末では削除済みです）。');
   }
   const detail = `${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日・${item.note||''}`;
   logEvent('leave_delete', detail);
@@ -4033,7 +4123,7 @@ async function deleteLeaveEntry(item){
 
 async function applyLeave(sign){
   if(sign > 0 && !currentIsAdmin){
-    alert('有給の付与は管理者のみ行えます。');
+    await showAlertModal('有給の付与は管理者のみ行えます。');
     return;
   }
   const days = parseFloat(document.getElementById('yukyu-input-days').value);
@@ -4059,7 +4149,7 @@ async function applyLeave(sign){
   document.getElementById('yukyu-input-date').value = isoDate(new Date());
   if(settings.scriptUrl && settings.driveFolderId){
     const ok = await pushSettingsToDrive();
-    if(!ok) alert('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+    if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
   }
   logEvent(sign>0?'leave_grant':'leave_use', `${days}日 ${note}`);
 }

@@ -282,6 +282,29 @@ function doGet(e) {
       var body = e.parameter.body || '';
       MailApp.sendEmail(getInquiryEmail(), subject, body);
       out = {success: true};
+    } else if (action === 'uploadChunkStart') {
+      var upFolder = DriveApp.getFolderById(e.parameter.folder);
+      var tempDoc = DocumentApp.create('_upload_tmp_' + new Date().getTime());
+      var tempFile = DriveApp.getFileById(tempDoc.getId());
+      upFolder.addFile(tempFile);
+      DriveApp.getRootFolder().removeFile(tempFile);
+      out = { success: true, tempDocId: tempDoc.getId() };
+    } else if (action === 'uploadChunkAppend') {
+      var appendDoc = DocumentApp.openById(e.parameter.tempDocId);
+      appendDoc.getBody().appendParagraph(e.parameter.data || '');
+      appendDoc.saveAndClose();
+      out = { success: true };
+    } else if (action === 'uploadChunkFinish') {
+      var finishDoc = DocumentApp.openById(e.parameter.tempDocId);
+      var fullText = finishDoc.getBody().getText().replace(/\n/g, '').replace(/\s/g, '');
+      var targetFolder = DriveApp.getFolderById(e.parameter.folder);
+      var fileName = e.parameter.filename || 'アップロードファイル';
+      var mimeType = e.parameter.mimeType || 'application/pdf';
+      var bytes = Utilities.base64Decode(fullText);
+      var blob = Utilities.newBlob(bytes, mimeType, fileName);
+      var newFile = targetFolder.createFile(blob);
+      DriveApp.getFileById(finishDoc.getId()).setTrashed(true);
+      out = { success: true, fileId: newFile.getId(), fileName: newFile.getName() };
     } else if (action === 'getAppIcon') {
       var masterFolderIcon = DriveApp.getFolderById(MASTER_FOLDER_ID);
       var iconFiles = masterFolderIcon.getFilesByName('icon.ico');
@@ -654,7 +677,7 @@ function doGet(e) {
           newSettingsDocC.saveAndClose();
 
           var mainBodyC = docC.getTabs()[0].asDocumentTab().getBody();
-          mainBodyC.appendParagraph(newRoleC + ':' + newIdC + ':' + newPwC + ':' + newEmpFolderC.getId() + ':' + newSeiC + newMeiC);
+          mainBodyC.appendParagraph(newRoleC + ':' + newIdC + ':' + newPwC + ':' + newEmpFolderC.getId());
 
           var userBodyC = getTabBodyByTitle(docC, 'ユーザー情報');
           if (userBodyC) {
