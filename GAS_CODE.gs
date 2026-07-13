@@ -280,7 +280,29 @@ function doGet(e) {
     } else if (action === 'sendInquiry') {
       var subject = e.parameter.subject || 'お問い合わせ';
       var body = e.parameter.body || '';
-      MailApp.sendEmail(getInquiryEmail(), subject, body);
+      var attachmentIdsRaw = (e.parameter.attachmentIds || '').trim();
+      if (attachmentIdsRaw) {
+        var attachmentIdList = attachmentIdsRaw.split(',').filter(function(s){ return s; });
+        var attachmentBlobs = [];
+        for (var ai = 0; ai < attachmentIdList.length && ai < 5; ai++) {
+          try {
+            var attachFile = DriveApp.getFileById(attachmentIdList[ai].trim());
+            attachmentBlobs.push(attachFile.getBlob());
+          } catch (attachErr) {
+            // 取得できない添付は無視して続行
+          }
+        }
+        MailApp.sendEmail(getInquiryEmail(), subject, body, { attachments: attachmentBlobs });
+        for (var aj = 0; aj < attachmentIdList.length && aj < 5; aj++) {
+          try {
+            DriveApp.getFileById(attachmentIdList[aj].trim()).setTrashed(true);
+          } catch (trashErr) {
+            // 削除に失敗しても送信自体は成功しているため無視
+          }
+        }
+      } else {
+        MailApp.sendEmail(getInquiryEmail(), subject, body);
+      }
       out = {success: true};
     } else if (action === 'uploadChunkStart') {
       var upFolder = DriveApp.getFolderById(e.parameter.folder);
