@@ -489,28 +489,74 @@ function doGet(e) {
       var priorityP = e.parameter.priority || 'normal';
       var titleP = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
       var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
-      appendLine(newsDocP, newsId + ':' + scope + ':' + priorityP + ':' + titleP + ':' + msg);
+      appendLine(newsDocP, [newsId, scope, priorityP, titleP, '', '', msg].join(':'));
       out = { success: true };
     } else if (action === 'getNews') {
       var newsDocG = getOrCreateMasterDoc('ニュース');
       var newsLines = newsDocG.getBody().getText().split('\n');
       var newsList = [];
+      var includeDeletedG = e.parameter.includeDeleted === '1';
       for (var ni = 0; ni < newsLines.length; ni++) {
         var nrow = newsLines[ni].trim();
         if (!nrow) continue;
         var nParts = nrow.split(':');
         if (nParts.length < 3) continue;
-        if (nParts.length >= 5) {
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], message: nParts.slice(4).join(':') });
+        var itemG;
+        if (nParts.length >= 7) {
+          // 新形式（編集日時・削除日時つき）
+          itemG = { id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], editedAt: nParts[4], deletedAt: nParts[5], message: nParts.slice(6).join(':') };
+        } else if (nParts.length >= 5) {
+          itemG = { id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], editedAt: '', deletedAt: '', message: nParts.slice(4).join(':') };
         } else if (nParts.length === 4) {
           // 旧形式（重要度なし・タイトルあり）との互換
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts[2], message: nParts.slice(3).join(':') });
+          itemG = { id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts[2], editedAt: '', deletedAt: '', message: nParts.slice(3).join(':') };
         } else {
           // 最旧形式（タイトルなし）との互換
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts.slice(2).join(':'), message: '' });
+          itemG = { id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts.slice(2).join(':'), editedAt: '', deletedAt: '', message: '' };
         }
+        if (itemG.deletedAt && !includeDeletedG) continue;
+        newsList.push(itemG);
       }
       out = { success: true, news: newsList };
+    } else if (action === 'editNews' || action === 'deleteNews' || action === 'restoreNews') {
+      var newsDocX = getOrCreateMasterDoc('ニュース');
+      var bodyX = newsDocX.getBody();
+      var linesX = bodyX.getText().split('\n');
+      var idX = (e.parameter.id || '').trim();
+      var foundX = false;
+      for (var xi = 0; xi < linesX.length; xi++) {
+        var rowX = linesX[xi].trim();
+        if (!rowX) continue;
+        var partsX = rowX.split(':');
+        if (partsX[0] !== idX) continue;
+        var isNewFormatX = partsX.length >= 7;
+        var scopeX = partsX[1] || 'all';
+        var priorityX = partsX[2] || 'normal';
+        var titleX = isNewFormatX ? partsX[3] : (partsX.length >= 5 ? partsX[3] : (partsX.length === 4 ? partsX[2] : ''));
+        var editedAtX = isNewFormatX ? partsX[4] : '';
+        var deletedAtX = isNewFormatX ? partsX[5] : '';
+        var msgX = isNewFormatX ? partsX.slice(6).join(':') : (partsX.length >= 5 ? partsX.slice(4).join(':') : '');
+        if (action === 'editNews') {
+          priorityX = e.parameter.priority || priorityX;
+          titleX = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
+          msgX = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
+          editedAtX = String(new Date().getTime());
+        } else if (action === 'deleteNews') {
+          deletedAtX = String(new Date().getTime());
+        } else if (action === 'restoreNews') {
+          deletedAtX = '';
+        }
+        linesX[xi] = [idX, scopeX, priorityX, titleX, editedAtX, deletedAtX, msgX].join(':');
+        foundX = true;
+        break;
+      }
+      if (!foundX) {
+        out = { error: '対象のニュースが見つかりませんでした' };
+      } else {
+        bodyX.editAsText().setText(linesX.join('\n'));
+        newsDocX.saveAndClose();
+        out = { success: true };
+      }
     } else if (action === 'logEvent') {
       var logDoc = getOrCreateMasterDoc('操作ログ');
       var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\n/g, ' ');

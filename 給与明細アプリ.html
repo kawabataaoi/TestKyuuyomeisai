@@ -382,6 +382,10 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       </div>
       <div class="news-detail-title-box" id="news-detail-title"></div>
       <div class="news-detail-content-box" id="news-detail-message"></div>
+      <div class="news-detail-actions is-hidden" id="news-detail-admin-actions">
+        <button class="btn ghost" id="news-detail-edit">編集</button>
+        <button class="btn" id="news-detail-delete" style="background:var(--danger);">削除</button>
+      </div>
       <div class="news-detail-actions">
         <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
         <button class="btn" id="news-detail-mark-read">既読にする</button>
@@ -789,7 +793,10 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
 
   <section class="view" id="view-maintenance">
     <div class="card" id="card-admin-news" style="display:none;">
-      <div class="section-title">ニュースを送信（管理者用）</div>
+      <div class="row mb-2">
+        <div class="section-title mb-0" id="news-form-title">ニュースを送信（管理者用）</div>
+        <button class="btn ghost small" id="btn-show-deleted-news">削除済みを確認</button>
+      </div>
       <label class="field mt-0">対象</label>
       <select id="news-scope">
         <option value="all">全員に通知</option>
@@ -806,6 +813,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <label class="field">内容</label>
       <textarea id="news-message" rows="3" class="contact-textarea" placeholder="例：GASのバージョンを更新しました"></textarea>
       <button class="btn ghost small mt-8 w-full" id="btn-post-news">送信する</button>
+      <button class="link-btn is-hidden" id="btn-cancel-edit-news">編集をキャンセルする</button>
       <p class="muted mt-6" id="post-news-status"></p>
     </div>
     <div class="card" id="card-admin-logs" style="display:none;">
@@ -1129,12 +1137,22 @@ function markNewsUnread(ids){
   if(settings.scriptUrl && settings.driveFolderId) pushSettingsToDrive();
 }
 let currentDetailNews = null;
+function formatEditedTime(ts){
+  const t = parseInt(ts, 10);
+  if(!t || isNaN(t)) return '';
+  const d = new Date(t);
+  const y = d.getFullYear(), mo = d.getMonth()+1, day = d.getDate();
+  const hh = d.getHours(), mm = String(d.getMinutes()).padStart(2,'0');
+  return `（${y}年${mo}月${day}日　${hh}時${mm}分編集済み）`;
+}
 function openNewsDetail(n){
   currentDetailNews = n;
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
-  document.getElementById('news-detail-message').textContent = n.message || '';
+  const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
+  document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
   document.getElementById('news-detail-admin-tag').classList.toggle('is-hidden', n.scope !== 'admin');
+  document.getElementById('news-detail-admin-actions').classList.toggle('is-hidden', !currentIsAdmin);
   const priorityClass = newsPriorityClass(n);
   ['news-detail-body','news-detail-date-box','news-detail-title','news-detail-message'].forEach(id=>{
     const el = document.getElementById(id);
@@ -1602,6 +1620,29 @@ document.getElementById('btn-change-password').addEventListener('click', async (
   }
 });
 
+let editingNewsId = null;
+function resetNewsForm(){
+  editingNewsId = null;
+  document.getElementById('news-form-title').textContent = 'ニュースを送信（管理者用）';
+  document.getElementById('btn-post-news').textContent = '送信する';
+  document.getElementById('btn-cancel-edit-news').classList.add('is-hidden');
+  document.getElementById('news-title').value = '';
+  document.getElementById('news-message').value = '';
+}
+function startEditNews(n){
+  editingNewsId = n.id;
+  document.getElementById('news-scope').value = n.scope === 'admin' ? 'admin' : 'all';
+  document.getElementById('news-priority').value = n.priority || 'normal';
+  document.getElementById('news-title').value = n.title || '';
+  document.getElementById('news-message').value = n.message || '';
+  document.getElementById('news-form-title').textContent = 'ニュースを編集（管理者用）';
+  document.getElementById('btn-post-news').textContent = '更新する';
+  document.getElementById('btn-cancel-edit-news').classList.remove('is-hidden');
+  document.getElementById('news-detail-modal').classList.add('hidden');
+  document.querySelector('nav.tabbar button[data-view=maintenance]').click();
+  document.getElementById('card-admin-news').scrollIntoView({behavior:'smooth'});
+}
+document.getElementById('btn-cancel-edit-news').addEventListener('click', resetNewsForm);
 document.getElementById('btn-post-news').addEventListener('click', async ()=>{
   const status = document.getElementById('post-news-status');
   const scope = document.getElementById('news-scope').value;
@@ -1609,17 +1650,83 @@ document.getElementById('btn-post-news').addEventListener('click', async ()=>{
   const title = document.getElementById('news-title').value.trim();
   const message = document.getElementById('news-message').value.trim();
   if(!title || !message){ status.textContent = 'タイトルと内容の両方を入力してください。'; return; }
-  status.textContent = '送信しています…';
+  const isEditing = !!editingNewsId;
+  status.textContent = isEditing ? '更新しています…' : '送信しています…';
   try{
-    const url = `${COMPANY_SCRIPT_URL}?action=postNews&scope=${encodeURIComponent(scope)}&priority=${encodeURIComponent(priority)}&title=${encodeURIComponent(title)}&message=${encodeURIComponent(message)}`;
+    const action = isEditing ? 'editNews' : 'postNews';
+    const idParam = isEditing ? `&id=${encodeURIComponent(editingNewsId)}` : '';
+    const url = `${COMPANY_SCRIPT_URL}?action=${action}${idParam}&scope=${encodeURIComponent(scope)}&priority=${encodeURIComponent(priority)}&title=${encodeURIComponent(title)}&message=${encodeURIComponent(message)}`;
     const data = await jsonpRequest(url);
     if(data.error){ status.textContent = data.error; return; }
-    status.textContent = '送信しました。';
-    document.getElementById('news-title').value = '';
-    document.getElementById('news-message').value = '';
+    status.textContent = isEditing ? '更新しました。' : '送信しました。';
+    if(isEditing){
+      const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+      logEvent('news_edit', `${empLabel} がニュース「${title}」を編集しました（id:${editingNewsId}）`);
+      resetNewsForm();
+    }else{
+      document.getElementById('news-title').value = '';
+      document.getElementById('news-message').value = '';
+    }
     fetchAndRenderNews();
   }catch(e){
-    status.textContent = '送信に失敗しました：' + e.message;
+    status.textContent = (isEditing ? '更新' : '送信') + 'に失敗しました：' + e.message;
+  }
+});
+document.getElementById('news-detail-edit').addEventListener('click', ()=>{
+  if(currentDetailNews) startEditNews(currentDetailNews);
+});
+document.getElementById('news-detail-delete').addEventListener('click', async ()=>{
+  if(!currentDetailNews) return;
+  const ok = await showConfirmModal(`「${currentDetailNews.title || '（無題）'}」を削除しますか？${currentDetailNews.priority==='critical' ? '（全員に関わる重要ニュースのため、削除後1年間は管理者が復元できます）' : ''}`);
+  if(!ok) return;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=deleteNews&id=${encodeURIComponent(currentDetailNews.id)}`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('news_delete', `${empLabel} がニュース「${currentDetailNews.title || '（無題）'}」を削除しました（id:${currentDetailNews.id}）`);
+    document.getElementById('news-detail-modal').classList.add('hidden');
+    fetchAndRenderNews();
+  }catch(e){
+    await showAlertModal('削除に失敗しました：' + e.message);
+  }
+});
+function deletedNewsRowHtml(n){
+  const editedTag = n.editedAt ? '<span class="admin-only-tag">編集済み</span>' : '';
+  const criticalTag = n.priority === 'critical' ? '<span class="admin-only-tag" style="background:#FBDCDC;color:var(--danger);">重要（1年復元可）</span>' : '';
+  return `<div class="log-item" data-restore-id="${n.id}" style="display:flex;align-items:center;gap:8px;">
+    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${newsPriorityIcon(n)} ${n.title || '（無題）'}</span>
+    ${criticalTag}${editedTag}
+    <button class="btn ghost small" data-restore-btn="${n.id}">復元</button>
+  </div>`;
+}
+document.getElementById('btn-show-deleted-news').addEventListener('click', async ()=>{
+  document.getElementById('news-modal-title').textContent = '削除済みニュース';
+  document.getElementById('news-modal-body').innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><p class="muted" style="margin-top:10px;">読み込んでいます…</p></div>';
+  document.getElementById('news-modal').classList.remove('hidden');
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getNews&includeDeleted=1`);
+    const deleted = ((data && data.news) || []).filter(n=>n.deletedAt);
+    const bodyEl = document.getElementById('news-modal-body');
+    bodyEl.innerHTML = deleted.length ? deleted.map(deletedNewsRowHtml).join('') : '<div class="empty">削除済みのお知らせはありません。</div>';
+    bodyEl.querySelectorAll('[data-restore-btn]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.restoreBtn;
+        const ok = await showConfirmModal('このお知らせを復元しますか？');
+        if(!ok) return;
+        try{
+          const rdata = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=restoreNews&id=${encodeURIComponent(id)}`);
+          if(rdata.error){ await showAlertModal(rdata.error); return; }
+          const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+          logEvent('news_restore', `${empLabel} がニュース（id:${id}）を復元しました`);
+          document.getElementById('btn-show-deleted-news').click();
+          fetchAndRenderNews();
+        }catch(e){
+          await showAlertModal('復元に失敗しました：' + e.message);
+        }
+      });
+    });
+  }catch(e){
+    document.getElementById('news-modal-body').innerHTML = `<div class="empty">取得に失敗しました：${e.message}</div>`;
   }
 });
 
