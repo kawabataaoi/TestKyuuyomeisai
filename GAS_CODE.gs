@@ -33,6 +33,7 @@ function logSystemEvent(eventType, detail) {
   appendLine(logDoc, logLine);
 }
 var BOOTSTRAP_DOC_ID = '15GaNuDtOCUW311AS-dKXSbu7x2-mVGHblkIe25KlY4I'; // GASのURLを書いた、公開閲覧可能なドキュメントのID
+var APP_VERSION_GAS = '2026.07.13.1'; // このGASコードの版数。デプロイのたびに手動で書き換えてください（自動更新お知らせの検知に使われます）
 
 function getMasterFolderId() {
   var v = PropertiesService.getScriptProperties().getProperty('MASTER_FOLDER_ID');
@@ -162,6 +163,29 @@ function appendLine(doc, line) {
   var body = doc.getBody();
   body.appendParagraph(line);
   doc.saveAndClose();
+}
+
+var COMPANY_SETTING_KEYS = ['有給次回付与', '付与数', '給料日', '締日', '賞与月1', '賞与日1', '賞与月2', '賞与日2', '残業時間警告基準'];
+// 「会社共通設定」ヘッダーが無い旧形式のドキュメントでも設定値を読み取れるよう、
+// ヘッダーの有無に関わらずキー名で判定する（ヘッダーがあれば単に読み飛ばす）。
+function parseCompanySettingsFromText(text) {
+  var result = {};
+  var inPaydaySection = false;
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var row = lines[i].trim();
+    if (row === '給料日特例') { inPaydaySection = true; continue; }
+    if (row === '会社共通設定') { inPaydaySection = false; continue; }
+    if (!row) { inPaydaySection = false; continue; }
+    if (inPaydaySection) continue;
+    var idx = row.indexOf(':');
+    if (idx <= 0) continue;
+    var key = row.substring(0, idx).trim();
+    if (COMPANY_SETTING_KEYS.indexOf(key) !== -1) {
+      result[key] = row.substring(idx + 1).trim();
+    }
+  }
+  return result;
 }
 
 function parsePaydayOverrides(text) {
@@ -378,18 +402,7 @@ function doGet(e) {
         out = {error: '「管理情報」ドキュメントが見つかりません'};
       } else {
         var listText0 = DocumentApp.openById(listFile0.getId()).getTabs()[0].asDocumentTab().getBody().getText();
-        var cs0 = {};
-        var inSection0 = false;
-        var rows0 = listText0.split('\n');
-        for (var k = 0; k < rows0.length; k++) {
-          var row0 = rows0[k].trim();
-          if (row0 === '会社共通設定') { inSection0 = true; continue; }
-          if (!row0) { inSection0 = false; continue; }
-          if (inSection0) {
-            var kv0 = row0.split(':');
-            if (kv0.length >= 2) cs0[kv0[0].trim()] = kv0.slice(1).join(':').trim();
-          }
-        }
+        var cs0 = parseCompanySettingsFromText(listText0);
         out = { success: true, companySettings: cs0, paydayOverrides: parsePaydayOverrides(listText0) };
       }
     } else if (action === 'updatePaydayOverride') {
@@ -522,6 +535,42 @@ function doGet(e) {
       var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
       appendLine(newsDocP, [newsId, scope, priorityP, titleP, '', '', msg].join(':'));
       out = { success: true };
+    } else if (action === 'checkAppVersion') {
+      var htmlVersionCV = (e.parameter.htmlVersion || '').trim();
+      var lockCV = LockService.getScriptLock();
+      lockCV.waitLock(10000);
+      try {
+        var propsCV = PropertiesService.getScriptProperties();
+        var lastGasCV = propsCV.getProperty('LAST_NOTIFIED_GAS_VERSION');
+        var lastHtmlCV = propsCV.getProperty('LAST_NOTIFIED_HTML_VERSION');
+        var changedPartsCV = [];
+        if (lastGasCV === null) {
+          propsCV.setProperty('LAST_NOTIFIED_GAS_VERSION', APP_VERSION_GAS);
+        } else if (lastGasCV !== APP_VERSION_GAS) {
+          changedPartsCV.push('サーバー側（GAS）');
+          propsCV.setProperty('LAST_NOTIFIED_GAS_VERSION', APP_VERSION_GAS);
+        }
+        if (htmlVersionCV) {
+          if (lastHtmlCV === null) {
+            propsCV.setProperty('LAST_NOTIFIED_HTML_VERSION', htmlVersionCV);
+          } else if (lastHtmlCV !== htmlVersionCV) {
+            changedPartsCV.push('画面（アプリ本体）');
+            propsCV.setProperty('LAST_NOTIFIED_HTML_VERSION', htmlVersionCV);
+          }
+        }
+        if (changedPartsCV.length > 0) {
+          var newsDocCV = getOrCreateMasterDoc('ニュース');
+          var newsIdCV = new Date().getTime();
+          var titleCV = 'システムが更新されました';
+          var msgCV = changedPartsCV.join('・') + 'が更新されました。表示がおかしい場合は再読み込みをお試しください。';
+          appendLine(newsDocCV, [newsIdCV, 'all', 'maintenance', titleCV, '', '', msgCV].join(':'));
+          out = { success: true, notified: true };
+        } else {
+          out = { success: true, notified: false };
+        }
+      } finally {
+        lockCV.releaseLock();
+      }
     } else if (action === 'getNews') {
       var newsDocG = getOrCreateMasterDoc('ニュース');
       var newsLines = newsDocG.getBody().getText().split('\n');
@@ -1067,36 +1116,31 @@ function doGet(e) {
         } catch (parseErrCS) {
           updatesCS = {};
         }
-        var sectionStartCS = -1;
-        var sectionEndCS = linesCS.length;
-        for (var csi = 0; csi < linesCS.length; csi++) {
-          if (linesCS[csi].trim() === '会社共通設定') { sectionStartCS = csi; continue; }
-          if (sectionStartCS >= 0 && (linesCS[csi].trim() === '' || linesCS[csi].trim() === '給料日特例')) { sectionEndCS = csi; break; }
-        }
-        var existingCS = {};
-        var orderCS = [];
-        if (sectionStartCS >= 0) {
-          for (var csj = sectionStartCS + 1; csj < sectionEndCS; csj++) {
-            var rowCS = linesCS[csj].trim();
-            if (!rowCS) continue;
-            var idxCS = rowCS.indexOf(':');
-            if (idxCS > 0) {
-              var keyCS = rowCS.substring(0, idxCS).trim();
-              existingCS[keyCS] = rowCS.substring(idxCS + 1).trim();
-              orderCS.push(keyCS);
-            }
-          }
-        }
+        // 「会社共通設定」ヘッダーの有無に関わらず、既存の設定値をキー名で拾い上げる
+        // （ヘッダーが無い旧形式ドキュメントでも値を失わないようにするため）
+        var existingCS = parseCompanySettingsFromText(linesCS.join('\n'));
+        var orderCS = COMPANY_SETTING_KEYS.filter(function(k){ return existingCS[k] !== undefined; });
         for (var ukCS in updatesCS) {
-          if (existingCS[ukCS] === undefined) orderCS.push(ukCS);
+          if (orderCS.indexOf(ukCS) === -1) orderCS.push(ukCS);
           existingCS[ukCS] = updatesCS[ukCS];
         }
         var newSectionLinesCS = ['会社共通設定'];
         orderCS.forEach(function(k){ newSectionLinesCS.push(k + ':' + existingCS[k]); });
         newSectionLinesCS.push('');
-        var beforeCS = sectionStartCS >= 0 ? linesCS.slice(0, sectionStartCS) : linesCS.slice(0, linesCS.length);
-        var afterCS = sectionStartCS >= 0 ? linesCS.slice(sectionEndCS) : [];
-        var finalLinesCS = beforeCS.concat(newSectionLinesCS).concat(afterCS);
+        // 既存のヘッダー付きセクション、およびヘッダーの無い旧形式の設定行を取り除いた残りの行
+        var inOldSectionCS = false;
+        var remainingLinesCS = [];
+        for (var ri = 0; ri < linesCS.length; ri++) {
+          var lineTrimCS = linesCS[ri].trim();
+          if (lineTrimCS === '会社共通設定') { inOldSectionCS = true; continue; }
+          if (!lineTrimCS) { inOldSectionCS = false; remainingLinesCS.push(linesCS[ri]); continue; }
+          if (inOldSectionCS) continue;
+          var idxRiCS = lineTrimCS.indexOf(':');
+          var keyRiCS = idxRiCS > 0 ? lineTrimCS.substring(0, idxRiCS).trim() : '';
+          if (COMPANY_SETTING_KEYS.indexOf(keyRiCS) !== -1) continue;
+          remainingLinesCS.push(linesCS[ri]);
+        }
+        var finalLinesCS = newSectionLinesCS.concat(remainingLinesCS);
         bodyCS.editAsText().setText(finalLinesCS.join('\n'));
         docCS.saveAndClose();
         out = { success: true };
@@ -1193,18 +1237,11 @@ function doGet(e) {
         var inputId = (e.parameter.id || '').trim();
         var inputPw = (e.parameter.password || '').trim();
         var found = null;
-        var companySettings = {};
-        var inCompanySection = false;
+        var companySettings = parseCompanySettingsFromText(listText);
         var rows = listText.split('\n');
         for (var i = 0; i < rows.length; i++) {
           var row = rows[i].trim();
-          if (row === '会社共通設定') { inCompanySection = true; continue; }
-          if (!row) { inCompanySection = false; continue; }
-          if (inCompanySection) {
-            var kv = row.split(':');
-            if (kv.length >= 2) companySettings[kv[0].trim()] = kv.slice(1).join(':').trim();
-            continue;
-          }
+          if (!row) continue;
           var cols = row.replace(/：/g, ':').split(':');
           if (cols.length < 4) continue;
           if (cols[1].trim() === inputId && cols[2].trim() === inputPw) {
