@@ -583,6 +583,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="date" id="yukyu-input-date">
       <label class="field" id="yukyu-note-label">理由（任意）</label>
       <input type="text" id="yukyu-input-note" placeholder="私用のため">
+      <button class="link-btn" id="btn-open-leave-range">複数日をまとめて申請・付与する</button>
     </div>
     <div class="card">
       <div class="section-title">履歴</div>
@@ -969,6 +970,31 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <div class="confirm-actions mt-14">
       <button class="btn ghost" id="reason-modal-cancel">キャンセル</button>
       <button class="btn" id="reason-modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="leave-range-modal">
+  <div class="modal-sheet">
+    <header>
+      <h3>複数日をまとめて申請・付与</h3>
+      <button class="x-btn" id="leave-range-close">×</button>
+    </header>
+    <div class="modal-body">
+      <label class="field mt-0">区分</label>
+      <div class="row tag-row">
+        <button class="btn small outline contact-cat-btn active" id="leave-range-mode-use" data-mode="use">使用（申請）</button>
+        <button class="btn small outline contact-cat-btn" id="leave-range-mode-grant" data-mode="grant">付与</button>
+      </div>
+      <label class="field">開始日</label>
+      <input type="date" id="leave-range-start">
+      <label class="field">終了日</label>
+      <input type="date" id="leave-range-end">
+      <p class="muted mt-6" id="leave-range-preview"></p>
+      <label class="field" id="leave-range-note-label">理由（任意）</label>
+      <input type="text" id="leave-range-note" placeholder="私用のため">
+      <button class="btn mt-14 w-full" id="leave-range-submit">申請する</button>
+      <p class="muted mt-8" id="leave-range-status"></p>
     </div>
   </div>
 </div>
@@ -4909,6 +4935,132 @@ async function applyLeave(sign){
 }
 document.getElementById('yukyu-plus').addEventListener('click', ()=>applyLeave(1));
 document.getElementById('yukyu-minus').addEventListener('click', ()=>applyLeave(-1));
+
+function countWeekdaysInRange(startStr, endStr){
+  const start = new Date(startStr+'T00:00:00');
+  const end = new Date(endStr+'T00:00:00');
+  let count = 0;
+  const cur = new Date(start);
+  while(cur <= end){
+    const day = cur.getDay();
+    if(day !== 0 && day !== 6) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return count;
+}
+let leaveRangeMode = 'use';
+function updateLeaveRangePreview(){
+  const start = document.getElementById('leave-range-start').value;
+  const end = document.getElementById('leave-range-end').value;
+  const previewEl = document.getElementById('leave-range-preview');
+  const submitBtn = document.getElementById('leave-range-submit');
+  if(!start || !end){
+    previewEl.textContent = '開始日と終了日を入力してください。';
+    submitBtn.disabled = false;
+    return;
+  }
+  if(end < start){
+    previewEl.textContent = '終了日は開始日より後の日付にしてください。';
+    submitBtn.disabled = true;
+    return;
+  }
+  const days = countWeekdaysInRange(start, end);
+  const actionLabel = leaveRangeMode === 'grant' ? '付与' : '使用';
+  previewEl.textContent = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで${actionLabel}（土日を除く${days}日分）`;
+  submitBtn.disabled = false;
+  if(leaveRangeMode === 'use' && days > totalLeaveBalance() + 0.0001){
+    previewEl.textContent += `　※残日数（${totalLeaveBalance().toFixed(1)}日）を超えています`;
+    submitBtn.disabled = true;
+  }
+}
+function setLeaveRangeMode(mode){
+  leaveRangeMode = mode;
+  document.getElementById('leave-range-mode-use').classList.toggle('active', mode==='use');
+  document.getElementById('leave-range-mode-grant').classList.toggle('active', mode==='grant');
+  document.getElementById('leave-range-submit').textContent = mode==='grant' ? '付与する' : '申請する';
+  document.getElementById('leave-range-note-label').textContent = mode==='grant' ? '付与理由（必須）' : '理由（任意）';
+  updateLeaveRangePreview();
+}
+document.getElementById('leave-range-mode-use').addEventListener('click', ()=>setLeaveRangeMode('use'));
+document.getElementById('leave-range-mode-grant').addEventListener('click', ()=>{
+  if(!currentIsAdmin){
+    showAlertModal('有給の付与は管理者のみ行えます。');
+    return;
+  }
+  setLeaveRangeMode('grant');
+});
+document.getElementById('leave-range-start').addEventListener('change', updateLeaveRangePreview);
+document.getElementById('leave-range-end').addEventListener('change', updateLeaveRangePreview);
+document.getElementById('btn-open-leave-range').addEventListener('click', ()=>{
+  document.getElementById('leave-range-start').value = isoDate(new Date());
+  document.getElementById('leave-range-end').value = isoDate(new Date());
+  document.getElementById('leave-range-note').value = '';
+  document.getElementById('leave-range-status').textContent = '';
+  setLeaveRangeMode('use');
+  document.getElementById('leave-range-modal').classList.remove('hidden');
+});
+document.getElementById('leave-range-close').addEventListener('click', ()=>{
+  document.getElementById('leave-range-modal').classList.add('hidden');
+});
+document.getElementById('leave-range-submit').addEventListener('click', async ()=>{
+  const status = document.getElementById('leave-range-status');
+  const start = document.getElementById('leave-range-start').value;
+  const end = document.getElementById('leave-range-end').value;
+  if(!start || !end || end < start){
+    status.textContent = '日付を正しく入力してください。';
+    return;
+  }
+  const days = countWeekdaysInRange(start, end);
+  if(days <= 0){
+    status.textContent = '対象期間に平日が含まれていません。';
+    return;
+  }
+  const reasonInput = document.getElementById('leave-range-note').value.trim();
+  const rangeText = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで${leaveRangeMode==='grant'?'付与':'使用'}`;
+  if(leaveRangeMode === 'grant'){
+    if(!currentIsAdmin){ status.textContent = '有給の付与は管理者のみ行えます。'; return; }
+    if(!reasonInput){ status.textContent = '付与理由を入力してください。'; return; }
+    const note = `${rangeText}（${reasonInput}）`;
+    addLeaveGrant(days, parseInt(start.split('-')[0]));
+    leave.log.push({date: start, delta: days, note});
+    ensureRecentYearKeys();
+    saveJSON('leave', leave);
+    renderLeave();
+    renderSummary();
+    if(settings.scriptUrl && settings.driveFolderId){
+      const ok = await pushSettingsToDrive();
+      if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+    }
+    logEvent('leave_grant', `${days}日 ${note}`);
+    document.getElementById('leave-range-modal').classList.add('hidden');
+    return;
+  }
+  if(days > totalLeaveBalance() + 0.0001){
+    status.textContent = `残日数（${totalLeaveBalance().toFixed(1)}日）を超えています。`;
+    return;
+  }
+  const consumedFrom = deductLeave(days);
+  const isPendingUse = !currentIsAdmin;
+  const requestId = isPendingUse ? genRequestId() : null;
+  const noteText = reasonInput ? `${rangeText}（${reasonInput}）` : rangeText;
+  const entry = {date: start, delta: -days, note: isPendingUse ? makePendingNote(noteText, 'PENDING_USE', requestId) : noteText, consumedFrom};
+  leave.log.push(entry);
+  ensureRecentYearKeys();
+  saveJSON('leave', leave);
+  renderLeave();
+  renderSummary();
+  if(settings.scriptUrl && settings.driveFolderId){
+    const ok = await pushSettingsToDrive();
+    if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+  }
+  if(isPendingUse){
+    logEvent('leave_use_request', `${days}日 ${noteText}`);
+    await notifyLeaveRequest('use', requestId, start, -days, noteText);
+  }else{
+    logEvent('leave_use', `${days}日 ${noteText}`);
+  }
+  document.getElementById('leave-range-modal').classList.add('hidden');
+});
 
 function adjustWeekend(date){
   const day = date.getDay();
