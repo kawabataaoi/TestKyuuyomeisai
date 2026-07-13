@@ -242,6 +242,120 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
   return { id: targetIdS, folderId: rowS.cols[3].trim(), userInfo: userInfo, byYear: byYearS };
 }
 
+// ============================================================
+// 管理情報スプレッドシート（社員一覧・ユーザー情報・会社共通設定・給料日特例）
+// 旧形式（管理情報ドキュメント）からの移行後は、こちらが正となる。
+// ============================================================
+var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
+
+function findMasterSpreadsheetFile() {
+  var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
+  var it = masterFolder.getFilesByName('管理情報');
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() === MimeType.GOOGLE_SHEETS) return f;
+  }
+  return null;
+}
+
+function openMasterSpreadsheet() {
+  var f = findMasterSpreadsheetFile();
+  return f ? SpreadsheetApp.openById(f.getId()) : null;
+}
+
+function getSheetData(ss, sheetName) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { sheet: null, header: [], rows: [] };
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 1) return { sheet: sheet, header: [], rows: [] };
+  var values = sheet.getDataRange().getValues();
+  return { sheet: sheet, header: values[0], rows: values.slice(1) };
+}
+
+function rowToObject(header, row) {
+  var obj = {};
+  for (var i = 0; i < header.length; i++) obj[String(header[i]).trim()] = row[i];
+  return obj;
+}
+
+// 社員一覧シートから該当行を検索（1行目はヘッダー）
+function findEmployeeRowSS(ss, targetId) {
+  var data = getSheetData(ss, '社員一覧');
+  for (var i = 0; i < data.rows.length; i++) {
+    var row = data.rows[i];
+    if (String(row[1]).trim() === targetId) {
+      return {
+        rowIndex: i + 2, role: String(row[0]).trim(), id: String(row[1]).trim(),
+        password: String(row[2]).trim(), folderId: String(row[3]).trim(),
+        name: row[4] ? String(row[4]).trim() : ''
+      };
+    }
+  }
+  return null;
+}
+
+function findUserInfoRowSS(ss, targetId) {
+  var data = getSheetData(ss, 'ユーザー情報');
+  for (var i = 0; i < data.rows.length; i++) {
+    if (String(data.rows[i][0]).trim() === targetId) {
+      return { rowIndex: i + 2, record: rowToObject(data.header, data.rows[i]) };
+    }
+  }
+  return null;
+}
+
+function readCompanySettingsSS(ss) {
+  var data = getSheetData(ss, '会社共通設定');
+  var result = {};
+  data.rows.forEach(function (row) {
+    var key = String(row[0] || '').trim();
+    if (key) result[key] = String(row[1] === undefined || row[1] === null ? '' : row[1]);
+  });
+  return result;
+}
+
+function readPaydayOverridesSS(ss) {
+  var data = getSheetData(ss, '給料日特例');
+  var result = {};
+  data.rows.forEach(function (row) {
+    var key = String(row[0] || '').trim();
+    if (key) result[key] = String(row[1] === undefined || row[1] === null ? '' : row[1]);
+  });
+  return result;
+}
+
+function buildUserDetailsSS(ss, targetId) {
+  var empRow = findEmployeeRowSS(ss, targetId);
+  if (!empRow) return null;
+  var userInfo = { sei: '', mei: '', dob: '', role: empRow.role, isExecutive: false, deleted: false, deletedDate: '', scheduledDate: '', deleteReason: '' };
+  var userRow = findUserInfoRowSS(ss, targetId);
+  if (userRow) {
+    var rec = userRow.record;
+    userInfo.sei = rec['苗字'] || '';
+    userInfo.mei = rec['名前'] || '';
+    userInfo.dob = rec['生年月日'] ? String(rec['生年月日']) : '';
+    userInfo.isExecutive = String(rec['役員フラグ']) === '1';
+    userInfo.deleted = String(rec['削除フラグ']) === '1';
+    userInfo.deletedDate = rec['削除日'] ? String(rec['削除日']) : '';
+    userInfo.scheduledDate = rec['削除予定日'] ? String(rec['削除予定日']) : '';
+    userInfo.deleteReason = rec['削除理由'] || '';
+  }
+  var byYear = {};
+  try {
+    var targetFolder = DriveApp.getFolderById(empRow.folderId);
+    var settingsDocFile = getSettingsDocFile(targetFolder);
+    if (settingsDocFile) {
+      var settingsText = DocumentApp.openById(settingsDocFile.getId()).getBody().getText();
+      var sLines = settingsText.split('\n');
+      for (var yi = 0; yi < sLines.length; yi++) {
+        var yMatch = sLines[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+        if (yMatch) byYear[yMatch[1]] = yMatch[2];
+      }
+    }
+  } catch (errS) { /* フォルダが見つからない等は無視してbyYearは空のまま返す */ }
+  return { id: targetId, folderId: empRow.folderId, userInfo: userInfo, byYear: byYear };
+}
+
 function doGet(e) {
   var action = e.parameter.action;
   var callback = e.parameter.callback;
@@ -272,15 +386,26 @@ function doGet(e) {
       var empIdCheck = (e.parameter.empId || '').trim();
       var folderParam = (e.parameter.folder || '').trim();
       if (empIdCheck) {
-        var verifyListFile = findMasterListFile();
-        if (verifyListFile) {
-          var verifyDoc = DocumentApp.openById(verifyListFile.getId());
-          var verifyMainText = verifyDoc.getTabs()[0].asDocumentTab().getBody().getText();
-          var verifyRow = findMainListRow(verifyMainText, empIdCheck);
-          if (!verifyRow || verifyRow.cols[3].trim() !== folderParam) {
-            logSystemEvent('write_settings_blocked', '社員ID「' + empIdCheck + '」に紐づかないフォルダ（' + folderParam + '）への書き込みをブロックしました');
-            out = { error: 'フォルダとユーザーの整合性が取れないため、書き込みを中止しました（安全のためのチェックです）。ページを再読み込みして、再度ログインしてから試してください。' };
+        var verifySS = openMasterSpreadsheet();
+        var verifyFolderId = null;
+        var verifySourceFound = false;
+        if (verifySS) {
+          verifySourceFound = true;
+          var verifyEmpRow = findEmployeeRowSS(verifySS, empIdCheck);
+          verifyFolderId = verifyEmpRow ? verifyEmpRow.folderId : null;
+        } else {
+          var verifyListFile = findMasterListFile();
+          if (verifyListFile) {
+            verifySourceFound = true;
+            var verifyDoc = DocumentApp.openById(verifyListFile.getId());
+            var verifyMainText = verifyDoc.getTabs()[0].asDocumentTab().getBody().getText();
+            var verifyRow = findMainListRow(verifyMainText, empIdCheck);
+            verifyFolderId = verifyRow ? verifyRow.cols[3].trim() : null;
           }
+        }
+        if (verifySourceFound && verifyFolderId !== folderParam) {
+          logSystemEvent('write_settings_blocked', '社員ID「' + empIdCheck + '」に紐づかないフォルダ（' + folderParam + '）への書き込みをブロックしました');
+          out = { error: 'フォルダとユーザーの整合性が取れないため、書き込みを中止しました（安全のためのチェックです）。ページを再読み込みして、再度ログインしてから試してください。' };
         }
       }
       if (!out) {
@@ -388,138 +513,74 @@ function doGet(e) {
         out = { success: true };
       }
     } else if (action === 'companySettings') {
-      var masterFolder0 = DriveApp.getFolderById(MASTER_FOLDER_ID);
-      var listFile0 = null;
-      var candidates0 = ['管理情報', '社員一覧'];
-      for (var cj = 0; cj < candidates0.length && !listFile0; cj++) {
-        var lf0 = masterFolder0.getFilesByName(candidates0[cj]);
-        while (lf0.hasNext()) {
-          var cand0 = lf0.next();
-          if (cand0.getMimeType() === MimeType.GOOGLE_DOCS) { listFile0 = cand0; break; }
-        }
-      }
-      if (!listFile0) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ss0 = openMasterSpreadsheet();
+      if (!ss0) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var listText0 = DocumentApp.openById(listFile0.getId()).getTabs()[0].asDocumentTab().getBody().getText();
-        var cs0 = parseCompanySettingsFromText(listText0);
-        out = { success: true, companySettings: cs0, paydayOverrides: parsePaydayOverrides(listText0) };
+        out = { success: true, companySettings: readCompanySettingsSS(ss0), paydayOverrides: readPaydayOverridesSS(ss0) };
       }
     } else if (action === 'updatePaydayOverride') {
-      var listFileP = findMasterListFile();
-      if (!listFileP) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssP = openMasterSpreadsheet();
+      if (!ssP) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docP = DocumentApp.openById(listFileP.getId());
-        var bodyP = docP.getBody();
-        var linesP = bodyP.getText().split('\n');
         var ymP = (e.parameter.ym || '').trim();
         var dateP = (e.parameter.date || '').trim(); // 空なら特例を削除
-        var sectionIdxP = -1;
-        var endIdxP = linesP.length;
-        for (var pi = 0; pi < linesP.length; pi++) {
-          if (linesP[pi].trim() === '給料日特例') { sectionIdxP = pi; continue; }
-          if (sectionIdxP >= 0 && (linesP[pi].trim() === '' || linesP[pi].trim() === '会社共通設定')) { endIdxP = pi; break; }
+        var sheetDataP = getSheetData(ssP, '給料日特例');
+        var sheetP = sheetDataP.sheet;
+        if (!sheetP) {
+          sheetP = ssP.insertSheet('給料日特例');
+          sheetP.appendRow(['対象年月', '給料日']);
+          sheetDataP = getSheetData(ssP, '給料日特例');
         }
-        if (sectionIdxP < 0) {
-          // セクション自体が無ければ末尾に新設
-          linesP.push('');
-          linesP.push('給料日特例');
-          if (dateP) linesP.push(ymP + ':' + dateP);
-          linesP.push('');
-        } else {
-          var replacedP = false;
-          for (var pj = sectionIdxP + 1; pj < endIdxP; pj++) {
-            var rowP = linesP[pj].trim();
-            if (!rowP) continue;
-            var idxP2 = rowP.indexOf(':');
-            if (idxP2 > 0 && rowP.substring(0, idxP2).trim() === ymP) {
-              if (dateP) { linesP[pj] = ymP + ':' + dateP; }
-              else { linesP.splice(pj, 1); }
-              replacedP = true;
-              break;
-            }
-          }
-          if (!replacedP && dateP) {
-            linesP.splice(sectionIdxP + 1, 0, ymP + ':' + dateP);
-          }
+        var foundRowIdxP = -1;
+        for (var pi = 0; pi < sheetDataP.rows.length; pi++) {
+          if (String(sheetDataP.rows[pi][0]).trim() === ymP) { foundRowIdxP = pi + 2; break; }
         }
-        bodyP.editAsText().setText(linesP.join('\n'));
-        docP.saveAndClose();
+        if (dateP) {
+          if (foundRowIdxP > 0) {
+            sheetP.getRange(foundRowIdxP, 2).setValue(dateP);
+          } else {
+            sheetP.appendRow([ymP, dateP]);
+          }
+        } else if (foundRowIdxP > 0) {
+          sheetP.deleteRow(foundRowIdxP);
+        }
         out = { success: true };
       }
     } else if (action === 'findUserByInfo') {
-      var listFileU = findMasterListFile();
-      if (!listFileU) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssU = openMasterSpreadsheet();
+      if (!ssU) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docU = DocumentApp.openById(listFileU.getId());
-        var userBody = getTabBodyByTitle(docU, 'ユーザー情報');
-        if (!userBody) {
-          out = {error: '「ユーザー情報」タブが見つかりません'};
-        } else {
-          var uLines = userBody.getText().split('\n');
-          var records = [];
-          var cur = null;
-          for (var ui = 0; ui < uLines.length; ui++) {
-            var uln = uLines[ui].trim();
-            if (!uln) continue;
-            var norm = uln.replace(/：/g, ':');
-            var uidx = norm.indexOf(':');
-            if (uidx < 0) continue;
-            var ukey = norm.substring(0, uidx).trim();
-            var uval = norm.substring(uidx + 1).trim();
-            if (ukey === 'ユーザーID') {
-              if (cur) records.push(cur);
-              cur = {};
-            }
-            if (cur) cur[ukey] = uval;
-          }
-          if (cur) records.push(cur);
-          var inSei = (e.parameter.sei || '').trim();
-          var inMei = (e.parameter.mei || '').trim();
-          var inDob = digitsOnly(e.parameter.dob || '');
-          var matchedId = null;
-          for (var ri = 0; ri < records.length; ri++) {
-            var r = records[ri];
-            if (r['苗字'] === inSei && r['名前'] === inMei && digitsOnly(r['生年月日']) === inDob) {
-              matchedId = r['ユーザーID'];
-              break;
-            }
-          }
-          if (matchedId) {
-            out = { success: true, userId: matchedId };
-          } else {
-            out = { error: '一致する情報が見つかりませんでした' };
-          }
-        }
-      }
-    } else if (action === 'resetPassword') {
-      var listFileR = findMasterListFile();
-      if (!listFileR) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
-      } else {
-        var docR = DocumentApp.openById(listFileR.getId());
-        var mainBody = docR.getTabs()[0].asDocumentTab().getBody();
-        var mainLines = mainBody.getText().split('\n');
-        var targetId = (e.parameter.id || '').trim();
-        var newPw = (e.parameter.newPassword || '').trim().replace(/:/g, '');
-        var changed = false;
-        for (var mi = 0; mi < mainLines.length; mi++) {
-          var mrow = mainLines[mi].trim();
-          if (!mrow) continue;
-          var mcols = mrow.replace(/：/g, ':').split(':');
-          if (mcols.length < 4) continue;
-          if (mcols[1].trim() === targetId) {
-            mcols[2] = newPw;
-            mainLines[mi] = mcols.join(':');
-            changed = true;
+        var dataU = getSheetData(ssU, 'ユーザー情報');
+        var inSei = (e.parameter.sei || '').trim();
+        var inMei = (e.parameter.mei || '').trim();
+        var inDob = digitsOnly(e.parameter.dob || '');
+        var matchedId = null;
+        for (var ri = 0; ri < dataU.rows.length; ri++) {
+          var r = rowToObject(dataU.header, dataU.rows[ri]);
+          if (String(r['苗字'] || '') === inSei && String(r['名前'] || '') === inMei && digitsOnly(String(r['生年月日'] || '')) === inDob) {
+            matchedId = String(r['ユーザーID']);
             break;
           }
         }
-        if (changed) {
-          mainBody.editAsText().setText(mainLines.join('\n'));
-          docR.saveAndClose();
+        if (matchedId) {
+          out = { success: true, userId: matchedId };
+        } else {
+          out = { error: '一致する情報が見つかりませんでした' };
+        }
+      }
+    } else if (action === 'resetPassword') {
+      var ssR = openMasterSpreadsheet();
+      if (!ssR) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var targetId = (e.parameter.id || '').trim();
+        var newPw = (e.parameter.newPassword || '').trim().replace(/:/g, '');
+        var empRowR = findEmployeeRowSS(ssR, targetId);
+        if (empRowR) {
+          ssR.getSheetByName('社員一覧').getRange(empRowR.rowIndex, 3).setValue(newPw);
           out = { success: true };
         } else {
           out = { error: '該当するユーザーIDが見つかりませんでした' };
@@ -654,39 +715,35 @@ function doGet(e) {
       var recent = logLines.slice(Math.max(0, logLines.length - 200));
       out = { success: true, logs: recent };
     } else if (action === 'adminFindUsersByQuery') {
-      var listFileQ = findMasterListFile();
-      if (!listFileQ) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssQ = openMasterSpreadsheet();
+      if (!ssQ) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docQ = DocumentApp.openById(listFileQ.getId());
-        var mainTextQ = docQ.getTabs()[0].asDocumentTab().getBody().getText();
         var queryQ = (e.parameter.query || '').trim();
-        var byIdQ = findMainListRow(mainTextQ, queryQ);
+        var byIdQ = findEmployeeRowSS(ssQ, queryQ);
         if (byIdQ) {
-          var detailsQ = buildUserDetails(docQ, mainTextQ, queryQ);
+          var detailsQ = buildUserDetailsSS(ssQ, queryQ);
           out = { success: true, mode: 'single', detail: detailsQ };
         } else {
-          var userBodyQ = getTabBodyByTitle(docQ, 'ユーザー情報');
+          var dataQ = getSheetData(ssQ, 'ユーザー情報');
           var matchesQ = [];
-          if (userBodyQ) {
-            var recordsQ = parseUserRecords(userBodyQ.getText());
-            for (var qi = 0; qi < recordsQ.length; qi++) {
-              if (recordsQ[qi]['みょうじ'] === queryQ) {
-                matchesQ.push({
-                  id: recordsQ[qi]['ユーザーID'],
-                  sei: recordsQ[qi]['苗字'] || '',
-                  mei: recordsQ[qi]['名前'] || '',
-                  seiKana: recordsQ[qi]['みょうじ'] || '',
-                  meiKana: recordsQ[qi]['なまえ'] || '',
-                  deleted: recordsQ[qi]['削除フラグ'] === '1'
-                });
-              }
+          for (var qi = 0; qi < dataQ.rows.length; qi++) {
+            var recQ = rowToObject(dataQ.header, dataQ.rows[qi]);
+            if (String(recQ['みょうじ'] || '') === queryQ) {
+              matchesQ.push({
+                id: String(recQ['ユーザーID']),
+                sei: recQ['苗字'] || '',
+                mei: recQ['名前'] || '',
+                seiKana: recQ['みょうじ'] || '',
+                meiKana: recQ['なまえ'] || '',
+                deleted: String(recQ['削除フラグ']) === '1'
+              });
             }
           }
           if (matchesQ.length === 0) {
             out = { error: '該当するユーザーが見つかりませんでした' };
           } else if (matchesQ.length === 1) {
-            var detailsQ1 = buildUserDetails(docQ, mainTextQ, matchesQ[0].id);
+            var detailsQ1 = buildUserDetailsSS(ssQ, matchesQ[0].id);
             out = { success: true, mode: 'single', detail: detailsQ1 };
           } else {
             out = { success: true, mode: 'multiple', matches: matchesQ };
@@ -694,84 +751,61 @@ function doGet(e) {
         }
       }
     } else if (action === 'adminDeleteUser') {
-      var listFileDel = findMasterListFile();
-      if (!listFileDel) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssDel = openMasterSpreadsheet();
+      if (!ssDel) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docDel = DocumentApp.openById(listFileDel.getId());
         var targetIdDel = (e.parameter.targetId || '').trim();
         var reasonDel = (e.parameter.reason || '').trim();
-        var userBodyDel = getTabBodyByTitle(docDel, 'ユーザー情報');
-        if (!userBodyDel) {
-          out = { error: '「ユーザー情報」タブが見つかりません' };
+        var userRowDel = findUserInfoRowSS(ssDel, targetIdDel);
+        var todayDel = todayDateString();
+        var scheduledDel = addDaysToDateString(todayDel, getRetentionDays());
+        var sheetUserDel = ssDel.getSheetByName('ユーザー情報');
+        if (userRowDel) {
+          var hIdx = {};
+          getSheetData(ssDel, 'ユーザー情報').header.forEach(function (h, i) { hIdx[String(h).trim()] = i + 1; });
+          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除フラグ']).setValue('1');
+          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除日']).setValue(todayDel);
+          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除予定日']).setValue(scheduledDel);
+          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除理由']).setValue(reasonDel || '（理由未入力）');
+          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['告知済み']).setValue('0');
+        } else if (findEmployeeRowSS(ssDel, targetIdDel)) {
+          // ユーザー情報行が無い社員一覧のみの社員も削除予定にできるよう、新規に行を追加する
+          sheetUserDel.appendRow([targetIdDel, '', '', '', '', '', '', '', '1', todayDel, scheduledDel, reasonDel || '（理由未入力）', '0']);
         } else {
-          var recordsDel = parseUserRecords(userBodyDel.getText());
-          var foundDel = false;
-          var todayDel = todayDateString();
-          var scheduledDel = addDaysToDateString(todayDel, getRetentionDays());
-          for (var di = 0; di < recordsDel.length; di++) {
-            if (recordsDel[di]['ユーザーID'] === targetIdDel) {
-              recordsDel[di]['削除フラグ'] = '1';
-              recordsDel[di]['削除日'] = todayDel;
-              recordsDel[di]['削除予定日'] = scheduledDel;
-              recordsDel[di]['削除理由'] = reasonDel || '（理由未入力）';
-              recordsDel[di]['告知済み'] = '0';
-              foundDel = true;
-              break;
-            }
-          }
-          if (!foundDel) {
-            out = { error: '該当するユーザーが見つかりませんでした' };
-          } else {
-            userBodyDel.editAsText().setText(serializeUserRecords(recordsDel));
-            docDel.saveAndClose();
-            logSystemEvent('user_delete_scheduled', targetIdDel + ' を削除予定に設定（完全削除予定日：' + scheduledDel + '、理由：' + reasonDel + '）');
-            out = { success: true, scheduledDate: scheduledDel };
-          }
+          out = { error: '該当するユーザーが見つかりませんでした' };
+        }
+        if (!out) {
+          logSystemEvent('user_delete_scheduled', targetIdDel + ' を削除予定に設定（完全削除予定日：' + scheduledDel + '、理由：' + reasonDel + '）');
+          out = { success: true, scheduledDate: scheduledDel };
         }
       }
     } else if (action === 'adminRestoreUser') {
-      var listFileRes = findMasterListFile();
-      if (!listFileRes) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssRes = openMasterSpreadsheet();
+      if (!ssRes) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docRes = DocumentApp.openById(listFileRes.getId());
         var targetIdRes = (e.parameter.targetId || '').trim();
         var reasonRes = (e.parameter.reason || '').trim();
-        var userBodyRes = getTabBodyByTitle(docRes, 'ユーザー情報');
-        if (!userBodyRes) {
-          out = { error: '「ユーザー情報」タブが見つかりません' };
+        var userRowRes = findUserInfoRowSS(ssRes, targetIdRes);
+        if (!userRowRes) {
+          out = { error: '該当するユーザーが見つかりませんでした' };
         } else {
-          var recordsRes = parseUserRecords(userBodyRes.getText());
-          var foundRes = false;
-          for (var ri3 = 0; ri3 < recordsRes.length; ri3++) {
-            if (recordsRes[ri3]['ユーザーID'] === targetIdRes) {
-              delete recordsRes[ri3]['削除フラグ'];
-              delete recordsRes[ri3]['削除日'];
-              delete recordsRes[ri3]['削除予定日'];
-              delete recordsRes[ri3]['削除理由'];
-              delete recordsRes[ri3]['告知済み'];
-              foundRes = true;
-              break;
-            }
-          }
-          if (!foundRes) {
-            out = { error: '該当するユーザーが見つかりませんでした' };
-          } else {
-            userBodyRes.editAsText().setText(serializeUserRecords(recordsRes));
-            docRes.saveAndClose();
-            logSystemEvent('user_restore', targetIdRes + ' の削除を取り消しました（理由：' + reasonRes + '）');
-            out = { success: true };
-          }
+          var hIdxRes = {};
+          getSheetData(ssRes, 'ユーザー情報').header.forEach(function (h, i) { hIdxRes[String(h).trim()] = i + 1; });
+          var sheetUserRes = ssRes.getSheetByName('ユーザー情報');
+          ['削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'].forEach(function (k) {
+            if (hIdxRes[k]) sheetUserRes.getRange(userRowRes.rowIndex, hIdxRes[k]).setValue('');
+          });
+          logSystemEvent('user_restore', targetIdRes + ' の削除を取り消しました（理由：' + reasonRes + '）');
+          out = { success: true };
         }
       }
     } else if (action === 'adminCreateUser') {
-      var listFileC = findMasterListFile();
-      if (!listFileC) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssC = openMasterSpreadsheet();
+      if (!ssC) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docC = DocumentApp.openById(listFileC.getId());
-        var mainTextC = docC.getTabs()[0].asDocumentTab().getBody().getText();
         var newIdC = (e.parameter.newId || '').trim();
         var newPwC = (e.parameter.newPassword || '').trim().replace(/:/g, '');
         var newRoleC = (e.parameter.role || '0').trim();
@@ -784,7 +818,7 @@ function doGet(e) {
         var newIsExecutiveC = (e.parameter.isExecutive || '0').trim();
         if (!newIdC || !newPwC) {
           out = { error: '社員IDとパスワードを入力してください' };
-        } else if (findMainListRow(mainTextC, newIdC)) {
+        } else if (findEmployeeRowSS(ssC, newIdC)) {
           out = { error: 'その社員IDはすでに使われています' };
         } else {
           var parentFolderC = DriveApp.getFolderById(getEmployeeParentId());
@@ -808,37 +842,19 @@ function doGet(e) {
           newSettingsDocC.getBody().editAsText().setText(initialTextC);
           newSettingsDocC.saveAndClose();
 
-          var mainBodyC = docC.getTabs()[0].asDocumentTab().getBody();
-          mainBodyC.appendParagraph(newRoleC + ':' + newIdC + ':' + newPwC + ':' + newEmpFolderC.getId());
+          ssC.getSheetByName('社員一覧').appendRow([newRoleC, newIdC, newPwC, newEmpFolderC.getId(), newSeiC + newMeiC]);
+          ssC.getSheetByName('ユーザー情報').appendRow([newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
 
-          var userBodyC = getTabBodyByTitle(docC, 'ユーザー情報');
-          if (userBodyC) {
-            var recordsC = parseUserRecords(userBodyC.getText());
-            recordsC.push({
-              'ユーザーID': newIdC,
-              '苗字': newSeiC,
-              '名前': newMeiC,
-              'みょうじ': newSeiKanaC,
-              'なまえ': newMeiKanaC,
-              '生年月日': newDobC,
-              '管理者権限': newRoleC,
-              '役員フラグ': newIsExecutiveC
-            });
-            userBodyC.editAsText().setText(serializeUserRecords(recordsC));
-          }
-          docC.saveAndClose();
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
         }
       }
     } else if (action === 'adminSearchUser') {
-      var listFileS = findMasterListFile();
-      if (!listFileS) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssS = openMasterSpreadsheet();
+      if (!ssS) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docS = DocumentApp.openById(listFileS.getId());
-        var mainTextS = docS.getTabs()[0].asDocumentTab().getBody().getText();
         var targetIdS = (e.parameter.targetId || '').trim();
-        var detailsS = buildUserDetails(docS, mainTextS, targetIdS);
+        var detailsS = buildUserDetailsSS(ssS, targetIdS);
         if (!detailsS) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
@@ -846,70 +862,47 @@ function doGet(e) {
         }
       }
     } else if (action === 'adminUpdateUserInfo') {
-      var listFileI = findMasterListFile();
-      if (!listFileI) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssI = openMasterSpreadsheet();
+      if (!ssI) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docI = DocumentApp.openById(listFileI.getId());
         var targetIdI = (e.parameter.targetId || '').trim();
         var newRole = (e.parameter.role || '0').trim();
-        var mainBodyI = docI.getTabs()[0].asDocumentTab().getBody();
-        var mainLinesI = mainBodyI.getText().split('\n');
-        var changedI = false;
-        for (var mi2 = 0; mi2 < mainLinesI.length; mi2++) {
-          var mrow2 = mainLinesI[mi2].trim();
-          if (!mrow2) continue;
-          var mcols2 = mrow2.replace(/：/g, ':').split(':');
-          if (mcols2.length < 4) continue;
-          if (mcols2[1].trim() === targetIdI) {
-            mcols2[0] = newRole;
-            mainLinesI[mi2] = mcols2.join(':');
-            changedI = true;
-            break;
-          }
-        }
-        if (!changedI) {
+        var empRowI = findEmployeeRowSS(ssI, targetIdI);
+        if (!empRowI) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
-          mainBodyI.editAsText().setText(mainLinesI.join('\n'));
-          var userBodyI = getTabBodyByTitle(docI, 'ユーザー情報');
-          if (userBodyI) {
-            var recordsI = parseUserRecords(userBodyI.getText());
-            var foundI = false;
-            for (var ri2 = 0; ri2 < recordsI.length; ri2++) {
-              if (recordsI[ri2]['ユーザーID'] === targetIdI) {
-                recordsI[ri2]['苗字'] = e.parameter.sei || '';
-                recordsI[ri2]['名前'] = e.parameter.mei || '';
-                recordsI[ri2]['生年月日'] = e.parameter.dob || '';
-                recordsI[ri2]['管理者権限'] = newRole;
-                recordsI[ri2]['役員フラグ'] = e.parameter.isExecutive || '0';
-                foundI = true;
-                break;
-              }
-            }
-            if (!foundI) {
-              recordsI.push({ 'ユーザーID': targetIdI, '苗字': e.parameter.sei || '', '名前': e.parameter.mei || '', '生年月日': e.parameter.dob || '', '管理者権限': newRole, '役員フラグ': e.parameter.isExecutive || '0' });
-            }
-            userBodyI.editAsText().setText(serializeUserRecords(recordsI));
+          ssI.getSheetByName('社員一覧').getRange(empRowI.rowIndex, 1).setValue(newRole);
+          var userRowI = findUserInfoRowSS(ssI, targetIdI);
+          var valsI = [targetIdI, e.parameter.sei || '', e.parameter.mei || '', '', '', e.parameter.dob || '', newRole, e.parameter.isExecutive || '0', '', '', '', '', ''];
+          if (userRowI) {
+            var hIdxI = {};
+            getSheetData(ssI, 'ユーザー情報').header.forEach(function (h, i) { hIdxI[String(h).trim()] = i + 1; });
+            var sheetUserI = ssI.getSheetByName('ユーザー情報');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['苗字']).setValue(e.parameter.sei || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['名前']).setValue(e.parameter.mei || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['生年月日']).setValue(e.parameter.dob || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['管理者権限']).setValue(newRole);
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['役員フラグ']).setValue(e.parameter.isExecutive || '0');
+          } else {
+            ssI.getSheetByName('ユーザー情報').appendRow(valsI);
           }
-          docI.saveAndClose();
           out = { success: true };
         }
       }
     } else if (action === 'adminUpdateLeaveBalance') {
-      var listFileL = findMasterListFile();
-      if (!listFileL) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssL = openMasterSpreadsheet();
+      if (!ssL) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var mainTextL = DocumentApp.openById(listFileL.getId()).getTabs()[0].asDocumentTab().getBody().getText();
         var targetIdL = (e.parameter.targetId || '').trim();
-        var rowL = findMainListRow(mainTextL, targetIdL);
+        var rowL = findEmployeeRowSS(ssL, targetIdL);
         if (!rowL) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
           var yearL = (e.parameter.year || '').trim();
           var newValueL = (e.parameter.newValue || '0').trim();
-          var targetFolderL = DriveApp.getFolderById(rowL.cols[3].trim());
+          var targetFolderL = DriveApp.getFolderById(rowL.folderId);
           var settingsDocFileL = getSettingsDocFile(targetFolderL);
           var settingsDocL;
           if (settingsDocFileL) {
@@ -941,13 +934,12 @@ function doGet(e) {
         }
       }
     } else if (action === 'adminUpdateGrantDate') {
-      var listFileGD = findMasterListFile();
-      if (!listFileGD) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssGD = openMasterSpreadsheet();
+      if (!ssGD) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var mainTextGD = DocumentApp.openById(listFileGD.getId()).getTabs()[0].asDocumentTab().getBody().getText();
         var targetIdGD = (e.parameter.targetId || '').trim();
-        var rowGD = findMainListRow(mainTextGD, targetIdGD);
+        var rowGD = findEmployeeRowSS(ssGD, targetIdGD);
         if (!rowGD) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
@@ -956,7 +948,7 @@ function doGet(e) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateGD)) {
             out = { error: '日付の形式が正しくありません' };
           } else {
-            var targetFolderGD = DriveApp.getFolderById(rowGD.cols[3].trim());
+            var targetFolderGD = DriveApp.getFolderById(rowGD.folderId);
             var settingsDocFileGD = getSettingsDocFile(targetFolderGD);
             var settingsDocGD;
             if (settingsDocFileGD) {
@@ -998,13 +990,12 @@ function doGet(e) {
         }
       }
     } else if (action === 'adminResolveLeaveRequest') {
-      var listFileR = findMasterListFile();
-      if (!listFileR) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssR = openMasterSpreadsheet();
+      if (!ssR) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var mainTextR = DocumentApp.openById(listFileR.getId()).getTabs()[0].asDocumentTab().getBody().getText();
         var targetIdR = (e.parameter.targetId || '').trim();
-        var rowR = findMainListRow(mainTextR, targetIdR);
+        var rowR = findEmployeeRowSS(ssR, targetIdR);
         if (!rowR) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
@@ -1012,7 +1003,7 @@ function doGet(e) {
           var typeR = e.parameter.type === 'delete' ? 'delete' : 'use';
           var decisionR = e.parameter.decision === 'approve' ? 'approve' : 'reject';
           var reasonR = (e.parameter.reason || '').replace(/\n/g, ' ');
-          var targetFolderR = DriveApp.getFolderById(rowR.cols[3].trim());
+          var targetFolderR = DriveApp.getFolderById(rowR.folderId);
           var settingsDocFileR = getSettingsDocFile(targetFolderR);
           if (!settingsDocFileR) {
             out = { error: '対象ユーザーの設定ドキュメントが見つかりません' };
@@ -1103,46 +1094,33 @@ function doGet(e) {
         }
       }
     } else if (action === 'updateCompanySettings') {
-      var listFileCS = findMasterListFile();
-      if (!listFileCS) {
-        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      var ssCS = openMasterSpreadsheet();
+      if (!ssCS) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
       } else {
-        var docCS = DocumentApp.openById(listFileCS.getId());
-        var bodyCS = docCS.getTabs()[0].asDocumentTab().getBody();
-        var linesCS = bodyCS.getText().split('\n');
         var updatesCS = {};
         try {
           updatesCS = JSON.parse(e.parameter.updates || '{}');
         } catch (parseErrCS) {
           updatesCS = {};
         }
-        // 「会社共通設定」ヘッダーの有無に関わらず、既存の設定値をキー名で拾い上げる
-        // （ヘッダーが無い旧形式ドキュメントでも値を失わないようにするため）
-        var existingCS = parseCompanySettingsFromText(linesCS.join('\n'));
-        var orderCS = COMPANY_SETTING_KEYS.filter(function(k){ return existingCS[k] !== undefined; });
+        var dataCS = getSheetData(ssCS, '会社共通設定');
+        var sheetCS = dataCS.sheet;
+        if (!sheetCS) {
+          sheetCS = ssCS.insertSheet('会社共通設定');
+          sheetCS.appendRow(['設定項目', '値']);
+          dataCS = getSheetData(ssCS, '会社共通設定');
+        }
+        var rowIdxByKeyCS = {};
+        dataCS.rows.forEach(function (row, i) { rowIdxByKeyCS[String(row[0]).trim()] = i + 2; });
         for (var ukCS in updatesCS) {
-          if (orderCS.indexOf(ukCS) === -1) orderCS.push(ukCS);
-          existingCS[ukCS] = updatesCS[ukCS];
+          if (rowIdxByKeyCS[ukCS]) {
+            sheetCS.getRange(rowIdxByKeyCS[ukCS], 2).setValue(updatesCS[ukCS]);
+          } else {
+            sheetCS.appendRow([ukCS, updatesCS[ukCS]]);
+            rowIdxByKeyCS[ukCS] = sheetCS.getLastRow();
+          }
         }
-        var newSectionLinesCS = ['会社共通設定'];
-        orderCS.forEach(function(k){ newSectionLinesCS.push(k + ':' + existingCS[k]); });
-        newSectionLinesCS.push('');
-        // 既存のヘッダー付きセクション、およびヘッダーの無い旧形式の設定行を取り除いた残りの行
-        var inOldSectionCS = false;
-        var remainingLinesCS = [];
-        for (var ri = 0; ri < linesCS.length; ri++) {
-          var lineTrimCS = linesCS[ri].trim();
-          if (lineTrimCS === '会社共通設定') { inOldSectionCS = true; continue; }
-          if (!lineTrimCS) { inOldSectionCS = false; remainingLinesCS.push(linesCS[ri]); continue; }
-          if (inOldSectionCS) continue;
-          var idxRiCS = lineTrimCS.indexOf(':');
-          var keyRiCS = idxRiCS > 0 ? lineTrimCS.substring(0, idxRiCS).trim() : '';
-          if (COMPANY_SETTING_KEYS.indexOf(keyRiCS) !== -1) continue;
-          remainingLinesCS.push(linesCS[ri]);
-        }
-        var finalLinesCS = newSectionLinesCS.concat(remainingLinesCS);
-        bodyCS.editAsText().setText(finalLinesCS.join('\n'));
-        docCS.saveAndClose();
         out = { success: true };
       }
     } else if (action === 'getRetentionDays') {
@@ -1175,6 +1153,78 @@ function doGet(e) {
         bDoc.getBody().editAsText().setText(newUrl);
         bDoc.saveAndClose();
         out = { success: true };
+      }
+    } else if (action === 'migrateToSpreadsheet') {
+      var existingSSFile = findMasterSpreadsheetFile();
+      if (existingSSFile) {
+        out = { error: 'すでに「管理情報」スプレッドシートが存在します（移行済みの可能性があります）。' };
+      } else {
+        var oldListFile = findMasterListFile();
+        if (!oldListFile) {
+          out = { error: '移行元の「管理情報」ドキュメントが見つかりません。' };
+        } else {
+          var oldDoc = DocumentApp.openById(oldListFile.getId());
+          var mainTextOld = oldDoc.getTabs()[0].asDocumentTab().getBody().getText();
+          var companySettingsOld = parseCompanySettingsFromText(mainTextOld);
+          var paydayOverridesOld = parsePaydayOverrides(mainTextOld);
+
+          // 社員一覧（区分:社員ID:パスワード:フォルダID:氏名）を抽出。
+          // 区分は必ず0か1のため、これを手がかりに設定値や特例行と区別する。
+          var empRowsOld = [];
+          var rowsOld = mainTextOld.split('\n');
+          for (var roi = 0; roi < rowsOld.length; roi++) {
+            var rowOld = rowsOld[roi].trim();
+            if (!rowOld) continue;
+            var colsOld = rowOld.replace(/：/g, ':').split(':');
+            if (colsOld.length < 4) continue;
+            if (colsOld[0].trim() !== '0' && colsOld[0].trim() !== '1') continue;
+            empRowsOld.push([colsOld[0].trim(), colsOld[1].trim(), colsOld[2].trim(), colsOld[3].trim(), colsOld[4] ? colsOld[4].trim() : '']);
+          }
+          var userBodyOld = getTabBodyByTitle(oldDoc, 'ユーザー情報');
+          var userRecordsOld = userBodyOld ? parseUserRecords(userBodyOld.getText()) : [];
+
+          var masterFolderMig = DriveApp.getFolderById(MASTER_FOLDER_ID);
+          var newSS = SpreadsheetApp.create('管理情報');
+          var newSSFile = DriveApp.getFileById(newSS.getId());
+          masterFolderMig.addFile(newSSFile);
+          DriveApp.getRootFolder().removeFile(newSSFile);
+
+          var sheetEmp = newSS.getSheets()[0];
+          sheetEmp.setName('社員一覧');
+          sheetEmp.appendRow(['区分', '社員ID', 'パスワード', 'フォルダID', '氏名']);
+          sheetEmp.getRange('B:C').setNumberFormat('@'); // ID・パスワードは常にテキスト扱いにする
+          if (empRowsOld.length > 0) sheetEmp.getRange(2, 1, empRowsOld.length, 5).setValues(empRowsOld);
+
+          var sheetUser = newSS.insertSheet('ユーザー情報');
+          sheetUser.appendRow(USER_INFO_HEADER);
+          sheetUser.getRange('A:M').setNumberFormat('@'); // 生年月日・削除日などが日付として自動変換されるのを防ぐ
+          if (userRecordsOld.length > 0) {
+            var userRowsOld = userRecordsOld.map(function (r) {
+              return USER_INFO_HEADER.map(function (k) { return r[k] !== undefined ? r[k] : ''; });
+            });
+            sheetUser.getRange(2, 1, userRowsOld.length, USER_INFO_HEADER.length).setValues(userRowsOld);
+          }
+
+          var sheetCompany = newSS.insertSheet('会社共通設定');
+          sheetCompany.appendRow(['設定項目', '値']);
+          sheetCompany.getRange('A:B').setNumberFormat('@');
+          COMPANY_SETTING_KEYS.forEach(function (k) {
+            if (companySettingsOld[k] !== undefined) sheetCompany.appendRow([k, companySettingsOld[k]]);
+          });
+
+          var sheetPayday = newSS.insertSheet('給料日特例');
+          sheetPayday.appendRow(['対象年月', '給料日']);
+          sheetPayday.getRange('A:B').setNumberFormat('@');
+          Object.keys(paydayOverridesOld).forEach(function (ym) {
+            sheetPayday.appendRow([ym, paydayOverridesOld[ym]]);
+          });
+
+          // 旧ドキュメントは削除せず、バックアップとして名前を変えて残す（非破壊的な移行）
+          try { oldListFile.setName('管理情報（旧・ドキュメント版バックアップ）'); } catch (renameErr) { /* リネーム失敗は無視 */ }
+
+          logSystemEvent('migrate_to_spreadsheet', '管理情報をスプレッドシートに移行しました（社員' + empRowsOld.length + '件、ユーザー情報' + userRecordsOld.length + '件）');
+          out = { success: true, employeeCount: empRowsOld.length, userInfoCount: userRecordsOld.length, spreadsheetId: newSS.getId() };
+        }
       }
     } else if (action === 'debugMatch') {
       var listFileM = findMasterListFile();
@@ -1219,6 +1269,33 @@ function doGet(e) {
         out = { success: true, tabCount: tabsD.length, tabTitles: tabTitlesD, text: textD, textLength: textD.length };
       }
     } else if (action === 'employeeLogin') {
+      var loginSS = openMasterSpreadsheet();
+      if (loginSS) {
+        // ---- 新形式：管理情報スプレッドシート ----
+        var inputIdSS = (e.parameter.id || '').trim();
+        var inputPwSS = (e.parameter.password || '').trim();
+        var empRowSS = findEmployeeRowSS(loginSS, inputIdSS);
+        if (!empRowSS || empRowSS.password !== inputPwSS) {
+          out = { error: 'IDまたはパスワードが違います' };
+        } else {
+          var nameSS = empRowSS.name || inputIdSS;
+          var isDeletedSS = false, isExecutiveSS = false;
+          var userRowSS = findUserInfoRowSS(loginSS, inputIdSS);
+          if (userRowSS) {
+            var recSS = userRowSS.record;
+            var seiSS = recSS['苗字'] || '', meiSS = recSS['名前'] || '';
+            if (seiSS || meiSS) nameSS = seiSS + meiSS;
+            isDeletedSS = String(recSS['削除フラグ']) === '1';
+            isExecutiveSS = String(recSS['役員フラグ']) === '1';
+          }
+          if (isDeletedSS) {
+            out = { error: 'このアカウントは削除処理中のため、ログインできません。管理者にお問い合わせください。' };
+          } else {
+            out = { success: true, folderId: empRowSS.folderId, name: nameSS, isAdmin: (empRowSS.role === '1'), isExecutive: isExecutiveSS, companySettings: readCompanySettingsSS(loginSS), paydayOverrides: readPaydayOverridesSS(loginSS) };
+          }
+        }
+      } else {
+      // ---- 旧形式：管理情報ドキュメント（スプレッドシートへの移行が済むまでのフォールバック） ----
       var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
       var listFile = null;
       var candidates = ['管理情報', '社員一覧'];
@@ -1274,6 +1351,7 @@ function doGet(e) {
           out = { error: 'IDまたはパスワードが違います' };
         }
       }
+      }
     } else {
       out = {error: 'unknown action'};
     }
@@ -1291,34 +1369,37 @@ function doGet(e) {
 // Apps Scriptエディタ左側の時計アイコン→「トリガーを追加」→実行する関数：checkDeletionSchedule→
 // イベントの種類：時間主導型→日付ベースのタイマー→午前2時〜3時など、好きな時間帯を選んでください。
 function checkDeletionSchedule() {
-  var listFile = findMasterListFile();
-  if (!listFile) return;
-  var doc = DocumentApp.openById(listFile.getId());
-  var userBody = getTabBodyByTitle(doc, 'ユーザー情報');
-  if (!userBody) return;
-  var records = parseUserRecords(userBody.getText());
-  var mainBody = doc.getTabs()[0].asDocumentTab().getBody();
-  var mainLines = mainBody.getText().split('\n');
+  var ss = openMasterSpreadsheet();
+  if (!ss) return;
+  var userSheet = ss.getSheetByName('ユーザー情報');
+  var empSheet = ss.getSheetByName('社員一覧');
+  if (!userSheet || !empSheet) return;
+  var userData = getSheetData(ss, 'ユーザー情報');
+  var empData = getSheetData(ss, '社員一覧');
   var today = todayDateString();
   var changed = false;
-  var mainChanged = false;
-  var remainingRecords = [];
+  var empChanged = false;
+  var remainingUserRows = [];
+  var remainingEmpRows = empData.rows.slice();
+  var hIdx = {};
+  userData.header.forEach(function (h, i) { hIdx[String(h).trim()] = i; });
 
-  for (var i = 0; i < records.length; i++) {
-    var r = records[i];
-    if (r['削除フラグ'] !== '1') { remainingRecords.push(r); continue; }
+  userData.rows.forEach(function (rowIn) {
+    var row = rowIn.slice();
+    var r = rowToObject(userData.header, row);
+    if (String(r['削除フラグ']) !== '1') { remainingUserRows.push(row); return; }
 
-    var scheduledDate = r['削除予定日'];
-    if (!scheduledDate) { remainingRecords.push(r); continue; }
+    var scheduledDate = r['削除予定日'] ? String(r['削除予定日']) : '';
+    if (!scheduledDate) { remainingUserRows.push(row); return; }
 
     // 1か月前告知（まだ告知していなければ）
-    if (r['告知済み'] !== '1') {
+    if (String(r['告知済み']) !== '1') {
       var oneMonthBefore = addDaysToDateString(scheduledDate, -30);
       if (today >= oneMonthBefore) {
         var msg = r['削除日'] + 'に削除された' + r['ユーザーID'] + ':' + (r['苗字'] || '') + '　' + (r['名前'] || '') + 'のアカウント情報が、' + scheduledDate + 'に完全削除される予定です';
         var newsDoc = getOrCreateMasterDoc('ニュース');
         appendLine(newsDoc, new Date().getTime() + ':admin:critical:完全削除予告:' + msg.replace(/:/g, '：'));
-        r['告知済み'] = '1';
+        row[hIdx['告知済み']] = '1';
         changed = true;
         logSystemEvent('user_delete_notice', r['ユーザーID'] + ' の完全削除予告を管理者に通知（予定日：' + scheduledDate + '）');
       }
@@ -1326,39 +1407,31 @@ function checkDeletionSchedule() {
 
     // 完全削除の実行
     if (today >= scheduledDate) {
-      var mainIdx = -1;
-      var folderIdToTrash = null;
-      for (var mi = 0; mi < mainLines.length; mi++) {
-        var mrow = mainLines[mi].trim();
-        if (!mrow) continue;
-        var mcols = mrow.replace(/：/g, ':').split(':');
-        if (mcols.length < 4) continue;
-        if (mcols[1].trim() === r['ユーザーID']) { mainIdx = mi; folderIdToTrash = mcols[3].trim(); break; }
+      var empIdxFound = -1, folderIdToTrash = null;
+      for (var mi = 0; mi < remainingEmpRows.length; mi++) {
+        if (String(remainingEmpRows[mi][1]).trim() === String(r['ユーザーID'])) { empIdxFound = mi; folderIdToTrash = String(remainingEmpRows[mi][3]).trim(); break; }
       }
-      if (mainIdx >= 0) {
+      if (empIdxFound >= 0) {
         try {
-          var folder = DriveApp.getFolderById(folderIdToTrash);
-          folder.setTrashed(true);
+          DriveApp.getFolderById(folderIdToTrash).setTrashed(true);
         } catch (errTrash) { /* フォルダが既に無い場合等は無視 */ }
-        mainLines.splice(mainIdx, 1);
-        mainChanged = true;
+        remainingEmpRows.splice(empIdxFound, 1);
+        empChanged = true;
       }
       logSystemEvent('user_delete_completed', r['ユーザーID'] + ':' + (r['苗字'] || '') + (r['名前'] || '') + ' のアカウント情報を完全削除しました（削除理由：' + (r['削除理由'] || '') + '）');
       changed = true;
-      // このレコードはremainingRecordsに含めない（完全削除）
-      continue;
+      return; // このレコードはremainingUserRowsに含めない（完全削除）
     }
 
-    remainingRecords.push(r);
-  }
+    remainingUserRows.push(row);
+  });
 
-  if (changed) {
-    userBody.editAsText().setText(serializeUserRecords(remainingRecords));
+  if (changed && userData.rows.length > 0) {
+    userSheet.getRange(2, 1, userData.rows.length, userData.header.length).clearContent();
+    if (remainingUserRows.length > 0) userSheet.getRange(2, 1, remainingUserRows.length, userData.header.length).setValues(remainingUserRows);
   }
-  if (mainChanged) {
-    mainBody.editAsText().setText(mainLines.join('\n'));
-  }
-  if (changed || mainChanged) {
-    doc.saveAndClose();
+  if (empChanged && empData.rows.length > 0) {
+    empSheet.getRange(2, 1, empData.rows.length, empData.header.length).clearContent();
+    if (remainingEmpRows.length > 0) empSheet.getRange(2, 1, remainingEmpRows.length, empData.header.length).setValues(remainingEmpRows);
   }
 }
