@@ -1034,6 +1034,20 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
 </div>
 
 <script>
+function setButtonLoading(btn, loadingText){
+  if(!btn || btn.dataset.loading === '1') return;
+  btn.dataset.loading = '1';
+  btn.dataset.originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;justify-content:center;"><span class="spinner" style="width:14px;height:14px;border-width:2px;margin:0;"></span>${loadingText||'処理中…'}</span>`;
+}
+function clearButtonLoading(btn){
+  if(!btn || btn.dataset.loading !== '1') return;
+  btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+  delete btn.dataset.originalHtml;
+  delete btn.dataset.loading;
+  btn.disabled = false;
+}
 function showConfirmModal(message){
   return new Promise(resolve=>{
     const overlay = document.getElementById('confirm-modal');
@@ -1767,6 +1781,8 @@ document.getElementById('news-detail-delete').addEventListener('click', async ()
   if(!currentDetailNews) return;
   const ok = await showConfirmModal(`「${currentDetailNews.title || '（無題）'}」を削除しますか？${currentDetailNews.priority==='critical' ? '（全員に関わる重要ニュースのため、削除後1年間は管理者が復元できます）' : ''}`);
   if(!ok) return;
+  const deleteBtn = document.getElementById('news-detail-delete');
+  setButtonLoading(deleteBtn, '削除中…');
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=deleteNews&id=${encodeURIComponent(currentDetailNews.id)}`);
     if(data.error){ await showAlertModal(data.error); return; }
@@ -1777,6 +1793,8 @@ document.getElementById('news-detail-delete').addEventListener('click', async ()
     refreshOpenNewsModalList();
   }catch(e){
     await showAlertModal('削除に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(deleteBtn);
   }
 });
 async function markLeaveRequestNewsHandled(){
@@ -1791,6 +1809,10 @@ document.getElementById('news-detail-leave-approve').addEventListener('click', a
   const typeLabel = req.type === 'delete' ? '有給削除' : '有給使用';
   const ok = await showConfirmModal(`${req.empName}さんの${typeLabel}申請（${isoToDisplay(req.date)}・${Math.abs(req.delta)}日）を許可しますか？`);
   if(!ok) return;
+  const approveBtn = document.getElementById('news-detail-leave-approve');
+  const rejectBtn = document.getElementById('news-detail-leave-reject');
+  setButtonLoading(approveBtn, 'Driveに書き込み中…');
+  rejectBtn.disabled = true;
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=adminResolveLeaveRequest&targetId=${encodeURIComponent(req.empId)}&requestId=${encodeURIComponent(req.requestId)}&type=${encodeURIComponent(req.type)}&decision=approve`);
     if(data.error){ await showAlertModal(data.error); return; }
@@ -1803,6 +1825,9 @@ document.getElementById('news-detail-leave-approve').addEventListener('click', a
     refreshOpenNewsModalList();
   }catch(e){
     await showAlertModal('処理に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(approveBtn);
+    rejectBtn.disabled = false;
   }
 });
 document.getElementById('news-detail-leave-reject').addEventListener('click', async ()=>{
@@ -1811,6 +1836,10 @@ document.getElementById('news-detail-leave-reject').addEventListener('click', as
   const typeLabel = req.type === 'delete' ? '有給削除' : '有給使用';
   const reason = await showReasonModal('不許可の理由を入力してください。');
   if(reason === null) return;
+  const approveBtn = document.getElementById('news-detail-leave-approve');
+  const rejectBtn = document.getElementById('news-detail-leave-reject');
+  setButtonLoading(rejectBtn, 'Driveに書き込み中…');
+  approveBtn.disabled = true;
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=adminResolveLeaveRequest&targetId=${encodeURIComponent(req.empId)}&requestId=${encodeURIComponent(req.requestId)}&type=${encodeURIComponent(req.type)}&decision=reject&reason=${encodeURIComponent(reason)}`);
     if(data.error){ await showAlertModal(data.error); return; }
@@ -1823,6 +1852,9 @@ document.getElementById('news-detail-leave-reject').addEventListener('click', as
     refreshOpenNewsModalList();
   }catch(e){
     await showAlertModal('処理に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(rejectBtn);
+    approveBtn.disabled = false;
   }
 });
 function deletedNewsRowHtml(n){
@@ -4915,17 +4947,23 @@ async function applyLeave(){
   renderSummary();
   document.getElementById('yukyu-input-note').value = '';
   document.getElementById('yukyu-input-date').value = isoDate(new Date());
-  if(settings.scriptUrl && settings.driveFolderId){
-    const ok = await pushSettingsToDrive();
-    if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
-  }
-  if(isPendingUse){
-    logEvent('leave_use_request', `${days}日 ${note}`);
-    await notifyLeaveRequest('use', requestId, dateStr, -days, note);
-    await showAlertModal('申請しました。管理者の承認をお待ちください。');
-  }else{
-    logEvent('leave_use', `${days}日 ${note}`);
-    await showAlertModal('使用を記録しました。');
+  const useBtn = document.getElementById('yukyu-minus');
+  setButtonLoading(useBtn, '保存中…');
+  try{
+    if(settings.scriptUrl && settings.driveFolderId){
+      const ok = await pushSettingsToDrive();
+      if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+    }
+    if(isPendingUse){
+      logEvent('leave_use_request', `${days}日 ${note}`);
+      await notifyLeaveRequest('use', requestId, dateStr, -days, note);
+      await showAlertModal('申請しました。管理者の承認をお待ちください。');
+    }else{
+      logEvent('leave_use', `${days}日 ${note}`);
+      await showAlertModal('使用を記録しました。');
+    }
+  }finally{
+    clearButtonLoading(useBtn);
   }
 }
 document.getElementById('yukyu-minus').addEventListener('click', ()=>applyLeave());
@@ -5008,18 +5046,24 @@ document.getElementById('leave-range-submit').addEventListener('click', async ()
   saveJSON('leave', leave);
   renderLeave();
   renderSummary();
-  if(settings.scriptUrl && settings.driveFolderId){
-    const ok = await pushSettingsToDrive();
-    if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
-  }
-  document.getElementById('leave-range-modal').classList.add('hidden');
-  if(isPendingUse){
-    logEvent('leave_use_request', `${days}日 ${noteText}`);
-    await notifyLeaveRequest('use', requestId, start, -days, noteText);
-    await showAlertModal('申請しました。管理者の承認をお待ちください。');
-  }else{
-    logEvent('leave_use', `${days}日 ${noteText}`);
-    await showAlertModal('使用を記録しました。');
+  const submitBtn = document.getElementById('leave-range-submit');
+  setButtonLoading(submitBtn, '保存中…');
+  try{
+    if(settings.scriptUrl && settings.driveFolderId){
+      const ok = await pushSettingsToDrive();
+      if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+    }
+    document.getElementById('leave-range-modal').classList.add('hidden');
+    if(isPendingUse){
+      logEvent('leave_use_request', `${days}日 ${noteText}`);
+      await notifyLeaveRequest('use', requestId, start, -days, noteText);
+      await showAlertModal('申請しました。管理者の承認をお待ちください。');
+    }else{
+      logEvent('leave_use', `${days}日 ${noteText}`);
+      await showAlertModal('使用を記録しました。');
+    }
+  }finally{
+    clearButtonLoading(submitBtn);
   }
 });
 
@@ -5381,6 +5425,23 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+  overlay.addEventListener('click', (e)=>{
+    if(e.target !== overlay) return;
+    if(overlay.id === 'confirm-modal'){
+      const cancelBtn = document.getElementById('confirm-modal-cancel');
+      if(!cancelBtn.classList.contains('is-hidden')) cancelBtn.click();
+      else document.getElementById('confirm-modal-ok').click();
+      return;
+    }
+    if(overlay.id === 'reason-modal'){
+      document.getElementById('reason-modal-cancel').click();
+      return;
+    }
+    overlay.classList.add('hidden');
+  });
+});
 </script>
 </body>
 </html>
