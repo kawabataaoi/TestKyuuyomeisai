@@ -808,6 +808,63 @@ function doGet(e) {
           out = { success: true };
         }
       }
+    } else if (action === 'adminUpdateGrantDate') {
+      var listFileGD = findMasterListFile();
+      if (!listFileGD) {
+        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      } else {
+        var mainTextGD = DocumentApp.openById(listFileGD.getId()).getTabs()[0].asDocumentTab().getBody().getText();
+        var targetIdGD = (e.parameter.targetId || '').trim();
+        var rowGD = findMainListRow(mainTextGD, targetIdGD);
+        if (!rowGD) {
+          out = { error: '該当する社員IDが見つかりませんでした' };
+        } else {
+          var newDateGD = (e.parameter.newDate || '').trim();
+          var newDaysGD = (e.parameter.newDays || '').trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateGD)) {
+            out = { error: '日付の形式が正しくありません' };
+          } else {
+            var targetFolderGD = DriveApp.getFolderById(rowGD.cols[3].trim());
+            var settingsDocFileGD = getSettingsDocFile(targetFolderGD);
+            var settingsDocGD;
+            if (settingsDocFileGD) {
+              settingsDocGD = DocumentApp.openById(settingsDocFileGD.getId());
+            } else {
+              settingsDocGD = DocumentApp.create(SETTINGS_DOC_NAME);
+              var newFileGD = DriveApp.getFileById(settingsDocGD.getId());
+              targetFolderGD.addFile(newFileGD);
+              DriveApp.getRootFolder().removeFile(newFileGD);
+            }
+            var bodyGD = settingsDocGD.getBody();
+            var linesGD = bodyGD.getText().split('\n');
+            var dateLineGD = '有給次回付与:' + newDateGD.replace(/-/g, '');
+            var foundDateGD = false;
+            for (var gi = 0; gi < linesGD.length; gi++) {
+              if (linesGD[gi].trim().indexOf('有給次回付与:') === 0) {
+                linesGD[gi] = dateLineGD;
+                foundDateGD = true;
+                break;
+              }
+            }
+            if (!foundDateGD) linesGD.push(dateLineGD);
+            if (newDaysGD !== '' && !isNaN(parseFloat(newDaysGD))) {
+              var daysLineGD = '付与数:' + newDaysGD;
+              var foundDaysGD = false;
+              for (var gj = 0; gj < linesGD.length; gj++) {
+                if (linesGD[gj].trim().indexOf('付与数:') === 0) {
+                  linesGD[gj] = daysLineGD;
+                  foundDaysGD = true;
+                  break;
+                }
+              }
+              if (!foundDaysGD) linesGD.push(daysLineGD);
+            }
+            bodyGD.editAsText().setText(linesGD.join('\n'));
+            settingsDocGD.saveAndClose();
+            out = { success: true };
+          }
+        }
+      }
     } else if (action === 'updateCompanySettings') {
       var listFileCS = findMasterListFile();
       if (!listFileCS) {
