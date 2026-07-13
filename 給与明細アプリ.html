@@ -54,33 +54,40 @@ main{flex:1;padding:16px 16px 96px;overflow-y:auto;}
 label.field{display:block;font-size:12px;color:var(--text-2);margin:12px 0 4px;}
 label.field:first-child{margin-top:0;}
 input[type=text],input[type=number],input[type=month],input[type=date],input[type=email],input[type=password],select{
-  width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);
-  color:var(--text);font-size:14px;font-family:'Zen Kaku Gothic New',sans-serif;
+  width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);
+  color:var(--text);font-size:14px;font-weight:600;font-family:'Zen Kaku Gothic New',sans-serif;
 }
-textarea.contact-textarea{width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--text);font-size:14px;font-family:'Zen Kaku Gothic New',sans-serif;resize:vertical;box-sizing:border-box;}
+textarea.contact-textarea{width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:14px;font-weight:600;font-family:'Zen Kaku Gothic New',sans-serif;resize:vertical;box-sizing:border-box;}
 input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
 .mono{font-family:'JetBrains Mono',monospace;}
 button{font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;}
-.btn{border:none;background:var(--accent);color:#fff;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:500;width:100%;}
+.btn{border:none;background:var(--accent);color:#fff;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:500;width:100%;transition:transform .15s ease,filter .15s ease,box-shadow .15s ease;}
+.btn:hover{filter:brightness(1.08);box-shadow:0 3px 10px rgba(91,58,148,0.28);}
 .btn:active{transform:scale(.98);}
 .btn.outline{background:transparent;color:var(--text);border:1px solid var(--border);}
 .contact-cat-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .btn.small{width:auto;padding:8px 14px;font-size:13px;}
-.btn.ghost{background:var(--surface-2);color:var(--text);}
+.btn.ghost{background:var(--surface-2);color:var(--accent);border:1px solid var(--accent-soft);font-weight:700;}
 .summary-table{width:100%;border-collapse:collapse;}
 .summary-table tr{border-bottom:1px solid var(--border);}
 .summary-table tr:last-child{border-bottom:none;}
 .summary-table td{padding:12px 0;font-size:13px;}
 .summary-table td.label{color:var(--text-2);}
 .summary-table td.val{text-align:right;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;}
-.ledger-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
+.ledger-row{display:flex;align-items:center;gap:12px;padding:13px 0 13px 8px;border-bottom:1px solid var(--border);border-radius:8px;transition:background .15s ease,color .15s ease;}
 .ledger-row:last-child{border-bottom:none;}
-.ledger-row .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.ledger-row .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;transition:background .15s ease;}
 .ledger-row.missing .dot{background:var(--danger);}
 .ledger-row .info{flex:1;min-width:0;}
 .ledger-row .info .m{font-size:15px;font-weight:500;}
-.ledger-row .info .f{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ledger-row .info .f{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s ease;}
 .ledger-row.missing .info .m{color:var(--danger);}
+.ledger-row:hover{background:var(--accent);color:#fff;}
+.ledger-row:hover .info .f{color:rgba(255,255,255,0.85);}
+.ledger-row:hover .info .m{color:#fff;}
+.ledger-row:hover .dot{background:#fff;}
+.ledger-row:hover .tag.ok{background:rgba(255,255,255,0.25);color:#fff;}
+.ledger-row:hover .tag.warn{background:rgba(255,255,255,0.25);color:#fff;}
 .tag{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
 .tag.ok{background:var(--accent-soft);color:var(--accent);}
 .tag.missing{background:var(--danger-soft);color:var(--danger);}
@@ -213,6 +220,24 @@ nav.tabbar button svg{width:20px;height:20px;}
 .icon-btn svg{width:16px;height:16px;}
 .icon-btn:active{background:var(--border);}
 .icon-btn.is-copied{background:var(--accent);color:#fff;}
+.icon-btn,.x-btn,nav.tabbar button{transition:transform .15s ease,filter .15s ease,background .15s ease;}
+.icon-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.x-btn:hover{filter:brightness(1.15);transform:scale(1.08);}
+nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--accent);}
+
+/* --- collapsible section toggle: keep label on one line, never vertical text --- */
+.collapsible-toggle{flex-shrink:0;white-space:nowrap;}
+.row.mb-2 .section-title.mb-0{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* --- admin-only news badge --- */
+.admin-only-tag{font-size:10px;color:var(--text-2);background:var(--surface-2);padding:2px 7px;border-radius:10px;margin-left:6px;flex-shrink:0;font-weight:500;}
+
+/* --- keep-unread button (light green) --- */
+#news-detail-keep-unread{background:#DCF5C4;color:#3F6B1F;border-color:#A9DE7A;}
+
+/* --- last-viewed note on ledger rows --- */
+.ledger-row .info .viewed{color:var(--accent);}
+.ledger-row:hover .info .viewed{color:#fff;}
 </style>
 </head>
 <body>
@@ -253,7 +278,7 @@ nav.tabbar button svg{width:20px;height:20px;}
         <option value="other">その他問い合わせ</option>
       </select>
       <label class="field">内容</label>
-      <textarea id="login-inquiry-message" rows="4" class="contact-textarea" placeholder="例：社員ID008ですが、パスワードが合っているのにログインできません"></textarea>
+      <textarea id="login-inquiry-message" rows="4" class="contact-textarea" placeholder="例：社員ID000ですが、パスワードが合っているのにログインできません"></textarea>
       <button class="btn mt-10 w-full" id="btn-login-inquiry-send">送信する</button>
       <p class="muted mt-8" id="login-inquiry-status"></p>
     </div>
@@ -346,7 +371,10 @@ nav.tabbar button svg{width:20px;height:20px;}
     </header>
     <div class="modal-body news-detail-body" id="news-detail-body">
       <div class="news-detail-meta-row">
-        <p class="news-detail-date-box" id="news-detail-date"></p>
+        <p class="news-detail-date-box" id="news-detail-date-box">
+          <span id="news-detail-date"></span>
+          <span class="admin-only-tag is-hidden" id="news-detail-admin-tag">管理者専用</span>
+        </p>
         <span class="news-detail-badge" id="news-detail-badge">未読</span>
       </div>
       <div class="news-detail-title-box" id="news-detail-title"></div>
@@ -794,7 +822,7 @@ nav.tabbar button svg{width:20px;height:20px;}
       </div>
       <div id="new-user-form" style="display:none;margin-top:10px;">
         <label class="field mt-0">社員ID</label>
-        <input type="text" id="new-user-id" placeholder="例：010">
+        <input type="text" id="new-user-id" placeholder="例：000">
         <label class="field">パスワード</label>
         <input type="text" id="new-user-password" placeholder="英字と数字を組み合わせて8文字以上">
         <label class="field">権限</label>
@@ -829,7 +857,7 @@ nav.tabbar button svg{width:20px;height:20px;}
         <button class="btn ghost small" id="btn-admin-reset">リセット</button>
       </div>
       <label class="field mt-0">社員ID または 苗字（ひらがな）</label>
-      <input type="text" id="admin-search-id" placeholder="例：009 または とみなが">
+      <input type="text" id="admin-search-id" placeholder="例：000 または やまだ">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
       <p class="muted mt-6" id="admin-search-status"></p>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
@@ -999,6 +1027,22 @@ function loadJSON(key, fallback){
 function saveJSON(key, val){
   try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('保存失敗', e); }
 }
+function markDocViewed(key){
+  if(!key) return;
+  const viewed = loadJSON('docViewedAt', {});
+  viewed[key] = Date.now();
+  saveJSON('docViewedAt', viewed);
+}
+function getDocViewedAt(key){
+  if(!key) return undefined;
+  return loadJSON('docViewedAt', {})[key];
+}
+function formatViewedTime(ts){
+  const d = new Date(ts);
+  const y = d.getFullYear(), mo = d.getMonth()+1, day = d.getDate();
+  const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+  return `最終閲覧：${y}/${mo}/${day} ${hh}:${mm}`;
+}
 
 // 会社全体で共通のApps Script URL（下記の固定値はフォールバック。起動時にブートストラップ用ドキュメントから最新値を取得します）
 let COMPANY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFjjchftTisMBg1EqhgUfaZWObAWAM8MX53E5Izn3IJM9dXAO3F_Xm2k7WSaUayzVs/exec';
@@ -1078,8 +1122,9 @@ function openNewsDetail(n){
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
   document.getElementById('news-detail-message').textContent = n.message || '';
+  document.getElementById('news-detail-admin-tag').classList.toggle('is-hidden', n.scope !== 'admin');
   const priorityClass = newsPriorityClass(n);
-  ['news-detail-body','news-detail-date','news-detail-title','news-detail-message'].forEach(id=>{
+  ['news-detail-body','news-detail-date-box','news-detail-title','news-detail-message'].forEach(id=>{
     const el = document.getElementById(id);
     el.classList.remove('priority-normal','priority-maintenance','priority-critical');
     el.classList.add(priorityClass);
@@ -1103,9 +1148,11 @@ function newsPriorityClass(n){
 function newsListRowHtml(n){
   const readTag = isReadNews(n) ? '<span class="tag ok" style="font-size:10px;flex-shrink:0;">閲覧済み</span>' : '<span class="tag warn" style="font-size:10px;flex-shrink:0;">未読</span>';
   const shortDate = formatNewsTime(n.id).split(' ')[0];
+  const adminTag = n.scope === 'admin' ? '<span class="admin-only-tag">管理者専用</span>' : '';
   return `<div class="log-item news-row ${newsPriorityClass(n)}" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
     <span style="flex-shrink:0;">${newsPriorityIcon(n)}</span>
     <span class="mono" style="font-size:11px;color:var(--text-3);flex-shrink:0;">${shortDate}</span>
+    ${adminTag}
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.title || '（無題）'}</span>
     ${readTag}
   </div>`;
@@ -3160,6 +3207,19 @@ document.querySelectorAll('nav.tabbar button').forEach(btn=>{
     document.getElementById('view-'+btn.dataset.view).classList.add('active');
   });
 });
+document.addEventListener('keydown', (ev)=>{
+  if(ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+  const activeTag = (document.activeElement && document.activeElement.tagName) || '';
+  if(['INPUT','TEXTAREA','SELECT'].includes(activeTag)) return;
+  const anyModalOpen = Array.from(document.querySelectorAll('.modal-overlay')).some(m=>!m.classList.contains('hidden'));
+  if(anyModalOpen) return;
+  const tabs = Array.from(document.querySelectorAll('nav.tabbar button')).filter(b=>getComputedStyle(b).display !== 'none');
+  const currentIndex = tabs.findIndex(b=>b.classList.contains('active'));
+  if(currentIndex === -1) return;
+  const delta = ev.key === 'ArrowLeft' ? -1 : 1;
+  const nextIndex = (currentIndex + delta + tabs.length) % tabs.length;
+  tabs[nextIndex].click();
+});
 
 function fillSettingsForm(){
   document.getElementById('set-base-salary').value = settings.baseSalary || '';
@@ -3356,7 +3416,7 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
     logEvent('pdf_add', displayName);
     try{
       const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
-      await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&message=${encodeURIComponent(`${empLabel} が明細PDF「${displayName}」を追加しました`)}`);
+      await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&title=${encodeURIComponent('明細PDFの追加')}&message=${encodeURIComponent(`${empLabel} が明細PDF「${displayName}」を追加しました`)}`);
     }catch(err2){ /* 通知失敗は無視 */ }
   }
   e.target.value = '';
@@ -3422,9 +3482,11 @@ async function fetchFileBytes(doc){
 }
 async function openFile(doc, label, payKey){
   currentOcrFile = doc;
+  const plainYm = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : '';
+  markDocViewed(payKey || plainYm || doc.id);
+  renderMeisaiLists();
   document.getElementById('modal-title').textContent = label;
   document.getElementById('modal').classList.remove('hidden');
-  const plainYm = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : '';
   fillManualEntryForm('modal-man-', plainYm, doc, payKey || plainYm);
   const viewer = document.getElementById('modal-viewer');
   viewer.innerHTML = '<p style="color:#eee;text-align:center;margin-top:40px;">読み込み中…</p>';
@@ -3610,16 +3672,20 @@ function renderLedgerRow(container, doc, ym, labelOverride, payKey){
   if(doc){
     row.className = 'ledger-row';
     const delBtn = (doc.source==='drive' || doc.source==='localfolder') ? '' : `<button class="x-btn" style="font-size:16px;" data-del="${doc.id}">×</button>`;
-    const ymKey = payKey || ((doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null);
+    const ymKey = payKey || ((doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null) || doc.id;
     const rec = ymKey ? payHistory[ymKey] : null;
     const registered = doc.type==='bonus' ? !!(rec && rec.bonus) : !!(rec && rec.salary);
     const unregTag = registered ? '' : '<span class="tag warn">未登録</span>';
     const monthLabelStyle = doc.type==='bonus' ? ' style="color:var(--money);"' : '';
+    const viewedAt = getDocViewedAt(ymKey);
+    const fText = viewedAt
+      ? `<span class="viewed">${formatViewedTime(viewedAt)}</span>`
+      : `${doc.name}${doc.source==='drive' ? '（Drive）' : doc.source==='localfolder' ? '（フォルダ連携）' : ''}`;
     row.innerHTML = `
       <div class="dot"></div>
       <div class="info">
         <div class="m"${monthLabelStyle}>${label}</div>
-        <div class="f">${doc.name}${doc.source==='drive' ? '（Drive）' : doc.source==='localfolder' ? '（フォルダ連携）' : ''}</div>
+        <div class="f">${fText}</div>
       </div>
       ${unregTag}
       <span class="tag ok">閲覧</span>
@@ -4209,7 +4275,7 @@ async function deleteLeaveEntry(item){
   logEvent('leave_delete', detail);
   try{
     const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
-    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&message=${encodeURIComponent(`${empLabel} が有給の記録を削除しました（${detail}）`)}`);
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&title=${encodeURIComponent('有給記録の削除')}&message=${encodeURIComponent(`${empLabel} が有給の記録を削除しました（${detail}）`)}`);
   }catch(e){ /* 通知失敗は無視 */ }
 }
 
