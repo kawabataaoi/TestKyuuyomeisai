@@ -382,11 +382,15 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       </div>
       <div class="news-detail-title-box" id="news-detail-title"></div>
       <div class="news-detail-content-box" id="news-detail-message"></div>
+      <div class="news-detail-actions is-hidden" id="news-detail-leave-actions">
+        <button class="btn ghost" id="news-detail-leave-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">不許可</button>
+        <button class="btn" id="news-detail-leave-approve">許可</button>
+      </div>
       <div class="news-detail-actions is-hidden" id="news-detail-admin-actions">
         <button class="btn ghost" id="news-detail-edit">編集</button>
         <button class="btn" id="news-detail-delete" style="background:var(--danger);">削除</button>
       </div>
-      <div class="news-detail-actions">
+      <div class="news-detail-actions" id="news-detail-read-actions">
         <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
         <button class="btn" id="news-detail-mark-read">既読にする</button>
       </div>
@@ -958,6 +962,17 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="reason-modal">
+  <div class="confirm-card">
+    <p class="confirm-message" id="reason-modal-message"></p>
+    <textarea id="reason-modal-input" rows="3" class="contact-textarea mt-6" style="width:100%;box-sizing:border-box;"></textarea>
+    <div class="confirm-actions mt-14">
+      <button class="btn ghost" id="reason-modal-cancel">キャンセル</button>
+      <button class="btn" id="reason-modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-sheet">
     <header>
@@ -1039,6 +1054,32 @@ function showAlertModal(message){
     }
     function onOk(){ cleanup(); }
     okBtn.addEventListener('click', onOk);
+  });
+}
+function showReasonModal(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('reason-modal');
+    const msgEl = document.getElementById('reason-modal-message');
+    const inputEl = document.getElementById('reason-modal-input');
+    const okBtn = document.getElementById('reason-modal-ok');
+    const cancelBtn = document.getElementById('reason-modal-cancel');
+    msgEl.textContent = message;
+    inputEl.value = '';
+    overlay.classList.remove('hidden');
+    function cleanup(result){
+      overlay.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){
+      const val = inputEl.value.trim();
+      if(!val){ inputEl.focus(); return; }
+      cleanup(val);
+    }
+    function onCancel(){ cleanup(null); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
   });
 }
 function loadJSON(key, fallback){
@@ -1127,7 +1168,7 @@ function isReadNews(n){
   return readIds.has(n.id);
 }
 function relevantNews(newsList){
-  return newsList.filter(n => n.scope==='all' || (n.scope==='admin' && currentIsAdmin));
+  return newsList.filter(n => n.scope==='all' || (n.scope==='admin' && currentIsAdmin) || n.scope==='emp:'+currentEmployeeId);
 }
 function markNewsRead(ids){
   const readIds = loadJSON(readNewsKey(), []);
@@ -1149,14 +1190,40 @@ function formatEditedTime(ts){
   const hh = d.getHours(), mm = String(d.getMinutes()).padStart(2,'0');
   return `（${y}年${mo}月${day}日　${hh}時${mm}分編集済み）`;
 }
+const LEAVE_REQUEST_MARKER = '##LEAVE_REQUEST##';
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m,p)=>String.fromCharCode('0x'+p)));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(atob(str).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+function parseLeaveRequestMessage(message){
+  if(!message || message.indexOf(LEAVE_REQUEST_MARKER) !== 0) return null;
+  try{ return JSON.parse(b64DecodeUnicode(message.slice(LEAVE_REQUEST_MARKER.length))); }catch(e){ return null; }
+}
+let currentLeaveRequest = null;
 function openNewsDetail(n){
   currentDetailNews = n;
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
-  const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
-  document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
+  currentLeaveRequest = parseLeaveRequestMessage(n.message);
+  if(currentLeaveRequest){
+    const req = currentLeaveRequest;
+    const typeLabel = req.type === 'delete' ? '有給削除申請' : '有給使用申請';
+    const alreadyResolved = /^\[処理済み\]/.test(n.title||'');
+    document.getElementById('news-detail-message').textContent =
+      `申請者：${req.empName}（${req.empId}）\n種別：${typeLabel}\n対象日：${isoToDisplay(req.date)}\n日数：${Math.abs(req.delta)}日\n理由：${req.note || '（未入力）'}`;
+    document.getElementById('news-detail-leave-actions').classList.toggle('is-hidden', !currentIsAdmin || alreadyResolved);
+    document.getElementById('news-detail-admin-actions').classList.add('is-hidden');
+    document.getElementById('news-detail-read-actions').classList.toggle('is-hidden', currentIsAdmin && !alreadyResolved);
+  }else{
+    const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
+    document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
+    document.getElementById('news-detail-leave-actions').classList.add('is-hidden');
+    document.getElementById('news-detail-admin-actions').classList.toggle('is-hidden', !currentIsAdmin);
+    document.getElementById('news-detail-read-actions').classList.remove('is-hidden');
+  }
   document.getElementById('news-detail-admin-tag').classList.toggle('is-hidden', n.scope !== 'admin');
-  document.getElementById('news-detail-admin-actions').classList.toggle('is-hidden', !currentIsAdmin);
   const priorityClass = newsPriorityClass(n);
   ['news-detail-body','news-detail-date-box','news-detail-title','news-detail-message'].forEach(id=>{
     const el = document.getElementById(id);
@@ -1697,6 +1764,52 @@ document.getElementById('news-detail-delete').addEventListener('click', async ()
     refreshOpenNewsModalList();
   }catch(e){
     await showAlertModal('削除に失敗しました：' + e.message);
+  }
+});
+async function markLeaveRequestNewsHandled(){
+  if(!currentDetailNews) return;
+  try{
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=editNews&id=${encodeURIComponent(currentDetailNews.id)}&scope=${encodeURIComponent(currentDetailNews.scope||'admin')}&priority=${encodeURIComponent(currentDetailNews.priority||'critical')}&title=${encodeURIComponent('[処理済み] '+(currentDetailNews.title||''))}&message=${encodeURIComponent(currentDetailNews.message||'')}`);
+  }catch(e){ /* 失敗しても致命的ではないため無視 */ }
+}
+document.getElementById('news-detail-leave-approve').addEventListener('click', async ()=>{
+  if(!currentLeaveRequest || !currentDetailNews) return;
+  const req = currentLeaveRequest;
+  const typeLabel = req.type === 'delete' ? '有給削除' : '有給使用';
+  const ok = await showConfirmModal(`${req.empName}さんの${typeLabel}申請（${isoToDisplay(req.date)}・${Math.abs(req.delta)}日）を許可しますか？`);
+  if(!ok) return;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=adminResolveLeaveRequest&targetId=${encodeURIComponent(req.empId)}&requestId=${encodeURIComponent(req.requestId)}&type=${encodeURIComponent(req.type)}&decision=approve`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=${encodeURIComponent('emp:'+req.empId)}&priority=critical&title=${encodeURIComponent(typeLabel+'申請の結果')}&message=${encodeURIComponent(`${isoToDisplay(req.date)}・${Math.abs(req.delta)}日の${typeLabel}申請が許可されました。`)}`);
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('leave_request_approve', `${empLabel} が ${req.empId}:${req.empName} の${typeLabel}申請（${isoToDisplay(req.date)}・${Math.abs(req.delta)}日）を許可`);
+    await markLeaveRequestNewsHandled();
+    document.getElementById('news-detail-modal').classList.add('hidden');
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
+  }catch(e){
+    await showAlertModal('処理に失敗しました：' + e.message);
+  }
+});
+document.getElementById('news-detail-leave-reject').addEventListener('click', async ()=>{
+  if(!currentLeaveRequest || !currentDetailNews) return;
+  const req = currentLeaveRequest;
+  const typeLabel = req.type === 'delete' ? '有給削除' : '有給使用';
+  const reason = await showReasonModal('不許可の理由を入力してください。');
+  if(reason === null) return;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=adminResolveLeaveRequest&targetId=${encodeURIComponent(req.empId)}&requestId=${encodeURIComponent(req.requestId)}&type=${encodeURIComponent(req.type)}&decision=reject&reason=${encodeURIComponent(reason)}`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=${encodeURIComponent('emp:'+req.empId)}&priority=critical&title=${encodeURIComponent(typeLabel+'申請の結果')}&message=${encodeURIComponent(`${isoToDisplay(req.date)}・${Math.abs(req.delta)}日の${typeLabel}申請が不許可となりました。不許可：${reason}`)}`);
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('leave_request_reject', `${empLabel} が ${req.empId}:${req.empName} の${typeLabel}申請（${isoToDisplay(req.date)}・${Math.abs(req.delta)}日）を不許可（理由：${reason}）`);
+    await markLeaveRequestNewsHandled();
+    document.getElementById('news-detail-modal').classList.add('hidden');
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
+  }catch(e){
+    await showAlertModal('処理に失敗しました：' + e.message);
   }
 });
 function deletedNewsRowHtml(n){
@@ -2558,6 +2671,14 @@ function doGet(e) {
         MailApp.sendEmail(getInquiryEmail(), subject, body);
       }
       out = {success: true};
+    } else if (action === 'sendLeaveRequestEmail') {
+      var lrEmpName = e.parameter.empName || '';
+      var lrDate = e.parameter.date || '';
+      var lrReason = e.parameter.reason || '（未入力）';
+      var lrSubject = '給与台帳：有給申請';
+      var lrBody = lrEmpName + 'さんから有給申請が届きました。' + lrDate + '。理由：' + lrReason + 'のため。内容を確認し、アプリより、有給許可を行ってください。\n※本メールは給与台帳より自動送信されています。';
+      MailApp.sendEmail(getInquiryEmail(), lrSubject, lrBody);
+      out = {success: true};
     } else if (action === 'uploadChunkStart') {
       var upFolder = DriveApp.getFolderById(e.parameter.folder);
       var tempDoc = DocumentApp.create('_upload_tmp_' + new Date().getTime());
@@ -2761,7 +2882,8 @@ function doGet(e) {
     } else if (action === 'postNews') {
       var newsDocP = getOrCreateMasterDoc('ニュース');
       var newsId = new Date().getTime();
-      var scope = e.parameter.scope === 'admin' ? 'admin' : 'all';
+      var scopeParamP = e.parameter.scope || 'all';
+      var scope = (scopeParamP === 'admin' || scopeParamP.indexOf('emp:') === 0) ? scopeParamP : 'all';
       var priorityP = e.parameter.priority || 'normal';
       var titleP = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
       var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
@@ -3184,6 +3306,111 @@ function doGet(e) {
             bodyGD.editAsText().setText(linesGD.join('\n'));
             settingsDocGD.saveAndClose();
             out = { success: true };
+          }
+        }
+      }
+    } else if (action === 'adminResolveLeaveRequest') {
+      var listFileR = findMasterListFile();
+      if (!listFileR) {
+        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      } else {
+        var mainTextR = DocumentApp.openById(listFileR.getId()).getTabs()[0].asDocumentTab().getBody().getText();
+        var targetIdR = (e.parameter.targetId || '').trim();
+        var rowR = findMainListRow(mainTextR, targetIdR);
+        if (!rowR) {
+          out = { error: '該当する社員IDが見つかりませんでした' };
+        } else {
+          var requestIdR = (e.parameter.requestId || '').trim();
+          var typeR = e.parameter.type === 'delete' ? 'delete' : 'use';
+          var decisionR = e.parameter.decision === 'approve' ? 'approve' : 'reject';
+          var reasonR = (e.parameter.reason || '').replace(/\n/g, ' ');
+          var targetFolderR = DriveApp.getFolderById(rowR.cols[3].trim());
+          var settingsDocFileR = getSettingsDocFile(targetFolderR);
+          if (!settingsDocFileR) {
+            out = { error: '対象ユーザーの設定ドキュメントが見つかりません' };
+          } else {
+            var settingsDocR = DocumentApp.openById(settingsDocFileR.getId());
+            var bodyR = settingsDocR.getBody();
+            var linesR = bodyR.getText().split('\n');
+            var byYearR = {};
+            for (var yi = 0; yi < linesR.length; yi++) {
+              var ym = linesR[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+              if (ym) byYearR[ym[1]] = parseFloat(ym[2]);
+            }
+            var usageStartR = -1, usageEndR = linesR.length;
+            for (var si = 0; si < linesR.length; si++) {
+              if (linesR[si].trim() === '有給使用履歴') { usageStartR = si + 1; break; }
+            }
+            if (usageStartR === -1) {
+              out = { error: '対象の申請が見つかりませんでした' };
+            } else {
+              for (var ei = usageStartR; ei < linesR.length; ei++) {
+                if (linesR[ei].trim() === '') { usageEndR = ei; break; }
+              }
+              var markerR = typeR === 'delete' ? 'PENDING_DELETE' : 'PENDING_USE';
+              var suffixR = '｜' + markerR + '｜' + requestIdR;
+              var targetLineIdx = -1;
+              for (var ui = usageStartR; ui < usageEndR; ui++) {
+                if (linesR[ui].indexOf(suffixR) !== -1) { targetLineIdx = ui; break; }
+              }
+              if (targetLineIdx === -1) {
+                out = { error: '対象の申請が見つかりませんでした（既に処理済みの可能性があります）' };
+              } else {
+                var lineM = linesR[targetLineIdx].trim().match(/^(\d{8}):(-?\d+(?:\.\d+)?):([^@]*)(?:@(.*))?$/);
+                if (!lineM) {
+                  out = { error: '申請データの形式が正しくありません' };
+                } else {
+                  var dateStrR = lineM[1];
+                  var amountR = parseFloat(lineM[2]);
+                  var noteWithMarkerR = lineM[3];
+                  var consumedStrR = lineM[4] || '';
+                  var cleanNoteR = noteWithMarkerR.split(suffixR).join('');
+                  var consumedListR = [];
+                  if (consumedStrR) {
+                    var consumedPartsR = consumedStrR.split(',');
+                    for (var pi = 0; pi < consumedPartsR.length; pi++) {
+                      var kv = consumedPartsR[pi].split('=');
+                      if (kv.length === 2) consumedListR.push({year: kv[0], amount: parseFloat(kv[1])});
+                    }
+                  }
+                  var restoreBalanceR = function(){
+                    if (consumedListR.length > 0) {
+                      for (var ci = 0; ci < consumedListR.length; ci++) {
+                        var cy = consumedListR[ci].year;
+                        byYearR[cy] = Math.round(((byYearR[cy] || 0) + consumedListR[ci].amount) * 10) / 10;
+                      }
+                    } else {
+                      var fy = String(parseInt(dateStrR.substring(0, 4)));
+                      byYearR[fy] = Math.round(((byYearR[fy] || 0) + amountR) * 10) / 10;
+                    }
+                  };
+                  if (typeR === 'use') {
+                    if (decisionR === 'approve') {
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':' + cleanNoteR + (consumedStrR ? '@' + consumedStrR : '');
+                    } else {
+                      restoreBalanceR();
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':不許可：' + reasonR;
+                    }
+                  } else {
+                    if (decisionR === 'approve') {
+                      restoreBalanceR();
+                      linesR.splice(targetLineIdx, 1);
+                    } else {
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':' + cleanNoteR + (consumedStrR ? '@' + consumedStrR : '');
+                    }
+                  }
+                  for (var wi = 0; wi < linesR.length; wi++) {
+                    var wm = linesR[wi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+                    if (wm && byYearR.hasOwnProperty(wm[1])) {
+                      linesR[wi] = wm[1] + '有給残:' + byYearR[wm[1]];
+                    }
+                  }
+                  bodyR.editAsText().setText(linesR.join('\n'));
+                  settingsDocR.saveAndClose();
+                  out = { success: true };
+                }
+              }
+            }
           }
         }
       }
@@ -4545,6 +4772,18 @@ function checkAndApplyScheduledGrant(){
   }
 }
 
+function parseNoteStatus(note){
+  const raw = note || '';
+  const m = raw.match(/^(.*)｜(PENDING_USE|PENDING_DELETE)｜([^｜]+)$/);
+  if(!m) return { cleanNote: raw, status: null, requestId: null };
+  return { cleanNote: m[1], status: m[2], requestId: m[3] };
+}
+function makePendingNote(cleanNote, status, requestId){
+  return `${cleanNote}｜${status}｜${requestId}`;
+}
+function genRequestId(){
+  return 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+}
 function renderLeave(){
   document.getElementById('yukyu-balance').textContent = totalLeaveBalance().toFixed(1);
   const years = Object.keys(leave.byYear||{}).sort((a,b)=>b-a);
@@ -4560,13 +4799,48 @@ function renderLeave(){
     const div = document.createElement('div');
     div.className = 'log-item';
     const sign = item.delta > 0 ? '+' : '';
-    div.innerHTML = `<div><div>${item.note||(item.delta>0?'付与':'使用')}</div><div class="d">${isoToDisplay(item.date)}</div></div><div class="row" style="gap:8px;"><div class="mono">${sign}${item.delta.toFixed(1)}日</div><button class="x-btn" style="font-size:16px;" data-del-leave>×</button></div>`;
-    div.querySelector('[data-del-leave]').addEventListener('click', ()=>deleteLeaveEntry(item));
+    const {cleanNote, status} = parseNoteStatus(item.note);
+    const pendingTag = status ? '<span class="admin-only-tag" style="background:var(--money-soft);color:var(--money);">申請中</span> ' : '';
+    const delBtn = status ? '' : '<button class="x-btn" style="font-size:16px;" data-del-leave>×</button>';
+    div.innerHTML = `<div><div>${pendingTag}${cleanNote||(item.delta>0?'付与':'使用')}</div><div class="d">${isoToDisplay(item.date)}</div></div><div class="row" style="gap:8px;"><div class="mono">${sign}${item.delta.toFixed(1)}日</div>${delBtn}</div>`;
+    const delEl = div.querySelector('[data-del-leave]');
+    if(delEl) delEl.addEventListener('click', ()=>deleteLeaveEntry(item));
     logEl.appendChild(div);
   });
 }
 
+async function notifyLeaveRequest(type, requestId, dateStr, delta, note){
+  const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+  const typeLabel = type === 'delete' ? '有給削除申請' : '有給使用申請';
+  const payload = b64EncodeUnicode(JSON.stringify({requestId, type, empId: currentEmployeeId, empName: currentEmployeeName||'', date: dateStr, delta, note: note||''}));
+  try{
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&priority=critical&title=${encodeURIComponent(typeLabel)}&message=${encodeURIComponent(LEAVE_REQUEST_MARKER+payload)}`);
+  }catch(e){ /* 通知失敗は無視 */ }
+  try{
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=sendLeaveRequestEmail&empName=${encodeURIComponent(currentEmployeeName||empLabel)}&date=${encodeURIComponent(isoToDisplay(dateStr))}&reason=${encodeURIComponent(note||'')}`);
+  }catch(e){ /* 通知失敗は無視 */ }
+}
 async function deleteLeaveEntry(item){
+  const existingStatus = parseNoteStatus(item.note).status;
+  if(existingStatus){
+    await showAlertModal('この記録は既に申請中です。管理者の承認をお待ちください。');
+    return;
+  }
+  if(!currentIsAdmin){
+    if(!(await showConfirmModal(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）の削除申請を行いますか？`))) return;
+    const requestId = genRequestId();
+    const originalNote = item.note || '';
+    item.note = makePendingNote(originalNote, 'PENDING_DELETE', requestId);
+    saveJSON('leave', leave);
+    renderLeave();
+    if(settings.scriptUrl && settings.driveFolderId){
+      const ok = await pushSettingsToDrive();
+      if(!ok) await showAlertModal('Driveへの反映に失敗しました。設定タブの同期状況を確認してください。');
+    }
+    logEvent('leave_delete_request', `${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日・${originalNote}`);
+    await notifyLeaveRequest('delete', requestId, item.date, item.delta, originalNote);
+    return;
+  }
   if(!(await showConfirmModal(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）を削除しますか？`))) return;
   const idx = leave.log.indexOf(item);
   if(idx>-1) leave.log.splice(idx,1);
@@ -4611,7 +4885,9 @@ async function applyLeave(sign){
   }else{
     consumedFrom = deductLeave(days);
   }
-  const entry = {date: dateStr, delta: sign*days, note};
+  const isPendingUse = sign < 0 && !currentIsAdmin;
+  const requestId = isPendingUse ? genRequestId() : null;
+  const entry = {date: dateStr, delta: sign*days, note: isPendingUse ? makePendingNote(note, 'PENDING_USE', requestId) : note};
   if(consumedFrom) entry.consumedFrom = consumedFrom;
   leave.log.push(entry);
   ensureRecentYearKeys();
@@ -4624,7 +4900,12 @@ async function applyLeave(sign){
     const ok = await pushSettingsToDrive();
     if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
   }
-  logEvent(sign>0?'leave_grant':'leave_use', `${days}日 ${note}`);
+  if(isPendingUse){
+    logEvent('leave_use_request', `${days}日 ${note}`);
+    await notifyLeaveRequest('use', requestId, dateStr, sign*days, note);
+  }else{
+    logEvent(sign>0?'leave_grant':'leave_use', `${days}日 ${note}`);
+  }
 }
 document.getElementById('yukyu-plus').addEventListener('click', ()=>applyLeave(1));
 document.getElementById('yukyu-minus').addEventListener('click', ()=>applyLeave(-1));

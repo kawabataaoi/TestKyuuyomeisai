@@ -304,6 +304,14 @@ function doGet(e) {
         MailApp.sendEmail(getInquiryEmail(), subject, body);
       }
       out = {success: true};
+    } else if (action === 'sendLeaveRequestEmail') {
+      var lrEmpName = e.parameter.empName || '';
+      var lrDate = e.parameter.date || '';
+      var lrReason = e.parameter.reason || '（未入力）';
+      var lrSubject = '給与台帳：有給申請';
+      var lrBody = lrEmpName + 'さんから有給申請が届きました。' + lrDate + '。理由：' + lrReason + 'のため。内容を確認し、アプリより、有給許可を行ってください。\n※本メールは給与台帳より自動送信されています。';
+      MailApp.sendEmail(getInquiryEmail(), lrSubject, lrBody);
+      out = {success: true};
     } else if (action === 'uploadChunkStart') {
       var upFolder = DriveApp.getFolderById(e.parameter.folder);
       var tempDoc = DocumentApp.create('_upload_tmp_' + new Date().getTime());
@@ -507,7 +515,8 @@ function doGet(e) {
     } else if (action === 'postNews') {
       var newsDocP = getOrCreateMasterDoc('ニュース');
       var newsId = new Date().getTime();
-      var scope = e.parameter.scope === 'admin' ? 'admin' : 'all';
+      var scopeParamP = e.parameter.scope || 'all';
+      var scope = (scopeParamP === 'admin' || scopeParamP.indexOf('emp:') === 0) ? scopeParamP : 'all';
       var priorityP = e.parameter.priority || 'normal';
       var titleP = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
       var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
@@ -930,6 +939,111 @@ function doGet(e) {
             bodyGD.editAsText().setText(linesGD.join('\n'));
             settingsDocGD.saveAndClose();
             out = { success: true };
+          }
+        }
+      }
+    } else if (action === 'adminResolveLeaveRequest') {
+      var listFileR = findMasterListFile();
+      if (!listFileR) {
+        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      } else {
+        var mainTextR = DocumentApp.openById(listFileR.getId()).getTabs()[0].asDocumentTab().getBody().getText();
+        var targetIdR = (e.parameter.targetId || '').trim();
+        var rowR = findMainListRow(mainTextR, targetIdR);
+        if (!rowR) {
+          out = { error: '該当する社員IDが見つかりませんでした' };
+        } else {
+          var requestIdR = (e.parameter.requestId || '').trim();
+          var typeR = e.parameter.type === 'delete' ? 'delete' : 'use';
+          var decisionR = e.parameter.decision === 'approve' ? 'approve' : 'reject';
+          var reasonR = (e.parameter.reason || '').replace(/\n/g, ' ');
+          var targetFolderR = DriveApp.getFolderById(rowR.cols[3].trim());
+          var settingsDocFileR = getSettingsDocFile(targetFolderR);
+          if (!settingsDocFileR) {
+            out = { error: '対象ユーザーの設定ドキュメントが見つかりません' };
+          } else {
+            var settingsDocR = DocumentApp.openById(settingsDocFileR.getId());
+            var bodyR = settingsDocR.getBody();
+            var linesR = bodyR.getText().split('\n');
+            var byYearR = {};
+            for (var yi = 0; yi < linesR.length; yi++) {
+              var ym = linesR[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+              if (ym) byYearR[ym[1]] = parseFloat(ym[2]);
+            }
+            var usageStartR = -1, usageEndR = linesR.length;
+            for (var si = 0; si < linesR.length; si++) {
+              if (linesR[si].trim() === '有給使用履歴') { usageStartR = si + 1; break; }
+            }
+            if (usageStartR === -1) {
+              out = { error: '対象の申請が見つかりませんでした' };
+            } else {
+              for (var ei = usageStartR; ei < linesR.length; ei++) {
+                if (linesR[ei].trim() === '') { usageEndR = ei; break; }
+              }
+              var markerR = typeR === 'delete' ? 'PENDING_DELETE' : 'PENDING_USE';
+              var suffixR = '｜' + markerR + '｜' + requestIdR;
+              var targetLineIdx = -1;
+              for (var ui = usageStartR; ui < usageEndR; ui++) {
+                if (linesR[ui].indexOf(suffixR) !== -1) { targetLineIdx = ui; break; }
+              }
+              if (targetLineIdx === -1) {
+                out = { error: '対象の申請が見つかりませんでした（既に処理済みの可能性があります）' };
+              } else {
+                var lineM = linesR[targetLineIdx].trim().match(/^(\d{8}):(-?\d+(?:\.\d+)?):([^@]*)(?:@(.*))?$/);
+                if (!lineM) {
+                  out = { error: '申請データの形式が正しくありません' };
+                } else {
+                  var dateStrR = lineM[1];
+                  var amountR = parseFloat(lineM[2]);
+                  var noteWithMarkerR = lineM[3];
+                  var consumedStrR = lineM[4] || '';
+                  var cleanNoteR = noteWithMarkerR.split(suffixR).join('');
+                  var consumedListR = [];
+                  if (consumedStrR) {
+                    var consumedPartsR = consumedStrR.split(',');
+                    for (var pi = 0; pi < consumedPartsR.length; pi++) {
+                      var kv = consumedPartsR[pi].split('=');
+                      if (kv.length === 2) consumedListR.push({year: kv[0], amount: parseFloat(kv[1])});
+                    }
+                  }
+                  var restoreBalanceR = function(){
+                    if (consumedListR.length > 0) {
+                      for (var ci = 0; ci < consumedListR.length; ci++) {
+                        var cy = consumedListR[ci].year;
+                        byYearR[cy] = Math.round(((byYearR[cy] || 0) + consumedListR[ci].amount) * 10) / 10;
+                      }
+                    } else {
+                      var fy = String(parseInt(dateStrR.substring(0, 4)));
+                      byYearR[fy] = Math.round(((byYearR[fy] || 0) + amountR) * 10) / 10;
+                    }
+                  };
+                  if (typeR === 'use') {
+                    if (decisionR === 'approve') {
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':' + cleanNoteR + (consumedStrR ? '@' + consumedStrR : '');
+                    } else {
+                      restoreBalanceR();
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':不許可：' + reasonR;
+                    }
+                  } else {
+                    if (decisionR === 'approve') {
+                      restoreBalanceR();
+                      linesR.splice(targetLineIdx, 1);
+                    } else {
+                      linesR[targetLineIdx] = dateStrR + ':' + amountR + ':' + cleanNoteR + (consumedStrR ? '@' + consumedStrR : '');
+                    }
+                  }
+                  for (var wi = 0; wi < linesR.length; wi++) {
+                    var wm = linesR[wi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+                    if (wm && byYearR.hasOwnProperty(wm[1])) {
+                      linesR[wi] = wm[1] + '有給残:' + byYearR[wm[1]];
+                    }
+                  }
+                  bodyR.editAsText().setText(linesR.join('\n'));
+                  settingsDocR.saveAndClose();
+                  out = { success: true };
+                }
+              }
+            }
           }
         }
       }
