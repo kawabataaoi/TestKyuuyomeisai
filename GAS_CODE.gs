@@ -170,9 +170,9 @@ function parsePaydayOverrides(text) {
   var inSection = false;
   for (var i = 0; i < lines.length; i++) {
     var row = lines[i].trim();
-    if (!row) continue;
     if (row === '給料日特例') { inSection = true; continue; }
     if (row === '会社共通設定') { inSection = false; continue; }
+    if (!row) { inSection = false; continue; }
     if (inSection) {
       var idx = row.indexOf(':');
       if (idx > 0) overrides[row.substring(0, idx).trim()] = row.substring(idx + 1).trim();
@@ -383,8 +383,8 @@ function doGet(e) {
         var rows0 = listText0.split('\n');
         for (var k = 0; k < rows0.length; k++) {
           var row0 = rows0[k].trim();
-          if (!row0) continue;
           if (row0 === '会社共通設定') { inSection0 = true; continue; }
+          if (!row0) { inSection0 = false; continue; }
           if (inSection0) {
             var kv0 = row0.split(':');
             if (kv0.length >= 2) cs0[kv0[0].trim()] = kv0.slice(1).join(':').trim();
@@ -406,7 +406,7 @@ function doGet(e) {
         var endIdxP = linesP.length;
         for (var pi = 0; pi < linesP.length; pi++) {
           if (linesP[pi].trim() === '給料日特例') { sectionIdxP = pi; continue; }
-          if (sectionIdxP >= 0 && linesP[pi].trim() === '会社共通設定') { endIdxP = pi; break; }
+          if (sectionIdxP >= 0 && (linesP[pi].trim() === '' || linesP[pi].trim() === '会社共通設定')) { endIdxP = pi; break; }
         }
         if (sectionIdxP < 0) {
           // セクション自体が無ければ末尾に新設
@@ -1065,7 +1065,7 @@ function doGet(e) {
         var sectionEndCS = linesCS.length;
         for (var csi = 0; csi < linesCS.length; csi++) {
           if (linesCS[csi].trim() === '会社共通設定') { sectionStartCS = csi; continue; }
-          if (sectionStartCS >= 0 && linesCS[csi].trim() === '給料日特例') { sectionEndCS = csi; break; }
+          if (sectionStartCS >= 0 && (linesCS[csi].trim() === '' || linesCS[csi].trim() === '給料日特例')) { sectionEndCS = csi; break; }
         }
         var existingCS = {};
         var orderCS = [];
@@ -1192,8 +1192,8 @@ function doGet(e) {
         var rows = listText.split('\n');
         for (var i = 0; i < rows.length; i++) {
           var row = rows[i].trim();
-          if (!row) continue;
           if (row === '会社共通設定') { inCompanySection = true; continue; }
+          if (!row) { inCompanySection = false; continue; }
           if (inCompanySection) {
             var kv = row.split(':');
             if (kv.length >= 2) companySettings[kv[0].trim()] = kv.slice(1).join(':').trim();
