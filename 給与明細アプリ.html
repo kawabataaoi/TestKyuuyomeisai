@@ -1251,10 +1251,13 @@ async function refreshNewsThenShowModal(onlyUnread){
   renderNewsModalList(onlyUnread);
   renderNewsBanner(lastFetchedNews);
 }
-function refreshNewsViewsAfterReadChange(){
-  renderNewsBanner(lastFetchedNews);
+function refreshOpenNewsModalList(){
   const modalOpen = !document.getElementById('news-modal').classList.contains('hidden');
   if(modalOpen && newsModalOnlyUnread !== null) renderNewsModalList(newsModalOnlyUnread);
+}
+function refreshNewsViewsAfterReadChange(){
+  renderNewsBanner(lastFetchedNews);
+  refreshOpenNewsModalList();
 }
 
 document.getElementById('news-banner').addEventListener('click', ()=>refreshNewsThenShowModal(true));
@@ -1671,7 +1674,8 @@ document.getElementById('btn-post-news').addEventListener('click', async ()=>{
       document.getElementById('news-title').value = '';
       document.getElementById('news-message').value = '';
     }
-    fetchAndRenderNews();
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
   }catch(e){
     status.textContent = (isEditing ? '更新' : '送信') + 'に失敗しました：' + e.message;
   }
@@ -1689,7 +1693,8 @@ document.getElementById('news-detail-delete').addEventListener('click', async ()
     const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
     logEvent('news_delete', `${empLabel} がニュース「${currentDetailNews.title || '（無題）'}」を削除しました（id:${currentDetailNews.id}）`);
     document.getElementById('news-detail-modal').classList.add('hidden');
-    fetchAndRenderNews();
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
   }catch(e){
     await showAlertModal('削除に失敗しました：' + e.message);
   }
