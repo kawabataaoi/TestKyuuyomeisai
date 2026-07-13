@@ -2274,7 +2274,7 @@ function todayDateString() {
 }
 function logSystemEvent(eventType, detail) {
   var logDoc = getOrCreateMasterDoc('操作ログ');
-  var logLine = new Date().toISOString() + ':system:system:' + eventType + ':' + detail.replace(/\\n/g, ' ');
+  var logLine = new Date().toISOString() + ':system:system:' + eventType + ':' + detail.replace(/\n/g, ' ');
   appendLine(logDoc, logLine);
 }
 var BOOTSTRAP_DOC_ID = '15GaNuDtOCUW311AS-dKXSbu7x2-mVGHblkIe25KlY4I'; // GASのURLを書いた、公開閲覧可能なドキュメントのID
@@ -2333,7 +2333,7 @@ function digitsOnly(s) {
 }
 
 function parseUserRecords(text) {
-  var lines = text.split('\\n');
+  var lines = text.split('\n');
   var records = [];
   var cur = null;
   for (var i = 0; i < lines.length; i++) {
@@ -2372,11 +2372,11 @@ function serializeUserRecords(records) {
     if (r['削除理由'] !== undefined) lines.push('削除理由:' + r['削除理由']);
     if (r['告知済み'] !== undefined) lines.push('告知済み:' + r['告知済み']);
   });
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 function findMainListRow(mainText, targetId) {
-  var rows = mainText.split('\\n');
+  var rows = mainText.split('\n');
   for (var i = 0; i < rows.length; i++) {
     var row = rows[i].trim();
     if (!row) continue;
@@ -2410,7 +2410,7 @@ function appendLine(doc, line) {
 }
 
 function parsePaydayOverrides(text) {
-  var lines = text.split('\\n');
+  var lines = text.split('\n');
   var overrides = {};
   var inSection = false;
   for (var i = 0; i < lines.length; i++) {
@@ -2453,9 +2453,9 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
     var settingsDocS = getSettingsDocFile(targetFolderS);
     if (settingsDocS) {
       var settingsTextS = DocumentApp.openById(settingsDocS.getId()).getBody().getText();
-      var sLinesS = settingsTextS.split('\\n');
+      var sLinesS = settingsTextS.split('\n');
       for (var yi = 0; yi < sLinesS.length; yi++) {
-        var yMatch = sLinesS[yi].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
+        var yMatch = sLinesS[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
         if (yMatch) byYearS[yMatch[1]] = yMatch[2];
       }
     }
@@ -2541,7 +2541,7 @@ function doGet(e) {
       out = { success: true };
     } else if (action === 'uploadChunkFinish') {
       var finishDoc = DocumentApp.openById(e.parameter.tempDocId);
-      var fullText = finishDoc.getBody().getText().replace(/\\n/g, '').replace(/\\s/g, '');
+      var fullText = finishDoc.getBody().getText().replace(/\n/g, '').replace(/\s/g, '');
       var targetFolder = DriveApp.getFolderById(e.parameter.folder);
       var fileName = e.parameter.filename || 'アップロードファイル';
       var mimeType = e.parameter.mimeType || 'application/pdf';
@@ -2595,7 +2595,7 @@ function doGet(e) {
         var listText0 = DocumentApp.openById(listFile0.getId()).getTabs()[0].asDocumentTab().getBody().getText();
         var cs0 = {};
         var inSection0 = false;
-        var rows0 = listText0.split('\\n');
+        var rows0 = listText0.split('\n');
         for (var k = 0; k < rows0.length; k++) {
           var row0 = rows0[k].trim();
           if (!row0) continue;
@@ -2614,7 +2614,7 @@ function doGet(e) {
       } else {
         var docP = DocumentApp.openById(listFileP.getId());
         var bodyP = docP.getBody();
-        var linesP = bodyP.getText().split('\\n');
+        var linesP = bodyP.getText().split('\n');
         var ymP = (e.parameter.ym || '').trim();
         var dateP = (e.parameter.date || '').trim(); // 空なら特例を削除
         var sectionIdxP = -1;
@@ -2646,7 +2646,7 @@ function doGet(e) {
             linesP.splice(sectionIdxP + 1, 0, ymP + ':' + dateP);
           }
         }
-        bodyP.editAsText().setText(linesP.join('\\n'));
+        bodyP.editAsText().setText(linesP.join('\n'));
         docP.saveAndClose();
         out = { success: true };
       }
@@ -2660,7 +2660,7 @@ function doGet(e) {
         if (!userBody) {
           out = {error: '「ユーザー情報」タブが見つかりません'};
         } else {
-          var uLines = userBody.getText().split('\\n');
+          var uLines = userBody.getText().split('\n');
           var records = [];
           var cur = null;
           for (var ui = 0; ui < uLines.length; ui++) {
@@ -2703,7 +2703,7 @@ function doGet(e) {
       } else {
         var docR = DocumentApp.openById(listFileR.getId());
         var mainBody = docR.getTabs()[0].asDocumentTab().getBody();
-        var mainLines = mainBody.getText().split('\\n');
+        var mainLines = mainBody.getText().split('\n');
         var targetId = (e.parameter.id || '').trim();
         var newPw = (e.parameter.newPassword || '').trim().replace(/:/g, '');
         var changed = false;
@@ -2720,7 +2720,7 @@ function doGet(e) {
           }
         }
         if (changed) {
-          mainBody.editAsText().setText(mainLines.join('\\n'));
+          mainBody.editAsText().setText(mainLines.join('\n'));
           docR.saveAndClose();
           out = { success: true };
         } else {
@@ -2732,38 +2732,84 @@ function doGet(e) {
       var newsId = new Date().getTime();
       var scope = e.parameter.scope === 'admin' ? 'admin' : 'all';
       var priorityP = e.parameter.priority || 'normal';
-      var titleP = (e.parameter.title || '').replace(/\\n/g, ' ').replace(/:/g, '：');
-      var msg = (e.parameter.message || '').replace(/\\n/g, ' ').replace(/:/g, '：');
-      appendLine(newsDocP, newsId + ':' + scope + ':' + priorityP + ':' + titleP + ':' + msg);
+      var titleP = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
+      var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
+      appendLine(newsDocP, [newsId, scope, priorityP, titleP, '', '', msg].join(':'));
       out = { success: true };
     } else if (action === 'getNews') {
       var newsDocG = getOrCreateMasterDoc('ニュース');
-      var newsLines = newsDocG.getBody().getText().split('\\n');
+      var newsLines = newsDocG.getBody().getText().split('\n');
       var newsList = [];
+      var includeDeletedG = e.parameter.includeDeleted === '1';
       for (var ni = 0; ni < newsLines.length; ni++) {
         var nrow = newsLines[ni].trim();
         if (!nrow) continue;
         var nParts = nrow.split(':');
         if (nParts.length < 3) continue;
-        if (nParts.length >= 5) {
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], message: nParts.slice(4).join(':') });
+        var itemG;
+        if (nParts.length >= 7) {
+          // 新形式（編集日時・削除日時つき）
+          itemG = { id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], editedAt: nParts[4], deletedAt: nParts[5], message: nParts.slice(6).join(':') };
+        } else if (nParts.length >= 5) {
+          itemG = { id: nParts[0], scope: nParts[1], priority: nParts[2], title: nParts[3], editedAt: '', deletedAt: '', message: nParts.slice(4).join(':') };
         } else if (nParts.length === 4) {
           // 旧形式（重要度なし・タイトルあり）との互換
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts[2], message: nParts.slice(3).join(':') });
+          itemG = { id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts[2], editedAt: '', deletedAt: '', message: nParts.slice(3).join(':') };
         } else {
           // 最旧形式（タイトルなし）との互換
-          newsList.push({ id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts.slice(2).join(':'), message: '' });
+          itemG = { id: nParts[0], scope: nParts[1], priority: 'normal', title: nParts.slice(2).join(':'), editedAt: '', deletedAt: '', message: '' };
         }
+        if (itemG.deletedAt && !includeDeletedG) continue;
+        newsList.push(itemG);
       }
       out = { success: true, news: newsList };
+    } else if (action === 'editNews' || action === 'deleteNews' || action === 'restoreNews') {
+      var newsDocX = getOrCreateMasterDoc('ニュース');
+      var bodyX = newsDocX.getBody();
+      var linesX = bodyX.getText().split('\n');
+      var idX = (e.parameter.id || '').trim();
+      var foundX = false;
+      for (var xi = 0; xi < linesX.length; xi++) {
+        var rowX = linesX[xi].trim();
+        if (!rowX) continue;
+        var partsX = rowX.split(':');
+        if (partsX[0] !== idX) continue;
+        var isNewFormatX = partsX.length >= 7;
+        var scopeX = partsX[1] || 'all';
+        var priorityX = partsX[2] || 'normal';
+        var titleX = isNewFormatX ? partsX[3] : (partsX.length >= 5 ? partsX[3] : (partsX.length === 4 ? partsX[2] : ''));
+        var editedAtX = isNewFormatX ? partsX[4] : '';
+        var deletedAtX = isNewFormatX ? partsX[5] : '';
+        var msgX = isNewFormatX ? partsX.slice(6).join(':') : (partsX.length >= 5 ? partsX.slice(4).join(':') : '');
+        if (action === 'editNews') {
+          priorityX = e.parameter.priority || priorityX;
+          titleX = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
+          msgX = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
+          editedAtX = String(new Date().getTime());
+        } else if (action === 'deleteNews') {
+          deletedAtX = String(new Date().getTime());
+        } else if (action === 'restoreNews') {
+          deletedAtX = '';
+        }
+        linesX[xi] = [idX, scopeX, priorityX, titleX, editedAtX, deletedAtX, msgX].join(':');
+        foundX = true;
+        break;
+      }
+      if (!foundX) {
+        out = { error: '対象のニュースが見つかりませんでした' };
+      } else {
+        bodyX.editAsText().setText(linesX.join('\n'));
+        newsDocX.saveAndClose();
+        out = { success: true };
+      }
     } else if (action === 'logEvent') {
       var logDoc = getOrCreateMasterDoc('操作ログ');
-      var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\\n/g, ' ');
+      var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\n/g, ' ');
       appendLine(logDoc, logLine);
       out = { success: true };
     } else if (action === 'getLogs') {
       var logDocG = getOrCreateMasterDoc('操作ログ');
-      var logLines = logDocG.getBody().getText().split('\\n').filter(function(l){ return l.trim(); });
+      var logLines = logDocG.getBody().getText().split('\n').filter(function(l){ return l.trim(); });
       var recent = logLines.slice(Math.max(0, logLines.length - 200));
       out = { success: true, logs: recent };
     } else if (action === 'adminFindUsersByQuery') {
@@ -2917,7 +2963,7 @@ function doGet(e) {
             curYearC + '有給残:0',
             '',
             '有給使用履歴'
-          ].join('\\n');
+          ].join('\n');
           newSettingsDocC.getBody().editAsText().setText(initialTextC);
           newSettingsDocC.saveAndClose();
 
@@ -2967,7 +3013,7 @@ function doGet(e) {
         var targetIdI = (e.parameter.targetId || '').trim();
         var newRole = (e.parameter.role || '0').trim();
         var mainBodyI = docI.getTabs()[0].asDocumentTab().getBody();
-        var mainLinesI = mainBodyI.getText().split('\\n');
+        var mainLinesI = mainBodyI.getText().split('\n');
         var changedI = false;
         for (var mi2 = 0; mi2 < mainLinesI.length; mi2++) {
           var mrow2 = mainLinesI[mi2].trim();
@@ -2984,7 +3030,7 @@ function doGet(e) {
         if (!changedI) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
-          mainBodyI.editAsText().setText(mainLinesI.join('\\n'));
+          mainBodyI.editAsText().setText(mainLinesI.join('\n'));
           var userBodyI = getTabBodyByTitle(docI, 'ユーザー情報');
           if (userBodyI) {
             var recordsI = parseUserRecords(userBodyI.getText());
@@ -3034,11 +3080,11 @@ function doGet(e) {
             DriveApp.getRootFolder().removeFile(newFileL);
           }
           var bodyL = settingsDocL.getBody();
-          var linesL = bodyL.getText().split('\\n');
+          var linesL = bodyL.getText().split('\n');
           var foundL = false;
           for (var li = 0; li < linesL.length; li++) {
             if (linesL[li].trim() === '' ) continue;
-            var lm = linesL[li].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
+            var lm = linesL[li].trim().match(/^(\d{4})有給残:([\d.]+)$/);
             if (lm && lm[1] === yearL) {
               linesL[li] = yearL + '有給残:' + newValueL;
               foundL = true;
@@ -3048,9 +3094,66 @@ function doGet(e) {
           if (!foundL) {
             linesL.push(yearL + '有給残:' + newValueL);
           }
-          bodyL.editAsText().setText(linesL.join('\\n'));
+          bodyL.editAsText().setText(linesL.join('\n'));
           settingsDocL.saveAndClose();
           out = { success: true };
+        }
+      }
+    } else if (action === 'adminUpdateGrantDate') {
+      var listFileGD = findMasterListFile();
+      if (!listFileGD) {
+        out = {error: '「管理情報」ドキュメントが見つかりません'};
+      } else {
+        var mainTextGD = DocumentApp.openById(listFileGD.getId()).getTabs()[0].asDocumentTab().getBody().getText();
+        var targetIdGD = (e.parameter.targetId || '').trim();
+        var rowGD = findMainListRow(mainTextGD, targetIdGD);
+        if (!rowGD) {
+          out = { error: '該当する社員IDが見つかりませんでした' };
+        } else {
+          var newDateGD = (e.parameter.newDate || '').trim();
+          var newDaysGD = (e.parameter.newDays || '').trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateGD)) {
+            out = { error: '日付の形式が正しくありません' };
+          } else {
+            var targetFolderGD = DriveApp.getFolderById(rowGD.cols[3].trim());
+            var settingsDocFileGD = getSettingsDocFile(targetFolderGD);
+            var settingsDocGD;
+            if (settingsDocFileGD) {
+              settingsDocGD = DocumentApp.openById(settingsDocFileGD.getId());
+            } else {
+              settingsDocGD = DocumentApp.create(SETTINGS_DOC_NAME);
+              var newFileGD = DriveApp.getFileById(settingsDocGD.getId());
+              targetFolderGD.addFile(newFileGD);
+              DriveApp.getRootFolder().removeFile(newFileGD);
+            }
+            var bodyGD = settingsDocGD.getBody();
+            var linesGD = bodyGD.getText().split('\n');
+            var dateLineGD = '有給次回付与:' + newDateGD.replace(/-/g, '');
+            var foundDateGD = false;
+            for (var gi = 0; gi < linesGD.length; gi++) {
+              if (linesGD[gi].trim().indexOf('有給次回付与:') === 0) {
+                linesGD[gi] = dateLineGD;
+                foundDateGD = true;
+                break;
+              }
+            }
+            if (!foundDateGD) linesGD.push(dateLineGD);
+            if (newDaysGD !== '' && !isNaN(parseFloat(newDaysGD))) {
+              var daysLineGD = '付与数:' + newDaysGD;
+              var foundDaysGD = false;
+              for (var gj = 0; gj < linesGD.length; gj++) {
+                if (linesGD[gj].trim().indexOf('付与数:') === 0) {
+                  linesGD[gj] = daysLineGD;
+                  foundDaysGD = true;
+                  break;
+                }
+              }
+              if (!foundDaysGD) linesGD.push(daysLineGD);
+            }
+            bodyGD.editAsText().setText(linesGD.join('\n'));
+            settingsDocGD.saveAndClose();
+            out = { success: true };
+          }
         }
       }
     } else if (action === 'updateCompanySettings') {
@@ -3060,7 +3163,7 @@ function doGet(e) {
       } else {
         var docCS = DocumentApp.openById(listFileCS.getId());
         var bodyCS = docCS.getTabs()[0].asDocumentTab().getBody();
-        var linesCS = bodyCS.getText().split('\\n');
+        var linesCS = bodyCS.getText().split('\n');
         var updatesCS = {};
         try {
           updatesCS = JSON.parse(e.parameter.updates || '{}');
@@ -3097,7 +3200,7 @@ function doGet(e) {
         var beforeCS = sectionStartCS >= 0 ? linesCS.slice(0, sectionStartCS) : linesCS.slice(0, linesCS.length);
         var afterCS = sectionStartCS >= 0 ? linesCS.slice(sectionEndCS) : [];
         var finalLinesCS = beforeCS.concat(newSectionLinesCS).concat(afterCS);
-        bodyCS.editAsText().setText(finalLinesCS.join('\\n'));
+        bodyCS.editAsText().setText(finalLinesCS.join('\n'));
         docCS.saveAndClose();
         out = { success: true };
       }
@@ -3141,7 +3244,7 @@ function doGet(e) {
         var textM = docM.getTabs()[0].asDocumentTab().getBody().getText();
         var inputIdM = (e.parameter.id || '').trim();
         var inputPwM = (e.parameter.password || '').trim();
-        var rowsM = textM.split('\\n');
+        var rowsM = textM.split('\n');
         var debugRows = [];
         var matchedRow = null;
         for (var mi3 = 0; mi3 < rowsM.length; mi3++) {
@@ -3195,7 +3298,7 @@ function doGet(e) {
         var found = null;
         var companySettings = {};
         var inCompanySection = false;
-        var rows = listText.split('\\n');
+        var rows = listText.split('\n');
         for (var i = 0; i < rows.length; i++) {
           var row = rows[i].trim();
           if (!row) continue;
@@ -3261,7 +3364,7 @@ function checkDeletionSchedule() {
   if (!userBody) return;
   var records = parseUserRecords(userBody.getText());
   var mainBody = doc.getTabs()[0].asDocumentTab().getBody();
-  var mainLines = mainBody.getText().split('\\n');
+  var mainLines = mainBody.getText().split('\n');
   var today = todayDateString();
   var changed = false;
   var mainChanged = false;
@@ -3319,7 +3422,7 @@ function checkDeletionSchedule() {
     userBody.editAsText().setText(serializeUserRecords(remainingRecords));
   }
   if (mainChanged) {
-    mainBody.editAsText().setText(mainLines.join('\\n'));
+    mainBody.editAsText().setText(mainLines.join('\n'));
   }
   if (changed || mainChanged) {
     doc.saveAndClose();
