@@ -573,6 +573,12 @@ function doGet(e) {
           msgX = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
           editedAtX = String(new Date().getTime());
         } else if (action === 'deleteNews') {
+          if (priorityX !== 'critical') {
+            // 重要ニュース以外は復元不要のため完全削除する
+            linesX.splice(xi, 1);
+            foundX = true;
+            break;
+          }
           deletedAtX = String(new Date().getTime());
         } else if (action === 'restoreNews') {
           deletedAtX = '';

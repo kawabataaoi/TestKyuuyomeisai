@@ -369,6 +369,13 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <div class="modal-sheet modal-sheet-80vh">
     <header>
       <h3>お知らせ</h3>
+      <div class="row" style="gap:8px;width:auto;">
+        <span class="news-detail-badge" id="news-detail-badge">未読</span>
+        <button class="icon-btn is-hidden" id="news-detail-edit-icon" title="編集">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="x-btn" id="news-detail-close-x">×</button>
+      </div>
     </header>
     <div class="modal-body news-detail-body" id="news-detail-body">
       <div class="news-detail-meta-row">
@@ -378,21 +385,35 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
           </p>
           <span class="admin-only-tag is-hidden" id="news-detail-admin-tag">管理者専用</span>
         </div>
-        <span class="news-detail-badge" id="news-detail-badge">未読</span>
       </div>
-      <div class="news-detail-title-box" id="news-detail-title"></div>
-      <div class="news-detail-content-box" id="news-detail-message"></div>
-      <div class="news-detail-actions is-hidden" id="news-detail-leave-actions">
-        <button class="btn ghost" id="news-detail-leave-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">不許可</button>
-        <button class="btn" id="news-detail-leave-approve">許可</button>
+      <div id="news-detail-view">
+        <div class="news-detail-title-box" id="news-detail-title"></div>
+        <div class="news-detail-content-box" id="news-detail-message"></div>
+        <div class="news-detail-actions is-hidden" id="news-detail-leave-actions">
+          <button class="btn ghost" id="news-detail-leave-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">不許可</button>
+          <button class="btn" id="news-detail-leave-approve">許可</button>
+        </div>
+        <div class="news-detail-actions" id="news-detail-read-actions">
+          <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
+          <button class="btn" id="news-detail-mark-read">既読にする</button>
+          <button class="btn is-hidden" id="news-detail-delete" style="background:var(--danger);">削除</button>
+        </div>
       </div>
-      <div class="news-detail-actions is-hidden" id="news-detail-admin-actions">
-        <button class="btn ghost" id="news-detail-edit">編集</button>
-        <button class="btn" id="news-detail-delete" style="background:var(--danger);">削除</button>
-      </div>
-      <div class="news-detail-actions" id="news-detail-read-actions">
-        <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
-        <button class="btn" id="news-detail-mark-read">既読にする</button>
+      <div class="is-hidden" id="news-detail-edit-form">
+        <label class="field mt-0">重要度</label>
+        <select id="news-detail-edit-priority">
+          <option value="normal">💧 通常のお知らせ</option>
+          <option value="maintenance">🟡 メンテナンス・システム更新</option>
+          <option value="critical">🔴 給与・有給ルールなど全員に関わる変更</option>
+        </select>
+        <label class="field">タイトル</label>
+        <input type="text" id="news-detail-edit-title">
+        <label class="field">内容</label>
+        <textarea id="news-detail-edit-message" rows="4" class="contact-textarea"></textarea>
+        <div class="news-detail-actions">
+          <button class="btn ghost" id="news-detail-edit-cancel">キャンセル</button>
+          <button class="btn" id="news-detail-edit-save">保存する</button>
+        </div>
       </div>
     </div>
   </div>
@@ -741,19 +762,6 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <label class="field">残業割増率</label>
       <input type="number" id="set-ot-rate" step="0.01" placeholder="1.25">
     </div>
-    <div class="card" id="card-yukyu-rules-display">
-      <div class="row mb-2">
-        <div class="section-title mb-0">有給ルール（全社共通）</div>
-        <button class="btn ghost small collapsible-toggle">開く</button>
-      </div>
-      <div class="collapsible-body is-hidden">
-      <label class="field">次回付与日</label>
-      <input class="opacity-70" type="date" id="set-grant-date" readonly>
-      <label class="field">付与日数</label>
-      <input class="opacity-70" type="number" id="set-grant-days" min="0" step="0.5" placeholder="10" readonly>
-      <div class="helptext">付与日が来ると自動で残日数に加算され、次回付与日は1年後に更新されます。付与された日数は付与日から2年で失効します。これらは管理者が設定した全社共通の値です（変更したい場合は管理者にお問い合わせください）。</div>
-      </div>
-    </div>
     <div class="card" id="card-pay-rules">
       <div class="row mb-2">
         <div class="section-title mb-0">支払い・有給ルール（全社共通・管理者が変更可）</div>
@@ -798,7 +806,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <section class="view" id="view-maintenance">
     <div class="card" id="card-admin-news" style="display:none;">
       <div class="row mb-2">
-        <div class="section-title mb-0" id="news-form-title">ニュースを送信（管理者用）</div>
+        <div class="section-title mb-0">ニュースを送信（管理者用）</div>
         <button class="btn ghost small" id="btn-show-deleted-news">削除済みを確認</button>
       </div>
       <label class="field mt-0">対象</label>
@@ -817,7 +825,6 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <label class="field">内容</label>
       <textarea id="news-message" rows="3" class="contact-textarea" placeholder="例：GASのバージョンを更新しました"></textarea>
       <button class="btn ghost small mt-8 w-full" id="btn-post-news">送信する</button>
-      <button class="link-btn is-hidden" id="btn-cancel-edit-news">編集をキャンセルする</button>
       <p class="muted mt-6" id="post-news-status"></p>
     </div>
     <div class="card" id="card-admin-logs" style="display:none;">
@@ -828,6 +835,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         </button>
       </div>
       <button class="btn ghost small w-full" id="btn-load-logs">最新のログを読み込む</button>
+      <button class="btn ghost small w-full is-hidden" id="btn-close-logs">閉じる</button>
       <pre id="log-list" style="white-space:pre-wrap;font-size:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px;max-height:260px;overflow:auto;"></pre>
     </div>
     <div class="card">
@@ -1235,9 +1243,16 @@ function parseLeaveRequestMessage(message){
 let currentLeaveRequest = null;
 function openNewsDetail(n){
   currentDetailNews = n;
+  document.getElementById('news-detail-view').classList.remove('is-hidden');
+  document.getElementById('news-detail-edit-form').classList.add('is-hidden');
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
+  const alreadyRead = isReadNews(n);
   currentLeaveRequest = parseLeaveRequestMessage(n.message);
+  const keepUnreadBtn = document.getElementById('news-detail-keep-unread');
+  const markReadBtn = document.getElementById('news-detail-mark-read');
+  const deleteBtn = document.getElementById('news-detail-delete');
+  const editIcon = document.getElementById('news-detail-edit-icon');
   if(currentLeaveRequest){
     const req = currentLeaveRequest;
     const typeLabel = req.type === 'delete' ? '有給削除申請' : '有給使用申請';
@@ -1245,14 +1260,20 @@ function openNewsDetail(n){
     document.getElementById('news-detail-message').textContent =
       `申請者：${req.empName}（${req.empId}）\n種別：${typeLabel}\n対象日：${isoToDisplay(req.date)}\n日数：${Math.abs(req.delta)}日\n理由：${req.note || '（未入力）'}`;
     document.getElementById('news-detail-leave-actions').classList.toggle('is-hidden', !currentIsAdmin || alreadyResolved);
-    document.getElementById('news-detail-admin-actions').classList.add('is-hidden');
     document.getElementById('news-detail-read-actions').classList.toggle('is-hidden', currentIsAdmin && !alreadyResolved);
+    editIcon.classList.add('is-hidden');
+    keepUnreadBtn.classList.remove('is-hidden');
+    markReadBtn.classList.toggle('is-hidden', alreadyRead);
+    deleteBtn.classList.add('is-hidden');
   }else{
     const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
     document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
     document.getElementById('news-detail-leave-actions').classList.add('is-hidden');
-    document.getElementById('news-detail-admin-actions').classList.toggle('is-hidden', !currentIsAdmin);
     document.getElementById('news-detail-read-actions').classList.remove('is-hidden');
+    editIcon.classList.toggle('is-hidden', !currentIsAdmin);
+    keepUnreadBtn.classList.remove('is-hidden');
+    markReadBtn.classList.toggle('is-hidden', alreadyRead);
+    deleteBtn.classList.toggle('is-hidden', !(currentIsAdmin && alreadyRead));
   }
   document.getElementById('news-detail-admin-tag').classList.toggle('is-hidden', n.scope !== 'admin');
   const priorityClass = newsPriorityClass(n);
@@ -1262,7 +1283,6 @@ function openNewsDetail(n){
     el.classList.add(priorityClass);
   });
   const badge = document.getElementById('news-detail-badge');
-  const alreadyRead = isReadNews(n);
   badge.textContent = alreadyRead ? '既読' : '未読';
   badge.classList.toggle('is-unread', !alreadyRead);
   document.getElementById('news-detail-modal').classList.remove('hidden');
@@ -1399,6 +1419,10 @@ function resetAdminPanels(){
   if(card) card.classList.remove('searching');
   const logListEl = document.getElementById('log-list');
   if(logListEl) logListEl.textContent = '';
+  const loadLogsBtn = document.getElementById('btn-load-logs');
+  const closeLogsBtn = document.getElementById('btn-close-logs');
+  if(loadLogsBtn) loadLogsBtn.classList.remove('is-hidden');
+  if(closeLogsBtn) closeLogsBtn.classList.add('is-hidden');
   const newUserForm = document.getElementById('new-user-form');
   const newUserToggle = document.getElementById('btn-new-user-toggle');
   if(newUserForm) newUserForm.style.display = 'none';
@@ -1413,7 +1437,6 @@ function applyAdminVisibilitySafe(){
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
   const maintTab = document.getElementById('tab-maintenance');
-  const yukyuDisplayCard = document.getElementById('card-yukyu-rules-display');
   if(driveCard) driveCard.style.display = 'none';
   if(payCard) payCard.style.display = 'none';
   if(newsCard) newsCard.style.display = 'none';
@@ -1421,7 +1444,6 @@ function applyAdminVisibilitySafe(){
   if(sysCard) sysCard.style.display = 'none';
   if(usersCard) usersCard.style.display = 'none';
   if(maintTab) maintTab.style.display = 'none';
-  if(yukyuDisplayCard) yukyuDisplayCard.style.display = 'none';
 }
 
 function resetPersonalDataForLogin(){
@@ -1447,14 +1469,12 @@ function applyAdminVisibility(isAdmin){
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
   const maintTab = document.getElementById('tab-maintenance');
-  const yukyuDisplayCard = document.getElementById('card-yukyu-rules-display');
   if(payCard) payCard.style.display = isAdmin ? 'block' : 'none';
   if(newsCard) newsCard.style.display = isAdmin ? 'block' : 'none';
   if(logsCard) logsCard.style.display = isAdmin ? 'block' : 'none';
   if(sysCard) sysCard.style.display = isAdmin ? 'block' : 'none';
   if(usersCard) usersCard.style.display = isAdmin ? 'block' : 'none';
   if(maintTab) maintTab.style.display = isAdmin ? 'flex' : 'none';
-  if(yukyuDisplayCard) yukyuDisplayCard.style.display = isAdmin ? 'block' : 'none';
   if(isAdmin){ loadInquiryContactForAdmin(); loadRetentionDaysForAdmin(); }
 }
 
@@ -1721,29 +1741,6 @@ document.getElementById('btn-change-password').addEventListener('click', async (
   }
 });
 
-let editingNewsId = null;
-function resetNewsForm(){
-  editingNewsId = null;
-  document.getElementById('news-form-title').textContent = 'ニュースを送信（管理者用）';
-  document.getElementById('btn-post-news').textContent = '送信する';
-  document.getElementById('btn-cancel-edit-news').classList.add('is-hidden');
-  document.getElementById('news-title').value = '';
-  document.getElementById('news-message').value = '';
-}
-function startEditNews(n){
-  editingNewsId = n.id;
-  document.getElementById('news-scope').value = n.scope === 'admin' ? 'admin' : 'all';
-  document.getElementById('news-priority').value = n.priority || 'normal';
-  document.getElementById('news-title').value = n.title || '';
-  document.getElementById('news-message').value = n.message || '';
-  document.getElementById('news-form-title').textContent = 'ニュースを編集（管理者用）';
-  document.getElementById('btn-post-news').textContent = '更新する';
-  document.getElementById('btn-cancel-edit-news').classList.remove('is-hidden');
-  document.getElementById('news-detail-modal').classList.add('hidden');
-  document.querySelector('nav.tabbar button[data-view=maintenance]').click();
-  document.getElementById('card-admin-news').scrollIntoView({behavior:'smooth'});
-}
-document.getElementById('btn-cancel-edit-news').addEventListener('click', resetNewsForm);
 document.getElementById('btn-post-news').addEventListener('click', async ()=>{
   const status = document.getElementById('post-news-status');
   const scope = document.getElementById('news-scope').value;
@@ -1751,31 +1748,65 @@ document.getElementById('btn-post-news').addEventListener('click', async ()=>{
   const title = document.getElementById('news-title').value.trim();
   const message = document.getElementById('news-message').value.trim();
   if(!title || !message){ status.textContent = 'タイトルと内容の両方を入力してください。'; return; }
-  const isEditing = !!editingNewsId;
-  status.textContent = isEditing ? '更新しています…' : '送信しています…';
+  status.textContent = '送信しています…';
   try{
-    const action = isEditing ? 'editNews' : 'postNews';
-    const idParam = isEditing ? `&id=${encodeURIComponent(editingNewsId)}` : '';
-    const url = `${COMPANY_SCRIPT_URL}?action=${action}${idParam}&scope=${encodeURIComponent(scope)}&priority=${encodeURIComponent(priority)}&title=${encodeURIComponent(title)}&message=${encodeURIComponent(message)}`;
+    const url = `${COMPANY_SCRIPT_URL}?action=postNews&scope=${encodeURIComponent(scope)}&priority=${encodeURIComponent(priority)}&title=${encodeURIComponent(title)}&message=${encodeURIComponent(message)}`;
     const data = await jsonpRequest(url);
     if(data.error){ status.textContent = data.error; return; }
-    status.textContent = isEditing ? '更新しました。' : '送信しました。';
-    if(isEditing){
-      const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
-      logEvent('news_edit', `${empLabel} がニュース「${title}」を編集しました（id:${editingNewsId}）`);
-      resetNewsForm();
-    }else{
-      document.getElementById('news-title').value = '';
-      document.getElementById('news-message').value = '';
-    }
+    status.textContent = '送信しました。';
+    document.getElementById('news-title').value = '';
+    document.getElementById('news-message').value = '';
     await fetchAndRenderNews();
     refreshOpenNewsModalList();
   }catch(e){
-    status.textContent = (isEditing ? '更新' : '送信') + 'に失敗しました：' + e.message;
+    status.textContent = '送信に失敗しました：' + e.message;
   }
 });
-document.getElementById('news-detail-edit').addEventListener('click', ()=>{
-  if(currentDetailNews) startEditNews(currentDetailNews);
+document.getElementById('news-detail-close-x').addEventListener('click', ()=>{
+  document.getElementById('news-detail-modal').classList.add('hidden');
+  currentDetailNews = null;
+  currentLeaveRequest = null;
+});
+document.getElementById('news-detail-edit-icon').addEventListener('click', ()=>{
+  if(!currentDetailNews) return;
+  const n = currentDetailNews;
+  document.getElementById('news-detail-edit-priority').value = n.priority || 'normal';
+  document.getElementById('news-detail-edit-title').value = n.title || '';
+  document.getElementById('news-detail-edit-message').value = n.message || '';
+  document.getElementById('news-detail-view').classList.add('is-hidden');
+  document.getElementById('news-detail-edit-form').classList.remove('is-hidden');
+});
+document.getElementById('news-detail-edit-cancel').addEventListener('click', ()=>{
+  document.getElementById('news-detail-edit-form').classList.add('is-hidden');
+  document.getElementById('news-detail-view').classList.remove('is-hidden');
+});
+document.getElementById('news-detail-edit-save').addEventListener('click', async ()=>{
+  if(!currentDetailNews) return;
+  const priority = document.getElementById('news-detail-edit-priority').value;
+  const title = document.getElementById('news-detail-edit-title').value.trim();
+  const message = document.getElementById('news-detail-edit-message').value.trim();
+  if(!title || !message){
+    await showAlertModal('タイトルと内容の両方を入力してください。');
+    return;
+  }
+  const saveBtn = document.getElementById('news-detail-edit-save');
+  setButtonLoading(saveBtn, '保存中…');
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=editNews&id=${encodeURIComponent(currentDetailNews.id)}&priority=${encodeURIComponent(priority)}&title=${encodeURIComponent(title)}&message=${encodeURIComponent(message)}`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('news_edit', `${empLabel} がニュース「${title}」を編集しました（id:${currentDetailNews.id}）`);
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
+    const updated = relevantNews(lastFetchedNews).find(x=>x.id===currentDetailNews.id);
+    document.getElementById('news-detail-edit-form').classList.add('is-hidden');
+    document.getElementById('news-detail-view').classList.remove('is-hidden');
+    if(updated) openNewsDetail(updated);
+  }catch(e){
+    await showAlertModal('保存に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(saveBtn);
+  }
 });
 document.getElementById('news-detail-delete').addEventListener('click', async ()=>{
   if(!currentDetailNews) return;
@@ -1899,14 +1930,25 @@ document.getElementById('btn-show-deleted-news').addEventListener('click', async
 
 document.getElementById('btn-load-logs').addEventListener('click', async ()=>{
   const el = document.getElementById('log-list');
-  el.textContent = '読み込んでいます…';
+  const loadBtn = document.getElementById('btn-load-logs');
+  const closeBtn = document.getElementById('btn-close-logs');
+  setButtonLoading(loadBtn, '読み込んでいます…');
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getLogs`);
     if(data.error){ el.textContent = data.error; return; }
     el.textContent = (data.logs||[]).slice().reverse().join('\n') || 'ログはまだありません。';
+    loadBtn.classList.add('is-hidden');
+    closeBtn.classList.remove('is-hidden');
   }catch(e){
     el.textContent = '読み込みに失敗しました：' + e.message;
+  }finally{
+    clearButtonLoading(loadBtn);
   }
+});
+document.getElementById('btn-close-logs').addEventListener('click', ()=>{
+  document.getElementById('log-list').textContent = '';
+  document.getElementById('btn-close-logs').classList.add('is-hidden');
+  document.getElementById('btn-load-logs').classList.remove('is-hidden');
 });
 document.getElementById('btn-copy-logs').addEventListener('click', async ()=>{
   const btn = document.getElementById('btn-copy-logs');
@@ -2090,7 +2132,7 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   document.getElementById('btn-new-user-toggle').textContent = showing ? '追加' : '閉じる';
 });
 
-['card-admin-system','card-yukyu-rules-display','card-pay-rules'].forEach(cardId=>{
+['card-admin-system','card-pay-rules'].forEach(cardId=>{
   const card = document.getElementById(cardId);
   if(!card) return;
   const toggleBtn = card.querySelector('.collapsible-toggle');
@@ -2994,6 +3036,12 @@ function doGet(e) {
           msgX = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
           editedAtX = String(new Date().getTime());
         } else if (action === 'deleteNews') {
+          if (priorityX !== 'critical') {
+            // 重要ニュース以外は復元不要のため完全削除する
+            linesX.splice(xi, 1);
+            foundX = true;
+            break;
+          }
           deletedAtX = String(new Date().getTime());
         } else if (action === 'restoreNews') {
           deletedAtX = '';
@@ -3788,8 +3836,6 @@ function fillSettingsForm(){
   document.getElementById('set-ot-warn-company').value = settings.otWarnHours!==undefined ? settings.otWarnHours : 45;
   document.getElementById('set-grant-date-company').value = settings.companyGrantDate || '';
   document.getElementById('set-grant-days-company').value = settings.companyGrantDays!==undefined ? settings.companyGrantDays : 20;
-  document.getElementById('set-grant-date').value = effectiveGrantDate();
-  document.getElementById('set-grant-days').value = effectiveGrantDays()!==undefined ? effectiveGrantDays() : '';
   document.getElementById('set-script-url').value = COMPANY_SCRIPT_URL;
   document.getElementById('set-drive-folder').value = settings.driveFolderId || '';
 }
