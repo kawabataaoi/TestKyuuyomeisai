@@ -43,7 +43,7 @@ header.top{padding:24px 20px 16px;background:var(--accent);color:#fff;border-rad
 header.top h1{font-size:20px;font-weight:700;margin:0;letter-spacing:.01em;color:#fff;}
 header.top #header-sub{color:rgba(255,255,255,0.8);}
 header.top p{margin:4px 0 0;font-size:12px;color:var(--text-2);}
-main{flex:1;padding:16px 16px 96px;overflow-y:auto;}
+main{flex:1;padding:0 16px 96px;overflow-y:auto;}
 .view{display:none;}
 .view.active{display:block;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
@@ -93,7 +93,7 @@ button{font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;}
 .empty{text-align:center;padding:26px 10px;color:var(--text-2);font-size:13px;}
 nav.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
 nav.tabbar button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;color:var(--text-3);font-size:10px;border-radius:10px;}
-nav.tabbar button.active{background:var(--accent);color:#fff;}
+nav.tabbar button.active{color:var(--accent);}
 nav.tabbar button svg{width:20px;height:20px;}
 .log-item{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid var(--border);}
 .log-item:last-child{border-bottom:none;}
@@ -107,112 +107,11 @@ nav.tabbar button svg{width:20px;height:20px;}
 .modal-sheet header h3{margin:0;font-size:14px;font-weight:700;}
 .modal-sheet .frame{background:#2b2c2a;}
 .modal-sheet iframe{width:100%;height:60vh;border:none;display:block;}
-.x-btn{background:var(--danger);border:none;font-size:18px;color:#fff;line-height:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.x-btn{background:none;border:none;font-size:20px;color:var(--text-2);line-height:1;padding:4px;}
 .formula{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:10px 12px;border-radius:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;line-height:1.7;white-space:pre-line;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
 .link-btn{background:none;border:none;color:var(--accent);font-size:12px;font-weight:500;padding:10px 0 0;width:100%;text-align:center;}
-
-/* --- utility classes (extracted from inline style attributes) ---
-   !important preserves inline-style-equivalent precedence so these
-   still win when combined with existing multi-class rules (e.g. .btn.small). */
-.mt-0{margin-top:0!important;}
-.mt-6{margin-top:6px!important;}
-.mt-8{margin-top:8px!important;}
-.mt-10{margin-top:10px!important;}
-.mt-12{margin-top:12px!important;}
-.mt-14{margin-top:14px!important;}
-.mb-0{margin-bottom:0!important;}
-.mb-2{margin-bottom:2px!important;}
-.w-full{width:100%!important;}
-.w-auto{width:auto!important;}
-.flex-1{flex:1!important;}
-.fs-10{font-size:10px!important;}
-.fs-11{font-size:11px!important;}
-.fs-12{font-size:12px!important;}
-.fs-13{font-size:13px!important;}
-.pos-relative{position:relative!important;}
-.opacity-70{opacity:0.7!important;}
-.is-hidden{display:none!important;}
-.text-center{text-align:center!important;}
-
-/* --- component classes (extracted from inline style attributes) --- */
-.input-icon-pad{padding-right:44px!important;}
-.modal-body{padding:16px 18px!important;overflow-y:auto!important;}
-.modal-sheet-80vh{max-height:80vh!important;}
-.modal-sheet-92vh{max-height:92vh!important;}
-.divider-16{border-top:1px dashed var(--border)!important;margin:16px 0!important;}
-.divider-20{border-top:1px dashed var(--border)!important;margin:20px 0!important;}
-.divider-mb-14{border-top:1px dashed var(--border)!important;margin-bottom:14px!important;}
-.legend-item{display:flex!important;align-items:center!important;gap:6px!important;font-size:11px!important;}
-.inline-row-8{display:flex!important;align-items:center!important;gap:8px!important;}
-.row-start-between{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;}
-.row-wrap-6{display:flex!important;gap:6px!important;flex-wrap:wrap!important;}
-.row-noshrink-8{display:flex!important;gap:8px!important;flex-shrink:0!important;}
-.tag-row{flex-wrap:wrap!important;gap:8px!important;justify-content:flex-start!important;margin-bottom:4px!important;}
-.readable-text{font-size:14px!important;line-height:1.7!important;white-space:pre-wrap!important;}
-.value-emphasis{font-size:15px!important;font-weight:700!important;}
-.section-heading{font-size:16px!important;font-weight:700!important;margin:6px 0 12px!important;}
-.value-lg{font-size:18px!important;font-weight:700!important;}
-.money-value-lg{font-size:18px!important;font-weight:700!important;color:var(--money)!important;}
-.userid-display-value{font-size:28px!important;font-weight:700!important;color:var(--accent)!important;font-family:'JetBrains Mono',monospace!important;letter-spacing:0.03em!important;}
-.action-row-gap{gap:8px!important;margin-top:8px!important;}
-.center-row-gap-10{justify-content:center!important;gap:10px!important;margin-bottom:6px!important;}
-.action-row-wrap{margin-top:10px!important;gap:12px!important;justify-content:flex-start!important;flex-wrap:wrap!important;}
-.btn-success-full{margin-top:10px!important;width:100%!important;background:#1e8449!important;}
-.btn-danger-full{margin-top:10px!important;width:100%!important;background:#c0392b!important;}
-.modal-footer{padding:16px 18px!important;border-top:1px solid var(--border)!important;}
-.eye-toggle-btn{position:absolute!important;right:6px!important;top:50%!important;transform:translateY(-50%)!important;background:none!important;border:none!important;outline:none!important;color:var(--text-2)!important;padding:6px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;}
-.userid-display-box{text-align:center!important;background:var(--accent-soft)!important;border-radius:10px!important;padding:12px!important;margin-bottom:12px!important;}
-.legend-dot-info{width:10px!important;height:10px!important;border-radius:3px!important;background:#3B6FD6!important;display:inline-block!important;}
-.legend-dot-danger{width:10px!important;height:10px!important;border-radius:3px!important;background:#D64545!important;display:inline-block!important;}
-.legend-dot-money{width:10px!important;height:10px!important;border-radius:3px!important;background:var(--money)!important;display:inline-block!important;}
-.legend-dash{width:14px!important;height:0!important;border-top:2px dashed var(--text)!important;display:inline-block!important;}
-.pdf-frame{width:100%!important;min-height:50vh!important;background:#3a3a38!important;padding:8px!important;box-sizing:border-box!important;}
-.news-icon-badge{background:rgba(255,255,255,0.2)!important;border:none!important;color:#fff!important;width:38px!important;height:38px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-shrink:0!important;margin-top:2px!important;}
-.loading-text{color:#eee!important;text-align:center!important;margin-top:40px!important;}
-
-/* --- news detail modal redesign --- */
-.news-detail-body{background:#DCF5C4;}
-.news-detail-meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px;}
-.news-detail-date-box{background:#fff;border:1px solid #A9DE7A;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text-2);margin:0;}
-.news-detail-badge{background:var(--money);color:#fff;font-weight:700;font-size:12px;padding:6px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
-.news-detail-badge.is-unread{background:var(--danger);}
-.news-detail-title-box{background:#fff;border:1px solid #A9DE7A;border-radius:10px;padding:14px;text-align:center;font-size:16px;font-weight:700;margin-bottom:14px;}
-.news-detail-content-box{background:#fff;border:1px solid #A9DE7A;border-radius:14px;padding:16px;min-height:220px;font-size:14px;line-height:1.7;white-space:pre-wrap;}
-.news-detail-actions{display:flex;gap:10px;margin-top:16px;}
-.news-detail-actions .btn{width:auto;flex:1;padding:12px 10px;font-size:13px;}
-
-/* --- confirm/alert replacement modal --- */
-#confirm-modal{padding:24px;}
-.confirm-card{background:var(--surface);width:100%;max-width:340px;border-radius:16px;padding:22px 20px;box-sizing:border-box;}
-.confirm-message{font-size:14px;line-height:1.6;color:var(--text);margin:0 0 22px;white-space:pre-wrap;}
-.confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
-.confirm-actions .btn{width:auto;padding:10px 20px;}
-
-/* --- news priority background colors --- */
-.news-detail-body.priority-normal{background:#DCEEFB;}
-.news-detail-body.priority-maintenance{background:#FBF3C7;}
-.news-detail-body.priority-critical{background:#FBDCDC;}
-.news-detail-date-box.priority-normal,.news-detail-title-box.priority-normal,.news-detail-content-box.priority-normal{border-color:#9CC7E8;}
-.news-detail-date-box.priority-maintenance,.news-detail-title-box.priority-maintenance,.news-detail-content-box.priority-maintenance{border-color:#E4CE6B;}
-.news-detail-date-box.priority-critical,.news-detail-title-box.priority-critical,.news-detail-content-box.priority-critical{border-color:#E4A3A3;}
-.news-row{border-radius:8px;padding:9px 8px;}
-.news-row.priority-normal{background:#DCEEFB;}
-.news-row.priority-maintenance{background:#FBF3C7;}
-.news-row.priority-critical{background:#FBDCDC;}
-
-/* --- overtime summary --- */
-.ot-prev-note{font-size:10px;font-weight:400;color:var(--text-2);}
-#sum-ot.ot-blue{color:#2F6FD6;}
-#sum-ot.ot-black{color:var(--text);}
-#sum-ot.ot-red{color:var(--danger);}
-
-/* --- small icon button (e.g. copy) --- */
-.icon-btn{background:var(--surface-2);border:none;color:var(--text-2);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
-.icon-btn svg{width:16px;height:16px;}
-.icon-btn:active{background:var(--border);}
-.icon-btn.is-copied{background:var(--accent);color:#fff;}
 </style>
 </head>
 <body>
@@ -220,32 +119,32 @@ nav.tabbar button svg{width:20px;height:20px;}
   <div class="login-card">
     <h1>給与台帳</h1>
     <p class="sub">社員IDとパスワードを入力してください</p>
-    <label class="field mt-0">社員ID</label>
+    <label class="field" style="margin-top:0;">社員ID</label>
     <input type="text" id="login-id" autocomplete="username">
     <label class="field">パスワード</label>
-    <div class="pos-relative">
-      <input class="input-icon-pad" type="password" id="login-password" autocomplete="current-password">
-      <button class="eye-toggle-btn" type="button" id="btn-toggle-password">
+    <div style="position:relative;">
+      <input type="password" id="login-password" autocomplete="current-password" style="padding-right:44px;">
+      <button type="button" id="btn-toggle-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
         <svg id="icon-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg id="icon-eye-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
       </button>
     </div>
-    <button class="btn mt-14" id="btn-employee-login">ログイン</button>
-    <p class="muted mt-10 text-center" id="login-status"></p>
-    <div class="divider-20"></div>
+    <button class="btn" id="btn-employee-login" style="margin-top:14px;">ログイン</button>
+    <p class="muted" id="login-status" style="margin-top:10px;text-align:center;"></p>
+    <div style="border-top:1px dashed var(--border);margin:20px 0;"></div>
     <button class="link-btn" id="btn-forgot-toggle" type="button">ID・パスワードを忘れた場合</button>
-    <button class="link-btn mt-8" id="btn-login-inquiry-open" type="button">お問い合わせ（ログインできない・その他）</button>
+    <button class="link-btn" id="btn-login-inquiry-open" type="button" style="margin-top:8px;">お問い合わせ（ログインできない・その他）</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="login-inquiry-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>お問い合わせ</h3>
       <button class="x-btn" id="login-inquiry-close">×</button>
     </header>
-    <div class="modal-body">
-      <label class="field mt-0">お名前</label>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <label class="field" style="margin-top:0;">お名前</label>
       <input type="text" id="login-inquiry-name" placeholder="お名前">
       <label class="field">種別</label>
       <select id="login-inquiry-category">
@@ -254,70 +153,70 @@ nav.tabbar button svg{width:20px;height:20px;}
       </select>
       <label class="field">内容</label>
       <textarea id="login-inquiry-message" rows="4" class="contact-textarea" placeholder="例：社員ID008ですが、パスワードが合っているのにログインできません"></textarea>
-      <button class="btn mt-10 w-full" id="btn-login-inquiry-send">送信する</button>
-      <p class="muted mt-8" id="login-inquiry-status"></p>
+      <button class="btn" id="btn-login-inquiry-send" style="margin-top:10px;width:100%;">送信する</button>
+      <p class="muted" id="login-inquiry-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="forgot-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>本人確認</h3>
       <button class="x-btn" id="forgot-modal-close">×</button>
     </header>
-    <div class="modal-body">
+    <div style="padding:16px 18px;overflow-y:auto;">
       <p class="muted">苗字・名前・生年月日を入力して本人確認を行います。</p>
-      <label class="field mt-0">苗字</label>
+      <label class="field" style="margin-top:0;">苗字</label>
       <input type="text" id="forgot-sei" placeholder="例：山田">
       <label class="field">名前</label>
       <input type="text" id="forgot-mei" placeholder="例：太郎">
       <label class="field">生年月日</label>
       <input type="date" id="forgot-dob">
-      <button class="btn ghost small mt-10 w-full" id="btn-forgot-find">本人確認する</button>
-      <p class="muted mt-8" id="forgot-status"></p>
+      <button class="btn ghost small" id="btn-forgot-find" style="margin-top:10px;width:100%;">本人確認する</button>
+      <p class="muted" id="forgot-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="forgot-reset-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>パスワードの再発行</h3>
       <button class="x-btn" id="forgot-reset-modal-close">×</button>
     </header>
-    <div class="modal-body">
-      <div class="userid-display-box">
-        <div class="muted fs-11">あなたの社員ID</div>
-        <div class="userid-display-value" id="forgot-userid-display"></div>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <div style="text-align:center;background:var(--accent-soft);border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div class="muted" style="font-size:11px;">あなたの社員ID</div>
+        <div id="forgot-userid-display" style="font-size:28px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;letter-spacing:0.03em;"></div>
       </div>
-      <label class="field mt-0">新しいパスワード</label>
-      <div class="pos-relative">
-        <input class="input-icon-pad" type="password" id="forgot-new-password" autocomplete="new-password">
-        <button class="eye-toggle-btn" type="button" id="btn-toggle-forgot-password">
+      <label class="field" style="margin-top:0;">新しいパスワード</label>
+      <div style="position:relative;">
+        <input type="password" id="forgot-new-password" autocomplete="new-password" style="padding-right:44px;">
+        <button type="button" id="btn-toggle-forgot-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
           <svg id="icon-eye-open-forgot" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           <svg id="icon-eye-closed-forgot" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
         </button>
       </div>
       <p id="forgot-password-rule" style="font-size:11px;color:var(--text-2);margin-top:6px;">パスワードは英字と数字を組み合わせて8文字以上にしてください。</p>
-      <button class="btn mt-10 w-full" id="btn-forgot-reset">パスワードを再発行する</button>
-      <p class="muted mt-8" id="forgot-reset-status"></p>
+      <button class="btn" id="btn-forgot-reset" style="margin-top:10px;width:100%;">パスワードを再発行する</button>
+      <p class="muted" id="forgot-reset-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div id="app">
 
-<header class="top row-start-between">
+<header class="top" style="display:flex;align-items:flex-start;justify-content:space-between;">
   <div>
     <h1>給与台帳</h1>
     <p id="header-sub">明細・有給・残業を一つにまとめて管理</p>
   </div>
-  <div class="row-noshrink-8">
-  <button class="news-icon-badge" id="btn-contact-open" title="お問い合わせ">
+  <div style="display:flex;gap:8px;flex-shrink:0;">
+  <button id="btn-contact-open" title="お問い合わせ" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
   </button>
-  <button class="news-icon-badge" id="btn-employee-logout" title="ログアウト">
+  <button id="btn-employee-logout" title="ログアウト" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
   </button>
   </div>
@@ -325,97 +224,91 @@ nav.tabbar button svg{width:20px;height:20px;}
 
 <div class="news-banner" id="news-banner" style="display:none;">
   <span class="dot"></span>
-  <span class="flex-1" id="news-banner-text">新着情報があります</span>
-  <span class="fs-10">開く ›</span>
+  <span id="news-banner-text" style="flex:1;">新着情報があります</span>
+  <span style="font-size:10px;">開く ›</span>
 </div>
 
 <div class="modal-overlay hidden" id="news-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3 id="news-modal-title">新着のお知らせ</h3>
       <button class="x-btn" id="news-modal-close">×</button>
     </header>
-    <div class="modal-body" id="news-modal-body"></div>
+    <div id="news-modal-body" style="padding:16px 18px;overflow-y:auto;"></div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="news-detail-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>お知らせ</h3>
+      <button class="x-btn" id="news-detail-close">×</button>
     </header>
-    <div class="modal-body news-detail-body" id="news-detail-body">
-      <div class="news-detail-meta-row">
-        <p class="news-detail-date-box" id="news-detail-date"></p>
-        <span class="news-detail-badge" id="news-detail-badge">未読</span>
-      </div>
-      <div class="news-detail-title-box" id="news-detail-title"></div>
-      <div class="news-detail-content-box" id="news-detail-message"></div>
-      <div class="news-detail-actions">
-        <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
-        <button class="btn" id="news-detail-mark-read">既読にする</button>
-      </div>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <p class="muted" id="news-detail-date" style="font-size:11px;margin-top:0;"></p>
+      <div id="news-detail-title" style="font-size:16px;font-weight:700;margin:6px 0 12px;"></div>
+      <div id="news-detail-message" style="font-size:14px;line-height:1.7;white-space:pre-wrap;"></div>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="delete-user-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>ユーザー削除の確認</h3>
       <button class="x-btn" id="delete-user-close">×</button>
     </header>
-    <div class="modal-body">
-      <p class="value-emphasis" id="delete-user-target"></p>
-      <p class="muted fs-12">この操作を行うと、社員一覧に削除予定として記録されます。すぐには消えず、保存期間が過ぎた後に自動で完全削除されます（削除完了の1か月前に管理者へ通知が届きます）。取り消したい場合は、いつでもユーザー管理から「削除を取り消す」ことができます。</p>
-      <label class="field mt-0">削除理由（必須）</label>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <p id="delete-user-target" style="font-size:15px;font-weight:700;"></p>
+      <p class="muted" style="font-size:12px;">この操作を行うと、社員一覧に削除予定として記録されます。すぐには消えず、保存期間が過ぎた後に自動で完全削除されます（削除完了の1か月前に管理者へ通知が届きます）。取り消したい場合は、いつでもユーザー管理から「削除を取り消す」ことができます。</p>
+      <label class="field" style="margin-top:0;">削除理由（必須）</label>
       <textarea id="delete-user-reason" rows="3" class="contact-textarea" placeholder="例：本人の退職のため"></textarea>
-      <button class="btn btn-danger-full" id="btn-confirm-delete-user">本当に削除しますか？</button>
-      <p class="muted mt-8" id="delete-user-status"></p>
+      <button class="btn" id="btn-confirm-delete-user" style="margin-top:10px;width:100%;background:#c0392b;">本当に削除しますか？</button>
+      <p class="muted" id="delete-user-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="restore-user-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>削除の取り消し</h3>
       <button class="x-btn" id="restore-user-close">×</button>
     </header>
-    <div class="modal-body">
-      <p class="value-emphasis" id="restore-user-target"></p>
-      <p class="muted fs-12">この操作を行うと、削除予定が解除され、通常のアカウントに戻ります。</p>
-      <label class="field mt-0">復元理由（必須）</label>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <p id="restore-user-target" style="font-size:15px;font-weight:700;"></p>
+      <p class="muted" style="font-size:12px;">この操作を行うと、削除予定が解除され、通常のアカウントに戻ります。</p>
+      <label class="field" style="margin-top:0;">復元理由（必須）</label>
       <textarea id="restore-user-reason" rows="3" class="contact-textarea" placeholder="例：削除の誤操作のため"></textarea>
-      <button class="btn btn-success-full" id="btn-confirm-restore-user">削除を取り消しますか？</button>
-      <p class="muted mt-8" id="restore-user-status"></p>
+      <button class="btn" id="btn-confirm-restore-user" style="margin-top:10px;width:100%;background:#1e8449;">削除を取り消しますか？</button>
+      <p class="muted" id="restore-user-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="create-user-modal">
-  <div class="modal-sheet modal-sheet-80vh">
+  <div class="modal-sheet" style="max-height:80vh;">
     <header>
       <h3>新規ユーザー作成の確認</h3>
       <button class="x-btn" id="create-user-modal-close">×</button>
     </header>
-    <div class="modal-body">
-      <p class="value-emphasis" id="create-user-modal-target"></p>
-      <p class="muted fs-12">共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</p>
-      <button class="btn mt-10 w-full" id="btn-confirm-create-user">この内容で作成しますか？</button>
-      <p class="muted mt-8" id="create-user-modal-status"></p>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <p id="create-user-modal-target" style="font-size:15px;font-weight:700;"></p>
+      <p class="muted" style="font-size:12px;">共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</p>
+      <button class="btn" id="btn-confirm-create-user" style="margin-top:10px;width:100%;">この内容で作成しますか？</button>
+      <p class="muted" id="create-user-modal-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="contact-modal">
-  <div class="modal-sheet modal-sheet-92vh">
+  <div class="modal-sheet" style="max-height:92vh;">
     <header>
       <h3>お問い合わせ</h3>
       <button class="x-btn" id="contact-close">×</button>
     </header>
-    <div class="modal-body">
-      <label class="field mt-0">お名前</label>
+    <div style="padding:16px 18px;overflow-y:auto;">
+      <label class="field" style="margin-top:0;">お名前</label>
       <input type="text" id="contact-name" placeholder="お名前">
       <label class="field">優先希望度（Sが最優先）</label>
       <select id="contact-priority">
@@ -426,17 +319,17 @@ nav.tabbar button svg{width:20px;height:20px;}
         <option value="D">D</option>
         <option value="E">E（低め）</option>
       </select>
-      <label class="field inline-row-8 mt-14">
-        <input class="w-auto" type="checkbox" id="contact-reply-needed" checked>
+      <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+        <input type="checkbox" id="contact-reply-needed" style="width:auto;" checked>
         返信希望
       </label>
       <div id="contact-reply-email-wrap">
         <label class="field">返信希望のメールアドレス</label>
         <input type="email" id="contact-reply-email" placeholder="you@example.com">
       </div>
-      <div class="divider-16"></div>
-      <label class="field mt-0">お問い合わせ種別</label>
-      <div class="row tag-row" id="contact-category-buttons">
+      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+      <label class="field" style="margin-top:0;">お問い合わせ種別</label>
+      <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:flex-start;margin-bottom:4px;" id="contact-category-buttons">
         <button class="btn small outline contact-cat-btn" data-cat="salary">給与間違い</button>
         <button class="btn small outline contact-cat-btn" data-cat="leave">有給間違い</button>
         <button class="btn small outline contact-cat-btn" data-cat="other">その他問い合わせ</button>
@@ -482,8 +375,8 @@ nav.tabbar button svg{width:20px;height:20px;}
         <textarea id="contact-bug-detail" rows="4" class="contact-textarea" placeholder="例：画面が真っ白になって進めなくなります"></textarea>
       </div>
 
-      <button class="btn mt-14" id="contact-send">送信する</button>
-      <p class="muted mt-8" id="contact-status">送信先：a_aoyama@dsbz.jp（お使いのメールアプリが開きます）</p>
+      <button class="btn" id="contact-send" style="margin-top:14px;">送信する</button>
+      <p class="muted" id="contact-status" style="margin-top:8px;">送信先：a_aoyama@dsbz.jp（お使いのメールアプリが開きます）</p>
     </div>
   </div>
 </div>
@@ -500,18 +393,18 @@ nav.tabbar button svg{width:20px;height:20px;}
         <tr><td class="label">次回賞与</td><td class="val" id="sum-bonus">-</td></tr>
         <tr><td class="label">有給残日数</td><td class="val"><span id="sum-leave">0.0日</span><div id="sum-leave-expire" style="font-size:10px;font-weight:400;color:var(--danger);display:none;"></div></td></tr>
         <tr><td class="label">次回有給付与</td><td class="val" id="sum-grant">-</td></tr>
-        <tr><td class="label" id="sum-ot-label">今月の残業時間</td><td class="val"><span id="sum-ot">未入力</span><div id="sum-ot-prev" class="ot-prev-note"></div></td></tr>
+        <tr><td class="label" id="sum-ot-label">前月残業時間</td><td class="val" id="sum-ot">未入力</td></tr>
       </table>
     </div>
     <div class="card">
-      <div class="row mb-2">
-        <div class="section-title mb-0">直近3か月の明細</div>
-        <div class="row-wrap-6">
+      <div class="row" style="margin-bottom:2px;">
+        <div class="section-title" style="margin-bottom:0;">直近3か月の明細</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn small ghost" id="btn-refresh-drive">Drive更新</button>
           <button class="btn small ghost" id="btn-add-file">＋ PDFを追加</button>
         </div>
       </div>
-      <input class="is-hidden" type="file" id="file-input" accept="application/pdf,image/*" multiple>
+      <input type="file" id="file-input" accept="application/pdf,image/*" multiple style="display:none;">
       <p class="muted" id="meisai-status">まだ明細が登録されていません。「＋ PDFを追加」からスキャン済みのPDFを選んでください。</p>
       <div id="meisai-list"></div>
       <button class="link-btn" id="btn-show-all">すべての明細を表示</button>
@@ -558,11 +451,11 @@ nav.tabbar button svg{width:20px;height:20px;}
       <div class="section-title">今年の累計支給額（<span id="ytd-month-label"></span>月度まで）</div>
       <div class="row">
         <span class="muted">総支給額</span>
-        <span class="mono value-lg" id="ytd-gross">¥0</span>
+        <span class="mono" id="ytd-gross" style="font-size:18px;font-weight:700;">¥0</span>
       </div>
-      <div class="row mt-6">
+      <div class="row" style="margin-top:6px;">
         <span class="muted">総差引支給額</span>
-        <span class="mono money-value-lg" id="ytd-net">¥0</span>
+        <span class="mono" id="ytd-net" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
       </div>
     </div>
     <div class="card">
@@ -572,31 +465,31 @@ nav.tabbar button svg{width:20px;height:20px;}
       <label class="field">対象月の残業時間（時間）</label>
       <input type="number" id="ot-hours" step="0.5" min="0" value="0">
       <div class="formula" id="ot-formula">基本給と所定労働時間を設定タブで入力してください。</div>
-      <div class="row mt-14">
+      <div class="row" style="margin-top:14px;">
         <span class="muted">残業代</span>
-        <span class="mono money-value-lg" id="ot-pay">¥0</span>
+        <span class="mono" id="ot-pay" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
       </div>
       <div class="row">
         <span class="muted">支給見込み合計</span>
-        <span class="mono money-value-lg" id="ot-total">¥0</span>
+        <span class="mono" id="ot-total" style="font-size:18px;font-weight:700;color:var(--money);">¥0</span>
       </div>
-      <p class="muted mt-8" id="ot-payday-label"></p>
-      <button class="btn mt-12" id="ot-save">この月の残業時間を保存</button>
+      <p class="muted" id="ot-payday-label" style="margin-top:8px;"></p>
+      <button class="btn" style="margin-top:12px;" id="ot-save">この月の残業時間を保存</button>
     </div>
     <div class="card">
       <div class="section-title">給与推移（基本給＋残業代）</div>
-      <div class="row center-row-gap-10">
+      <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;">
         <button class="btn small outline" id="chart-prev">‹ 前の月</button>
         <button class="btn small outline" id="chart-next">次の月 ›</button>
       </div>
       <div id="salary-chart"></div>
-      <div class="row action-row-wrap">
-        <span class="muted legend-item"><span class="legend-dot-info"></span>基本給</span>
-        <span class="muted legend-item"><span class="legend-dot-danger"></span>残業代</span>
-        <span class="muted legend-item"><span class="legend-dash"></span>総支給額</span>
-        <span class="muted legend-item"><span class="legend-dot-money"></span>賞与</span>
+      <div class="row" style="margin-top:10px;gap:12px;justify-content:flex-start;flex-wrap:wrap;">
+        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:#3B6FD6;display:inline-block;"></span>基本給</span>
+        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:#D64545;display:inline-block;"></span>残業代</span>
+        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:14px;height:0;border-top:2px dashed var(--text);display:inline-block;"></span>総支給額</span>
+        <span class="muted" style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--money);display:inline-block;"></span>賞与</span>
       </div>
-      <p class="muted mt-8 fs-11">色が薄い月は残業時間からの推定値、濃い月は明細から入力した実績です。同じ月に給与と賞与の両方がある場合は横に並べて表示します。縦の目盛りは5万円ごとです。</p>
+      <p class="muted" style="margin-top:8px;font-size:11px;">色が薄い月は残業時間からの推定値、濃い月は明細から入力した実績です。同じ月に給与と賞与の両方がある場合は横に並べて表示します。縦の目盛りは5万円ごとです。</p>
     </div>
     <div class="card">
       <div class="section-title">明細の実績を手入力</div>
@@ -622,8 +515,8 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" inputmode="numeric" class="man-amount" id="man-total">
       <label class="field">差引支給額（手取り・グラフに使用）</label>
       <input type="text" inputmode="numeric" class="man-amount" id="man-net">
-      <button class="btn mt-12" id="man-save">この内容をグラフに反映</button>
-      <p class="muted mt-8" id="man-status"></p>
+      <button class="btn" id="man-save" style="margin-top:12px;">この内容をグラフに反映</button>
+      <p class="muted" id="man-status" style="margin-top:8px;"></p>
     </div>
   </section>
 
@@ -631,64 +524,59 @@ nav.tabbar button svg{width:20px;height:20px;}
   <section class="view" id="view-settings">
     <div class="card">
       <div class="section-title">アカウント</div>
-      <label class="field mt-0">パスワードの変更</label>
-      <div class="pos-relative">
-        <input class="input-icon-pad" type="password" id="set-new-password" autocomplete="new-password" placeholder="新しいパスワード">
-        <button class="eye-toggle-btn" type="button" id="btn-toggle-set-password">
+      <label class="field" style="margin-top:0;">パスワードの変更</label>
+      <div style="position:relative;">
+        <input type="password" id="set-new-password" autocomplete="new-password" placeholder="新しいパスワード" style="padding-right:44px;">
+        <button type="button" id="btn-toggle-set-password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;outline:none;color:var(--text-2);padding:6px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
           <svg id="icon-eye-open-set" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           <svg id="icon-eye-closed-set" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.7 21.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
         </button>
       </div>
       <div class="helptext">英字と数字を組み合わせて8文字以上にしてください。本人確認は不要です（ログイン済みのため）。</div>
-      <button class="btn ghost small mt-8 w-full" id="btn-change-password">パスワードを変更</button>
-      <p class="muted mt-6" id="change-password-status"></p>
+      <button class="btn ghost small" id="btn-change-password" style="margin-top:8px;width:100%;">パスワードを変更</button>
+      <p class="muted" id="change-password-status" style="margin-top:6px;"></p>
     </div>
     <div class="card">
-      <div class="row mb-2">
-        <div class="section-title mb-0">お知らせ履歴</div>
+      <div class="row" style="margin-bottom:2px;">
+        <div class="section-title" style="margin-bottom:0;">お知らせ履歴</div>
         <button class="link-btn" id="btn-news-show-all" style="display:none;">すべて見る</button>
       </div>
       <div id="news-log-list"><div class="empty">お知らせはまだありません。</div></div>
     </div>
     <div class="card" id="card-admin-system" style="display:none;">
-      <div class="row mb-2">
-        <div class="section-title mb-0">システム設定（管理者用）</div>
-        <button class="btn ghost small collapsible-toggle">開く</button>
-      </div>
-      <div class="collapsible-body is-hidden">
-      <label class="field mt-0">お問い合わせメールの受信先</label>
+      <div class="section-title">システム設定（管理者用）</div>
+      <label class="field" style="margin-top:0;">お問い合わせメールの受信先</label>
       <input type="email" id="admin-inquiry-email" placeholder="a_aoyama@dsbz.jp">
       <label class="field">宛名</label>
       <input type="text" id="admin-inquiry-name" placeholder="青山">
-      <button class="btn ghost small mt-6 w-full" id="btn-save-inquiry-contact">受信先を変更</button>
-      <p class="muted mt-6" id="admin-inquiry-contact-status"></p>
-      <div class="divider-16"></div>
-      <label class="field mt-0">共通フォルダID（社員一覧の場所）</label>
+      <button class="btn ghost small" id="btn-save-inquiry-contact" style="margin-top:6px;width:100%;">受信先を変更</button>
+      <p class="muted" id="admin-inquiry-contact-status" style="margin-top:6px;"></p>
+      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+      <label class="field" style="margin-top:0;">共通フォルダID（社員一覧の場所）</label>
       <input type="text" id="admin-master-folder" placeholder="1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-      <button class="btn ghost small mt-6 w-full" id="btn-save-master-folder">共通フォルダIDを変更</button>
-      <p class="muted mt-6" id="admin-master-folder-status"></p>
-      <div class="divider-16"></div>
-      <label class="field mt-0">Apps ScriptのURL</label>
+      <button class="btn ghost small" id="btn-save-master-folder" style="margin-top:6px;width:100%;">共通フォルダIDを変更</button>
+      <p class="muted" id="admin-master-folder-status" style="margin-top:6px;"></p>
+      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+      <label class="field" style="margin-top:0;">Apps ScriptのURL</label>
       <input type="text" id="admin-script-url" placeholder="https://script.google.com/macros/s/xxxx/exec">
-      <button class="btn ghost small mt-6 w-full" id="btn-save-script-url">GAS URLを変更</button>
-      <p class="muted mt-6" id="admin-script-url-status"></p>
+      <button class="btn ghost small" id="btn-save-script-url" style="margin-top:6px;width:100%;">GAS URLを変更</button>
+      <p class="muted" id="admin-script-url-status" style="margin-top:6px;"></p>
       <div class="helptext">変更すると全員に反映されます（次回起動時に自動で切り替わります）。URLを間違えると全員がログインできなくなるので、変更前に必ずダブルチェックしてください。</div>
-      <div class="divider-16"></div>
-      <label class="field mt-0">退職者データの保存期間（日数）</label>
+      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+      <label class="field" style="margin-top:0;">退職者データの保存期間（日数）</label>
       <input type="number" id="admin-retention-days" placeholder="1826">
-      <button class="btn ghost small mt-6 w-full" id="btn-save-retention-days">保存期間を変更</button>
-      <p class="muted mt-6" id="admin-retention-status"></p>
+      <button class="btn ghost small" id="btn-save-retention-days" style="margin-top:6px;width:100%;">保存期間を変更</button>
+      <p class="muted" id="admin-retention-status" style="margin-top:6px;"></p>
       <div class="helptext">初期値は1826日（5年）です。法令に基づいた正しい期間は、社労士等にご確認の上、必要であれば変更してください。ユーザー削除後、この日数が経過すると自動的に完全削除されます。</div>
-      </div>
     </div>
     <div class="card" id="card-drive-sync" style="display:none;">
       <div class="section-title">Google Drive連携</div>
-      <label class="field mt-0">現在のフォルダID（ログインすると自動設定されます）</label>
+      <label class="field" style="margin-top:0;">現在のフォルダID（ログインすると自動設定されます）</label>
       <input type="text" id="set-drive-folder" placeholder="1kHB__0s1hetSuXEQWVqtyllw7P6BVRdJ">
       <div class="helptext">基本給・給料日・有給日数などの設定は「給与明細設定値」というGoogleドキュメントに自動で保存・同期されます。「設定を保存」を押すたび、また有給を記録するたびに自動で同期されます。</div>
-      <p class="muted mt-6" id="sync-status"></p>
+      <p class="muted" id="sync-status" style="margin-top:6px;"></p>
     </div>
-    <div class="card is-hidden">
+    <div class="card" style="display:none;">
       <textarea id="gas-code" readonly></textarea>
       <button class="btn ghost small" id="btn-copy-gas">コードをコピー</button>
       <input type="text" id="set-script-url" readonly>
@@ -703,24 +591,15 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="number" id="set-ot-rate" step="0.01" placeholder="1.25">
     </div>
     <div class="card" id="card-yukyu-rules-display">
-      <div class="row mb-2">
-        <div class="section-title mb-0">有給ルール（全社共通）</div>
-        <button class="btn ghost small collapsible-toggle">開く</button>
-      </div>
-      <div class="collapsible-body is-hidden">
+      <div class="section-title">有給ルール（全社共通）</div>
       <label class="field">次回付与日</label>
-      <input class="opacity-70" type="date" id="set-grant-date" readonly>
+      <input type="date" id="set-grant-date" readonly style="opacity:0.7;">
       <label class="field">付与日数</label>
-      <input class="opacity-70" type="number" id="set-grant-days" min="0" step="0.5" placeholder="10" readonly>
+      <input type="number" id="set-grant-days" min="0" step="0.5" placeholder="10" readonly style="opacity:0.7;">
       <div class="helptext">付与日が来ると自動で残日数に加算され、次回付与日は1年後に更新されます。付与された日数は付与日から2年で失効します。これらは管理者が設定した全社共通の値です（変更したい場合は管理者にお問い合わせください）。</div>
-      </div>
     </div>
     <div class="card" id="card-pay-rules">
-      <div class="row mb-2">
-        <div class="section-title mb-0">支払い・有給ルール（全社共通・管理者が変更可）</div>
-        <button class="btn ghost small collapsible-toggle">開く</button>
-      </div>
-      <div class="collapsible-body is-hidden">
+      <div class="section-title">支払い・有給ルール（全社共通・管理者が変更可）</div>
       <label class="field">給料日（毎月・日）</label>
       <input type="number" id="set-pay-day" min="1" max="31" placeholder="5">
       <label class="field">締め日（1〜31、0で月末）</label>
@@ -739,19 +618,18 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="date" id="set-grant-date-company">
       <label class="field">付与日数</label>
       <input type="number" id="set-grant-days-company" step="0.5" placeholder="20">
-      <button class="btn ghost small mt-8 w-full" id="btn-save-company-rules">この内容を全員に反映</button>
-      <p class="muted mt-6" id="company-rules-status"></p>
+      <button class="btn ghost small" id="btn-save-company-rules" style="margin-top:8px;width:100%;">この内容を全員に反映</button>
+      <p class="muted" id="company-rules-status" style="margin-top:6px;"></p>
       <div class="helptext">ここで変更すると、次回ログイン時から全員に反映されます（個人の基本給・有給残高などは変わりません）。土日にあたる場合は自動で前営業日に繰り上げます。祝日は判定していないため、祝日と重なる場合はご自身で読み替えてください。</div>
-      <div class="divider-16"></div>
-      <div class="section-title fs-13">特定月の給料日を修正（管理者用・一時的）</div>
-      <p class="muted fs-12">正月休みなどで、その月だけ給料日を繰り上げたい場合に使います。この月以外には影響しません。</p>
+      <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+      <div class="section-title" style="font-size:13px;">特定月の給料日を修正（管理者用・一時的）</div>
+      <p class="muted" style="font-size:12px;">正月休みなどで、その月だけ給料日を繰り上げたい場合に使います。この月以外には影響しません。</p>
       <label class="field">対象年月</label>
       <input type="month" id="payday-override-ym">
       <label class="field">支給日（空欄で通常の給料日に戻す）</label>
       <input type="date" id="payday-override-date">
-      <button class="btn ghost small mt-8 w-full" id="btn-save-payday-override">この月の給料日を保存</button>
-      <p class="muted mt-6" id="payday-override-status"></p>
-      </div>
+      <button class="btn ghost small" id="btn-save-payday-override" style="margin-top:8px;width:100%;">この月の給料日を保存</button>
+      <p class="muted" id="payday-override-status" style="margin-top:6px;"></p>
     </div>
     <button class="btn" id="btn-save-settings">設定を保存</button>
   </section>
@@ -759,7 +637,7 @@ nav.tabbar button svg{width:20px;height:20px;}
   <section class="view" id="view-maintenance">
     <div class="card" id="card-admin-news" style="display:none;">
       <div class="section-title">ニュースを送信（管理者用）</div>
-      <label class="field mt-0">対象</label>
+      <label class="field" style="margin-top:0;">対象</label>
       <select id="news-scope">
         <option value="all">全員に通知</option>
         <option value="admin">管理者のみに通知</option>
@@ -774,26 +652,22 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" id="news-title" placeholder="例：GASバージョンアップのお知らせ">
       <label class="field">内容</label>
       <textarea id="news-message" rows="3" class="contact-textarea" placeholder="例：GASのバージョンを更新しました"></textarea>
-      <button class="btn ghost small mt-8 w-full" id="btn-post-news">送信する</button>
-      <p class="muted mt-6" id="post-news-status"></p>
+      <button class="btn ghost small" id="btn-post-news" style="margin-top:8px;width:100%;">送信する</button>
+      <p class="muted" id="post-news-status" style="margin-top:6px;"></p>
     </div>
     <div class="card" id="card-admin-logs" style="display:none;">
-      <div class="row mb-2">
-        <div class="section-title mb-0">操作ログ（管理者用）</div>
-        <button class="icon-btn" id="btn-copy-logs" title="クリップボードにコピー">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-      </div>
-      <button class="btn ghost small w-full" id="btn-load-logs">最新のログを読み込む</button>
+      <div class="section-title">操作ログ（管理者用）</div>
+      <button class="btn ghost small" id="btn-load-logs" style="width:100%;">最新のログを読み込む</button>
+      <button class="btn ghost small" id="btn-copy-logs" style="width:100%;margin-top:6px;">クリップボードにコピー</button>
       <pre id="log-list" style="white-space:pre-wrap;font-size:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px;max-height:260px;overflow:auto;"></pre>
     </div>
     <div class="card">
-      <div class="row mb-2">
-        <div class="section-title mb-0">新規ユーザー追加（管理者用）</div>
+      <div class="row" style="margin-bottom:2px;">
+        <div class="section-title" style="margin-bottom:0;">新規ユーザー追加（管理者用）</div>
         <button class="btn ghost small" id="btn-new-user-toggle">追加</button>
       </div>
       <div id="new-user-form" style="display:none;margin-top:10px;">
-        <label class="field mt-0">社員ID</label>
+        <label class="field" style="margin-top:0;">社員ID</label>
         <input type="text" id="new-user-id" placeholder="例：010">
         <label class="field">パスワード</label>
         <input type="text" id="new-user-password" placeholder="英字と数字を組み合わせて8文字以上">
@@ -814,30 +688,30 @@ nav.tabbar button svg{width:20px;height:20px;}
         <input type="date" id="new-user-dob">
         <label class="field">基本給（後から変更できます）</label>
         <input type="number" id="new-user-base-salary" placeholder="0">
-        <label class="field inline-row-8">
-          <input class="w-auto" type="checkbox" id="new-user-executive">
+        <label class="field" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="new-user-executive" style="width:auto;">
           役員（有給付与の対象外）
         </label>
-        <button class="btn mt-8 w-full" id="btn-create-user">新規ユーザーを作成</button>
-        <p class="muted mt-6" id="create-user-status"></p>
+        <button class="btn" id="btn-create-user" style="margin-top:8px;width:100%;">新規ユーザーを作成</button>
+        <p class="muted" id="create-user-status" style="margin-top:6px;"></p>
         <div class="helptext">作成すると、「管理情報」ドキュメントへの登録に加えて、共通フォルダ内に本人名のフォルダと、初期状態の「給与明細設定値」ドキュメントが自動で作成されます。</div>
       </div>
     </div>
     <div class="card" id="card-admin-users">
-      <div class="row mb-2">
-        <div class="section-title mb-0">ユーザー管理（管理者用）</div>
+      <div class="row" style="margin-bottom:2px;">
+        <div class="section-title" style="margin-bottom:0;">ユーザー管理（管理者用）</div>
         <button class="btn ghost small" id="btn-admin-reset">リセット</button>
       </div>
-      <label class="field mt-0">社員ID または 苗字（ひらがな）</label>
+      <label class="field" style="margin-top:0;">社員ID または 苗字（ひらがな）</label>
       <input type="text" id="admin-search-id" placeholder="例：009 または とみなが">
-      <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
-      <p class="muted mt-6" id="admin-search-status"></p>
+      <button class="btn ghost small" id="btn-admin-search" style="margin-top:6px;width:100%;">検索</button>
+      <p class="muted" id="admin-search-status" style="margin-top:6px;"></p>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
       <div id="admin-user-panel" style="display:none;margin-top:14px;">
-        <div class="divider-mb-14"></div>
+        <div style="border-top:1px dashed var(--border);margin-bottom:14px;"></div>
         <div id="admin-user-name-display" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
         <div id="admin-user-deleted-banner" style="display:none;background:#FDECEA;border:1px solid #F5B7B1;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#a93226;"></div>
-        <label class="field mt-0">苗字</label>
+        <label class="field" style="margin-top:0;">苗字</label>
         <input type="text" id="admin-user-sei">
         <label class="field">名前</label>
         <input type="text" id="admin-user-mei">
@@ -848,25 +722,25 @@ nav.tabbar button svg{width:20px;height:20px;}
           <option value="0">一般社員</option>
           <option value="1">管理者</option>
         </select>
-        <label class="field inline-row-8">
-          <input class="w-auto" type="checkbox" id="admin-user-executive">
+        <label class="field" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="admin-user-executive" style="width:auto;">
           役員（有給付与の対象外）
         </label>
-        <button class="btn ghost small mt-8 w-full" id="btn-admin-save-userinfo">ユーザー情報を保存</button>
-        <p class="muted mt-6" id="admin-userinfo-status"></p>
-        <div class="divider-16"></div>
-        <div class="section-title fs-13">有給残日数の修正</div>
+        <button class="btn ghost small" id="btn-admin-save-userinfo" style="margin-top:8px;width:100%;">ユーザー情報を保存</button>
+        <p class="muted" id="admin-userinfo-status" style="margin-top:6px;"></p>
+        <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
+        <div class="section-title" style="font-size:13px;">有給残日数の修正</div>
         <div id="admin-leave-years"></div>
-        <div class="row action-row-gap">
-          <input class="flex-1" type="number" id="admin-leave-new-year" placeholder="年（例：2026）">
-          <input class="flex-1" type="number" id="admin-leave-new-value" placeholder="日数">
+        <div class="row" style="gap:8px;margin-top:8px;">
+          <input type="number" id="admin-leave-new-year" placeholder="年（例：2026）" style="flex:1;">
+          <input type="number" id="admin-leave-new-value" placeholder="日数" style="flex:1;">
         </div>
-        <button class="btn ghost small mt-6 w-full" id="btn-admin-add-leave-year">この年を追加・保存</button>
-        <p class="muted mt-6" id="admin-leave-status"></p>
-        <div class="divider-16"></div>
+        <button class="btn ghost small" id="btn-admin-add-leave-year" style="margin-top:6px;width:100%;">この年を追加・保存</button>
+        <p class="muted" id="admin-leave-status" style="margin-top:6px;"></p>
+        <div style="border-top:1px dashed var(--border);margin:16px 0;"></div>
         <button class="btn ghost small" id="btn-admin-delete-user" style="width:100%;color:#c0392b;">このユーザーを削除する</button>
         <button class="btn ghost small" id="btn-admin-restore-user" style="width:100%;display:none;">削除を取り消す</button>
-        <p class="muted mt-6" id="admin-delete-action-status"></p>
+        <p class="muted" id="admin-delete-action-status" style="margin-top:6px;"></p>
       </div>
     </div>
   </section>
@@ -896,16 +770,6 @@ nav.tabbar button svg{width:20px;height:20px;}
   </button>
 </nav>
 
-<div class="modal-overlay hidden" id="confirm-modal">
-  <div class="confirm-card">
-    <p class="confirm-message" id="confirm-modal-message"></p>
-    <div class="confirm-actions">
-      <button class="btn ghost" id="confirm-modal-cancel">キャンセル</button>
-      <button class="btn" id="confirm-modal-ok">OK</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-sheet">
     <header>
@@ -913,11 +777,11 @@ nav.tabbar button svg{width:20px;height:20px;}
       <button class="x-btn" id="modal-close">×</button>
     </header>
     <div class="frame">
-      <div class="pdf-frame" id="modal-viewer">
-        <p class="loading-text" id="viewer-loading">読み込み中…</p>
+      <div id="modal-viewer" style="width:100%;min-height:50vh;background:#3a3a38;padding:8px;box-sizing:border-box;">
+        <p style="color:#eee;text-align:center;margin-top:40px;" id="viewer-loading">読み込み中…</p>
       </div>
     </div>
-    <div class="modal-footer">
+    <div style="padding:16px 18px;border-top:1px solid var(--border);">
       <div class="section-title">この明細の実績を入力</div>
       <label class="field">種別</label>
       <select id="modal-man-type">
@@ -941,8 +805,8 @@ nav.tabbar button svg{width:20px;height:20px;}
       <input type="text" inputmode="numeric" class="man-amount" id="modal-man-total">
       <label class="field">差引支給額（手取り・グラフに使用）</label>
       <input type="text" inputmode="numeric" class="man-amount" id="modal-man-net">
-      <button class="btn mt-12" id="modal-man-save">この内容をグラフに反映</button>
-      <p class="muted mt-8" id="modal-man-status"></p>
+      <button class="btn" id="modal-man-save" style="margin-top:12px;">この内容をグラフに反映</button>
+      <p class="muted" id="modal-man-status" style="margin-top:8px;"></p>
     </div>
   </div>
 </div>
@@ -950,45 +814,6 @@ nav.tabbar button svg{width:20px;height:20px;}
 </div>
 
 <script>
-function showConfirmModal(message){
-  return new Promise(resolve=>{
-    const overlay = document.getElementById('confirm-modal');
-    const msgEl = document.getElementById('confirm-modal-message');
-    const okBtn = document.getElementById('confirm-modal-ok');
-    const cancelBtn = document.getElementById('confirm-modal-cancel');
-    msgEl.textContent = message;
-    cancelBtn.classList.remove('is-hidden');
-    overlay.classList.remove('hidden');
-    function cleanup(result){
-      overlay.classList.add('hidden');
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
-      resolve(result);
-    }
-    function onOk(){ cleanup(true); }
-    function onCancel(){ cleanup(false); }
-    okBtn.addEventListener('click', onOk);
-    cancelBtn.addEventListener('click', onCancel);
-  });
-}
-function showAlertModal(message){
-  return new Promise(resolve=>{
-    const overlay = document.getElementById('confirm-modal');
-    const msgEl = document.getElementById('confirm-modal-message');
-    const okBtn = document.getElementById('confirm-modal-ok');
-    const cancelBtn = document.getElementById('confirm-modal-cancel');
-    msgEl.textContent = message;
-    cancelBtn.classList.add('is-hidden');
-    overlay.classList.remove('hidden');
-    function cleanup(){
-      overlay.classList.add('hidden');
-      okBtn.removeEventListener('click', onOk);
-      resolve();
-    }
-    function onOk(){ cleanup(); }
-    okBtn.addEventListener('click', onOk);
-  });
-}
 function loadJSON(key, fallback){
   try{
     const raw = localStorage.getItem(key);
@@ -1066,44 +891,23 @@ function markNewsRead(ids){
   saveJSON(readNewsKey(), Array.from(new Set([...readIds, ...ids])));
   if(settings.scriptUrl && settings.driveFolderId) pushSettingsToDrive();
 }
-function markNewsUnread(ids){
-  const readIds = loadJSON(readNewsKey(), []);
-  const idSet = new Set(ids);
-  saveJSON(readNewsKey(), readIds.filter(id=>!idSet.has(id)));
-  if(settings.scriptUrl && settings.driveFolderId) pushSettingsToDrive();
-}
-let currentDetailNews = null;
 function openNewsDetail(n){
-  currentDetailNews = n;
   document.getElementById('news-detail-date').textContent = formatNewsTime(n.id);
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
   document.getElementById('news-detail-message').textContent = n.message || '';
-  const priorityClass = newsPriorityClass(n);
-  ['news-detail-body','news-detail-date','news-detail-title','news-detail-message'].forEach(id=>{
-    const el = document.getElementById(id);
-    el.classList.remove('priority-normal','priority-maintenance','priority-critical');
-    el.classList.add(priorityClass);
-  });
-  const badge = document.getElementById('news-detail-badge');
-  const alreadyRead = isReadNews(n);
-  badge.textContent = alreadyRead ? '既読' : '未読';
-  badge.classList.toggle('is-unread', !alreadyRead);
   document.getElementById('news-detail-modal').classList.remove('hidden');
+  markNewsRead([n.id]);
+  renderNewsBanner(lastFetchedNews);
 }
 function newsPriorityIcon(n){
   if(n.priority === 'critical') return '🔴';
   if(n.priority === 'maintenance') return '🟡';
   return '💧';
 }
-function newsPriorityClass(n){
-  if(n.priority === 'critical') return 'priority-critical';
-  if(n.priority === 'maintenance') return 'priority-maintenance';
-  return 'priority-normal';
-}
 function newsListRowHtml(n){
   const readTag = isReadNews(n) ? '<span class="tag ok" style="font-size:10px;flex-shrink:0;">閲覧済み</span>' : '<span class="tag warn" style="font-size:10px;flex-shrink:0;">未読</span>';
   const shortDate = formatNewsTime(n.id).split(' ')[0];
-  return `<div class="log-item news-row ${newsPriorityClass(n)}" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+  return `<div class="log-item news-row" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
     <span style="flex-shrink:0;">${newsPriorityIcon(n)}</span>
     <span class="mono" style="font-size:11px;color:var(--text-3);flex-shrink:0;">${shortDate}</span>
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.title || '（無題）'}</span>
@@ -1150,16 +954,7 @@ async function fetchAndRenderNews(){
   }catch(e){ /* 取得失敗は無視 */ }
 }
 
-let newsModalOnlyUnread = null;
-function renderNewsModalList(onlyUnread){
-  const relevant = relevantNews(lastFetchedNews).slice().reverse();
-  const list = onlyUnread ? relevant.filter(n=>!isReadNews(n)) : relevant;
-  const bodyEl = document.getElementById('news-modal-body');
-  bodyEl.innerHTML = list.length ? list.map(newsListRowHtml).join('') : '<div class="empty">該当するお知らせはありません。</div>';
-  wireNewsRowClicks(bodyEl, list);
-}
 async function refreshNewsThenShowModal(onlyUnread){
-  newsModalOnlyUnread = onlyUnread;
   document.getElementById('news-modal-title').textContent = onlyUnread ? '新着のお知らせ' : 'お知らせ履歴（すべて）';
   document.getElementById('news-modal-body').innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><p class="muted" style="margin-top:10px;">読み込んでいます…</p></div>';
   document.getElementById('news-modal').classList.remove('hidden');
@@ -1167,13 +962,12 @@ async function refreshNewsThenShowModal(onlyUnread){
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getNews`);
     if(data && data.news) lastFetchedNews = data.news;
   }catch(e){}
-  renderNewsModalList(onlyUnread);
+  const relevant = relevantNews(lastFetchedNews).slice().reverse();
+  const list = onlyUnread ? relevant.filter(n=>!isReadNews(n)) : relevant;
+  const bodyEl = document.getElementById('news-modal-body');
+  bodyEl.innerHTML = list.length ? list.map(newsListRowHtml).join('') : '<div class="empty">該当するお知らせはありません。</div>';
+  wireNewsRowClicks(bodyEl, list);
   renderNewsBanner(lastFetchedNews);
-}
-function refreshNewsViewsAfterReadChange(){
-  renderNewsBanner(lastFetchedNews);
-  const modalOpen = !document.getElementById('news-modal').classList.contains('hidden');
-  if(modalOpen && newsModalOnlyUnread !== null) renderNewsModalList(newsModalOnlyUnread);
 }
 
 document.getElementById('news-banner').addEventListener('click', ()=>refreshNewsThenShowModal(true));
@@ -1181,17 +975,8 @@ document.getElementById('btn-news-show-all').addEventListener('click', ()=>refre
 document.getElementById('news-modal-close').addEventListener('click', ()=>{
   document.getElementById('news-modal').classList.add('hidden');
 });
-document.getElementById('news-detail-keep-unread').addEventListener('click', ()=>{
-  if(currentDetailNews) markNewsUnread([currentDetailNews.id]);
+document.getElementById('news-detail-close').addEventListener('click', ()=>{
   document.getElementById('news-detail-modal').classList.add('hidden');
-  refreshNewsViewsAfterReadChange();
-  currentDetailNews = null;
-});
-document.getElementById('news-detail-mark-read').addEventListener('click', ()=>{
-  if(currentDetailNews) markNewsRead([currentDetailNews.id]);
-  document.getElementById('news-detail-modal').classList.add('hidden');
-  refreshNewsViewsAfterReadChange();
-  currentDetailNews = null;
 });
 
 
@@ -1307,8 +1092,9 @@ async function doEmployeeLogin(id, password){
     renderSalaryChart();
     renderMeisaiLists();
     refreshDriveDocs();
+    pullSettingsFromDrive();
     logEvent('login', 'ログインしました');
-    pullSettingsFromDrive().then(()=>fetchAndRenderNews());
+    fetchAndRenderNews();
   }catch(e){
     status.textContent = 'ログインに失敗しました：' + e.message;
   }
@@ -1502,8 +1288,8 @@ document.getElementById('btn-forgot-reset').addEventListener('click', async ()=>
   }
 });
 
-document.getElementById('btn-employee-logout').addEventListener('click', async ()=>{
-  if(!(await showConfirmModal('ログアウトしますか？'))) return;
+document.getElementById('btn-employee-logout').addEventListener('click', ()=>{
+  if(!confirm('ログアウトしますか？')) return;
   settings.driveFolderId = '';
   currentEmployeeId = null;
   currentEmployeeName = null;
@@ -1574,21 +1360,6 @@ document.getElementById('btn-load-logs').addEventListener('click', async ()=>{
   }catch(e){
     el.textContent = '読み込みに失敗しました：' + e.message;
   }
-});
-document.getElementById('btn-copy-logs').addEventListener('click', async ()=>{
-  const btn = document.getElementById('btn-copy-logs');
-  const logText = document.getElementById('log-list').textContent;
-  try{
-    await navigator.clipboard.writeText(logText);
-  }catch(e){
-    const range = document.createRange();
-    range.selectNodeContents(document.getElementById('log-list'));
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-  btn.classList.add('is-copied');
-  setTimeout(()=>btn.classList.remove('is-copied'), 1200);
 });
 
 let adminFoundUserId = null;
@@ -1755,18 +1526,6 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   const showing = el.style.display !== 'none';
   el.style.display = showing ? 'none' : 'block';
   document.getElementById('btn-new-user-toggle').textContent = showing ? '追加' : '閉じる';
-});
-
-['card-admin-system','card-yukyu-rules-display','card-pay-rules'].forEach(cardId=>{
-  const card = document.getElementById(cardId);
-  if(!card) return;
-  const toggleBtn = card.querySelector('.collapsible-toggle');
-  const body = card.querySelector('.collapsible-body');
-  if(!toggleBtn || !body) return;
-  toggleBtn.addEventListener('click', ()=>{
-    const nowHidden = body.classList.toggle('is-hidden');
-    toggleBtn.textContent = nowHidden ? '開く' : '閉じる';
-  });
 });
 
 document.getElementById('btn-create-user').addEventListener('click', async ()=>{
@@ -2002,7 +1761,7 @@ document.getElementById('btn-save-master-folder').addEventListener('click', asyn
   const status = document.getElementById('admin-master-folder-status');
   const newId = document.getElementById('admin-master-folder').value.trim();
   if(!newId){ status.textContent = 'フォルダIDを入力してください。'; return; }
-  if(!(await showConfirmModal('共通フォルダIDを変更しますか？間違えると全員がログインできなくなります。'))) return;
+  if(!confirm('共通フォルダIDを変更しますか？間違えると全員がログインできなくなります。')) return;
   status.textContent = '変更しています…';
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=updateMasterFolderId&newFolderId=${encodeURIComponent(newId)}`);
@@ -2018,7 +1777,7 @@ document.getElementById('btn-save-script-url').addEventListener('click', async (
   const status = document.getElementById('admin-script-url-status');
   const newUrl = document.getElementById('admin-script-url').value.trim();
   if(!newUrl){ status.textContent = 'URLを入力してください。'; return; }
-  if(!(await showConfirmModal('GASのURLを変更しますか？間違えると全員がアプリを使えなくなります。'))) return;
+  if(!confirm('GASのURLを変更しますか？間違えると全員がアプリを使えなくなります。')) return;
   status.textContent = '変更しています…';
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=updateScriptUrl&newUrl=${encodeURIComponent(newUrl)}`);
@@ -3337,7 +3096,7 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
       saveJSON('documents', documents);
       renderMeisaiLists();
     }catch(err){
-      await showAlertModal(`${file.name} の保存に失敗しました：${err.message}`);
+      alert(`${file.name} の保存に失敗しました：${err.message}`);
       continue;
     }
     try{
@@ -3364,7 +3123,7 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
 });
 
 async function deleteDocument(id){
-  if(!(await showConfirmModal('この明細を削除しますか？'))) return;
+  if(!confirm('この明細を削除しますか？')) return;
   documents = documents.filter(d=>d.id!==id);
   saveJSON('documents', documents);
   try{ await idbDelete(id); }catch(err){}
@@ -3535,18 +3294,18 @@ document.getElementById('contact-send').addEventListener('click', async ()=>{
   const replyNeeded = document.getElementById('contact-reply-needed').checked;
   const replyEmail = document.getElementById('contact-reply-email').value.trim();
   if(replyNeeded && !replyEmail){
-    await showAlertModal('返信希望の場合は、返信希望のメールアドレスを入力してください。');
+    alert('返信希望の場合は、返信希望のメールアドレスを入力してください。');
     document.getElementById('contact-reply-email').focus();
     return;
   }
   if(replyNeeded && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyEmail)){
-    await showAlertModal('メールアドレスの形式が正しくないようです。');
+    alert('メールアドレスの形式が正しくないようです。');
     document.getElementById('contact-reply-email').focus();
     return;
   }
   const items = buildContactItems();
   if(!items.valid){
-    await showAlertModal('必要な項目をすべて入力してください。');
+    alert('必要な項目をすべて入力してください。');
     return;
   }
   if(!settings.scriptUrl){
@@ -4026,7 +3785,7 @@ function setupManualEntryForm(prefix){
   });
   el('save').addEventListener('click', async ()=>{
     const ym = el('month').value;
-    if(!ym){ await showAlertModal('対象年月を入力してください。'); return; }
+    if(!ym){ alert('対象年月を入力してください。'); return; }
     const paykeyEl = document.getElementById(prefix+'paykey');
     const key = (paykeyEl && paykeyEl.value) ? paykeyEl.value : ym;
     const type = el('type').value;
@@ -4186,7 +3945,7 @@ function renderLeave(){
 }
 
 async function deleteLeaveEntry(item){
-  if(!(await showConfirmModal(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）を削除しますか？`))) return;
+  if(!confirm(`「${item.note||(item.delta>0?'付与':'使用')}」（${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日）を削除しますか？`)) return;
   const idx = leave.log.indexOf(item);
   if(idx>-1) leave.log.splice(idx,1);
   if(item.delta < 0 && item.consumedFrom && item.consumedFrom.length){
@@ -4203,7 +3962,7 @@ async function deleteLeaveEntry(item){
   renderSummary();
   if(settings.scriptUrl && settings.driveFolderId){
     const ok = await pushSettingsToDrive();
-    if(!ok) await showAlertModal('Driveへの反映に失敗しました。設定タブの同期状況を確認してください（この端末では削除済みです）。');
+    if(!ok) alert('Driveへの反映に失敗しました。設定タブの同期状況を確認してください（この端末では削除済みです）。');
   }
   const detail = `${isoToDisplay(item.date)}・${item.delta>0?'+':''}${item.delta}日・${item.note||''}`;
   logEvent('leave_delete', detail);
@@ -4215,7 +3974,7 @@ async function deleteLeaveEntry(item){
 
 async function applyLeave(sign){
   if(sign > 0 && !currentIsAdmin){
-    await showAlertModal('有給の付与は管理者のみ行えます。');
+    alert('有給の付与は管理者のみ行えます。');
     return;
   }
   const days = parseFloat(document.getElementById('yukyu-input-days').value);
@@ -4241,7 +4000,7 @@ async function applyLeave(sign){
   document.getElementById('yukyu-input-date').value = isoDate(new Date());
   if(settings.scriptUrl && settings.driveFolderId){
     const ok = await pushSettingsToDrive();
-    if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
+    if(!ok) alert('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
   }
   logEvent(sign>0?'leave_grant':'leave_use', `${days}日 ${note}`);
 }
@@ -4559,25 +4318,11 @@ function renderSummary(){
     expireEl.style.display = 'none';
   }
   document.getElementById('sum-grant').textContent = settings.grantDate ? `${isoToDisplay(settings.grantDate)}（${settings.grantDays||0}日）` : '未設定';
-  const cm = currentMonthStr();
   const pm = previousMonthStr();
-  const curHrs = otHoursByMonth[cm];
-  const prevHrs = otHoursByMonth[pm];
-  const otEl = document.getElementById('sum-ot');
-  const otPrevEl = document.getElementById('sum-ot-prev');
-  otEl.textContent = (curHrs===undefined) ? '未入力' : `${curHrs}時間`;
-  otPrevEl.textContent = (prevHrs===undefined) ? '' : `（先月${prevHrs}時間）`;
-  const warnHours = settings.otWarnHours!==undefined ? settings.otWarnHours : 45;
-  otEl.classList.remove('ot-blue','ot-black','ot-red');
-  if(curHrs !== undefined){
-    if(curHrs > warnHours){
-      otEl.classList.add('ot-red');
-    }else if(prevHrs !== undefined && curHrs > prevHrs){
-      otEl.classList.add('ot-black');
-    }else{
-      otEl.classList.add('ot-blue');
-    }
-  }
+  const [py, pmo] = pm.split('-').map(Number);
+  document.getElementById('sum-ot-label').textContent = `${pmo}月度残業時間`;
+  const hrs = otHoursByMonth[pm];
+  document.getElementById('sum-ot').textContent = (hrs===undefined) ? '未入力' : `${hrs}時間`;
 }
 
 (async ()=>{
