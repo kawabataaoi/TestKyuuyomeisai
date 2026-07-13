@@ -573,17 +573,12 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         </div>
         <span class="tag ok" id="yukyu-updated">未更新</span>
       </div>
-      <div class="plusminus">
-        <button class="btn outline small" id="yukyu-minus">− 使用</button>
-        <button class="btn small" id="yukyu-plus">＋ 付与</button>
-      </div>
-      <label class="field">日数</label>
-      <input type="number" id="yukyu-input-days" step="0.5" min="0" value="1">
-      <label class="field">日付</label>
+      <label class="field">使用日</label>
       <input type="date" id="yukyu-input-date">
       <label class="field" id="yukyu-note-label">理由（任意）</label>
       <input type="text" id="yukyu-input-note" placeholder="私用のため">
-      <button class="link-btn" id="btn-open-leave-range">複数日をまとめて申請・付与する</button>
+      <button class="btn mt-14 w-full" id="yukyu-minus">この日を使用申請する</button>
+      <button class="btn outline mt-8 w-full" id="btn-open-leave-range">複数日をまとめて申請する</button>
     </div>
     <div class="card">
       <div class="section-title">履歴</div>
@@ -977,21 +972,17 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
 <div class="modal-overlay hidden" id="leave-range-modal">
   <div class="modal-sheet">
     <header>
-      <h3>複数日をまとめて申請・付与</h3>
+      <h3>複数日をまとめて使用申請</h3>
       <button class="x-btn" id="leave-range-close">×</button>
     </header>
     <div class="modal-body">
-      <label class="field mt-0">区分</label>
-      <div class="row tag-row">
-        <button class="btn small outline contact-cat-btn active" id="leave-range-mode-use" data-mode="use">使用（申請）</button>
-        <button class="btn small outline contact-cat-btn" id="leave-range-mode-grant" data-mode="grant">付与</button>
-      </div>
+      <p class="muted mt-0">現在の残日数：<span class="mono" id="leave-range-balance">0.0</span>日</p>
       <label class="field">開始日</label>
       <input type="date" id="leave-range-start">
       <label class="field">終了日</label>
       <input type="date" id="leave-range-end">
       <p class="muted mt-6" id="leave-range-preview"></p>
-      <label class="field" id="leave-range-note-label">理由（任意）</label>
+      <label class="field">理由（任意）</label>
       <input type="text" id="leave-range-note" placeholder="私用のため">
       <button class="btn mt-14 w-full" id="leave-range-submit">申請する</button>
       <p class="muted mt-8" id="leave-range-status"></p>
@@ -1407,7 +1398,6 @@ function applyAdminVisibilitySafe(){
   const logsCard = document.getElementById('card-admin-logs');
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
-  const grantBtn = document.getElementById('yukyu-plus');
   const maintTab = document.getElementById('tab-maintenance');
   const yukyuDisplayCard = document.getElementById('card-yukyu-rules-display');
   if(driveCard) driveCard.style.display = 'none';
@@ -1416,7 +1406,6 @@ function applyAdminVisibilitySafe(){
   if(logsCard) logsCard.style.display = 'none';
   if(sysCard) sysCard.style.display = 'none';
   if(usersCard) usersCard.style.display = 'none';
-  if(grantBtn) grantBtn.style.display = 'none';
   if(maintTab) maintTab.style.display = 'none';
   if(yukyuDisplayCard) yukyuDisplayCard.style.display = 'none';
 }
@@ -1443,7 +1432,6 @@ function applyAdminVisibility(isAdmin){
   const logsCard = document.getElementById('card-admin-logs');
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
-  const grantBtn = document.getElementById('yukyu-plus');
   const maintTab = document.getElementById('tab-maintenance');
   const yukyuDisplayCard = document.getElementById('card-yukyu-rules-display');
   if(payCard) payCard.style.display = isAdmin ? 'block' : 'none';
@@ -1451,7 +1439,6 @@ function applyAdminVisibility(isAdmin){
   if(logsCard) logsCard.style.display = isAdmin ? 'block' : 'none';
   if(sysCard) sysCard.style.display = isAdmin ? 'block' : 'none';
   if(usersCard) usersCard.style.display = isAdmin ? 'block' : 'none';
-  if(grantBtn) grantBtn.style.display = isAdmin ? 'inline-block' : 'none';
   if(maintTab) maintTab.style.display = isAdmin ? 'flex' : 'none';
   if(yukyuDisplayCard) yukyuDisplayCard.style.display = isAdmin ? 'block' : 'none';
   if(isAdmin){ loadInquiryContactForAdmin(); loadRetentionDaysForAdmin(); }
@@ -4903,27 +4890,24 @@ async function deleteLeaveEntry(item){
   }catch(e){ /* 通知失敗は無視 */ }
 }
 
-async function applyLeave(sign){
-  if(sign > 0 && !currentIsAdmin){
-    await showAlertModal('有給の付与は管理者のみ行えます。');
+async function applyLeave(){
+  const days = 1;
+  const dateInput = document.getElementById('yukyu-input-date').value;
+  if(!dateInput){
+    await showAlertModal('使用日を入力してください。');
     return;
   }
-  const days = parseFloat(document.getElementById('yukyu-input-days').value);
-  if(!days || days<=0) return;
-  const noteInput = document.getElementById('yukyu-input-note').value.trim();
-  const note = (sign < 0 && !noteInput) ? '私用のため' : noteInput;
-  const dateInput = document.getElementById('yukyu-input-date').value;
-  const dateStr = dateInput || isoDate(new Date());
-  let consumedFrom = null;
-  if(sign > 0){
-    addLeaveGrant(days, parseInt(dateStr.split('-')[0]));
-  }else{
-    consumedFrom = deductLeave(days);
+  if(days > totalLeaveBalance() + 0.0001){
+    await showAlertModal('有給残日数が足りません。');
+    return;
   }
-  const isPendingUse = sign < 0 && !currentIsAdmin;
+  const noteInput = document.getElementById('yukyu-input-note').value.trim();
+  const note = noteInput || '私用のため';
+  const dateStr = dateInput;
+  const consumedFrom = deductLeave(days);
+  const isPendingUse = !currentIsAdmin;
   const requestId = isPendingUse ? genRequestId() : null;
-  const entry = {date: dateStr, delta: sign*days, note: isPendingUse ? makePendingNote(note, 'PENDING_USE', requestId) : note};
-  if(consumedFrom) entry.consumedFrom = consumedFrom;
+  const entry = {date: dateStr, delta: -days, note: isPendingUse ? makePendingNote(note, 'PENDING_USE', requestId) : note, consumedFrom};
   leave.log.push(entry);
   ensureRecentYearKeys();
   saveJSON('leave', leave);
@@ -4937,13 +4921,14 @@ async function applyLeave(sign){
   }
   if(isPendingUse){
     logEvent('leave_use_request', `${days}日 ${note}`);
-    await notifyLeaveRequest('use', requestId, dateStr, sign*days, note);
+    await notifyLeaveRequest('use', requestId, dateStr, -days, note);
+    await showAlertModal('申請しました。管理者の承認をお待ちください。');
   }else{
-    logEvent(sign>0?'leave_grant':'leave_use', `${days}日 ${note}`);
+    logEvent('leave_use', `${days}日 ${note}`);
+    await showAlertModal('使用を記録しました。');
   }
 }
-document.getElementById('yukyu-plus').addEventListener('click', ()=>applyLeave(1));
-document.getElementById('yukyu-minus').addEventListener('click', ()=>applyLeave(-1));
+document.getElementById('yukyu-minus').addEventListener('click', ()=>applyLeave());
 
 function countWeekdaysInRange(startStr, endStr){
   const start = new Date(startStr+'T00:00:00');
@@ -4957,12 +4942,12 @@ function countWeekdaysInRange(startStr, endStr){
   }
   return count;
 }
-let leaveRangeMode = 'use';
 function updateLeaveRangePreview(){
   const start = document.getElementById('leave-range-start').value;
   const end = document.getElementById('leave-range-end').value;
   const previewEl = document.getElementById('leave-range-preview');
   const submitBtn = document.getElementById('leave-range-submit');
+  document.getElementById('leave-range-balance').textContent = totalLeaveBalance().toFixed(1);
   if(!start || !end){
     previewEl.textContent = '開始日と終了日を入力してください。';
     submitBtn.disabled = false;
@@ -4974,30 +4959,13 @@ function updateLeaveRangePreview(){
     return;
   }
   const days = countWeekdaysInRange(start, end);
-  const actionLabel = leaveRangeMode === 'grant' ? '付与' : '使用';
-  previewEl.textContent = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで${actionLabel}（土日を除く${days}日分）`;
+  previewEl.textContent = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで使用（土日を除く${days}日分）`;
   submitBtn.disabled = false;
-  if(leaveRangeMode === 'use' && days > totalLeaveBalance() + 0.0001){
+  if(days > totalLeaveBalance() + 0.0001){
     previewEl.textContent += `　※残日数（${totalLeaveBalance().toFixed(1)}日）を超えています`;
     submitBtn.disabled = true;
   }
 }
-function setLeaveRangeMode(mode){
-  leaveRangeMode = mode;
-  document.getElementById('leave-range-mode-use').classList.toggle('active', mode==='use');
-  document.getElementById('leave-range-mode-grant').classList.toggle('active', mode==='grant');
-  document.getElementById('leave-range-submit').textContent = mode==='grant' ? '付与する' : '申請する';
-  document.getElementById('leave-range-note-label').textContent = mode==='grant' ? '付与理由（必須）' : '理由（任意）';
-  updateLeaveRangePreview();
-}
-document.getElementById('leave-range-mode-use').addEventListener('click', ()=>setLeaveRangeMode('use'));
-document.getElementById('leave-range-mode-grant').addEventListener('click', ()=>{
-  if(!currentIsAdmin){
-    showAlertModal('有給の付与は管理者のみ行えます。');
-    return;
-  }
-  setLeaveRangeMode('grant');
-});
 document.getElementById('leave-range-start').addEventListener('change', updateLeaveRangePreview);
 document.getElementById('leave-range-end').addEventListener('change', updateLeaveRangePreview);
 document.getElementById('btn-open-leave-range').addEventListener('click', ()=>{
@@ -5005,8 +4973,8 @@ document.getElementById('btn-open-leave-range').addEventListener('click', ()=>{
   document.getElementById('leave-range-end').value = isoDate(new Date());
   document.getElementById('leave-range-note').value = '';
   document.getElementById('leave-range-status').textContent = '';
-  setLeaveRangeMode('use');
   document.getElementById('leave-range-modal').classList.remove('hidden');
+  updateLeaveRangePreview();
 });
 document.getElementById('leave-range-close').addEventListener('click', ()=>{
   document.getElementById('leave-range-modal').classList.add('hidden');
@@ -5024,34 +4992,16 @@ document.getElementById('leave-range-submit').addEventListener('click', async ()
     status.textContent = '対象期間に平日が含まれていません。';
     return;
   }
-  const reasonInput = document.getElementById('leave-range-note').value.trim();
-  const rangeText = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで${leaveRangeMode==='grant'?'付与':'使用'}`;
-  if(leaveRangeMode === 'grant'){
-    if(!currentIsAdmin){ status.textContent = '有給の付与は管理者のみ行えます。'; return; }
-    if(!reasonInput){ status.textContent = '付与理由を入力してください。'; return; }
-    const note = `${rangeText}（${reasonInput}）`;
-    addLeaveGrant(days, parseInt(start.split('-')[0]));
-    leave.log.push({date: start, delta: days, note});
-    ensureRecentYearKeys();
-    saveJSON('leave', leave);
-    renderLeave();
-    renderSummary();
-    if(settings.scriptUrl && settings.driveFolderId){
-      const ok = await pushSettingsToDrive();
-      if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
-    }
-    logEvent('leave_grant', `${days}日 ${note}`);
-    document.getElementById('leave-range-modal').classList.add('hidden');
-    return;
-  }
   if(days > totalLeaveBalance() + 0.0001){
     status.textContent = `残日数（${totalLeaveBalance().toFixed(1)}日）を超えています。`;
     return;
   }
+  const reasonInput = document.getElementById('leave-range-note').value.trim();
+  const rangeText = `${isoToDisplay(start)} ～ ${isoToDisplay(end)}まで使用`;
+  const noteText = reasonInput ? `${rangeText}（${reasonInput}）` : rangeText;
   const consumedFrom = deductLeave(days);
   const isPendingUse = !currentIsAdmin;
   const requestId = isPendingUse ? genRequestId() : null;
-  const noteText = reasonInput ? `${rangeText}（${reasonInput}）` : rangeText;
   const entry = {date: start, delta: -days, note: isPendingUse ? makePendingNote(noteText, 'PENDING_USE', requestId) : noteText, consumedFrom};
   leave.log.push(entry);
   ensureRecentYearKeys();
@@ -5062,13 +5012,15 @@ document.getElementById('leave-range-submit').addEventListener('click', async ()
     const ok = await pushSettingsToDrive();
     if(!ok) await showAlertModal('Driveへの保存に失敗しました。設定タブの同期状況を確認してください（記録自体はこの端末には残っています）。');
   }
+  document.getElementById('leave-range-modal').classList.add('hidden');
   if(isPendingUse){
     logEvent('leave_use_request', `${days}日 ${noteText}`);
     await notifyLeaveRequest('use', requestId, start, -days, noteText);
+    await showAlertModal('申請しました。管理者の承認をお待ちください。');
   }else{
     logEvent('leave_use', `${days}日 ${noteText}`);
+    await showAlertModal('使用を記録しました。');
   }
-  document.getElementById('leave-range-modal').classList.add('hidden');
 });
 
 function adjustWeekend(date){
