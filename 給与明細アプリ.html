@@ -5471,7 +5471,12 @@ document.getElementById('ot-save').addEventListener('click', async ()=>{
 function formatYen(v){
   return `¥${Math.round(v||0).toLocaleString('en-US')}`;
 }
-let chartWindowEnd = null;
+// 表示ウィンドウは「末尾からの相対オフセット」で管理する（0＝最新月で終わるウィンドウ）。
+// 以前は絶対インデックスで管理していたため、当月分の穴埋め表示を追加した影響でentries配列の
+// 長さが再描画のたびに変わるようになり、常に最新月まで表示されるはずが古い位置に固定されて
+// しまう不具合があった。相対オフセットならentries配列の長さが変わっても「最新」の位置は0のまま
+// 正しく保たれる。
+let chartEndOffset = 0;
 const CHART_WINDOW = 6;
 let salaryChartDetails = [];
 function renderSalaryChart(){
@@ -5525,12 +5530,14 @@ function renderSalaryChart(){
     return {y, m, key:k, salaries, bonuses, isGap, gapBase: settingsBase};
   });
 
-  if(chartWindowEnd === null || chartWindowEnd > entries.length) chartWindowEnd = entries.length;
-  if(chartWindowEnd < Math.min(CHART_WINDOW, entries.length)) chartWindowEnd = Math.min(CHART_WINDOW, entries.length);
-  const windowStart = Math.max(0, chartWindowEnd - CHART_WINDOW);
-  const recent = entries.slice(windowStart, chartWindowEnd);
+  const maxOffset = Math.max(0, entries.length - CHART_WINDOW);
+  if(chartEndOffset < 0) chartEndOffset = 0;
+  if(chartEndOffset > maxOffset) chartEndOffset = maxOffset;
+  const windowEnd = entries.length - chartEndOffset;
+  const windowStart = Math.max(0, windowEnd - CHART_WINDOW);
+  const recent = entries.slice(windowStart, windowEnd);
   document.getElementById('chart-prev').style.visibility = windowStart > 0 ? 'visible' : 'hidden';
-  document.getElementById('chart-next').style.visibility = chartWindowEnd < entries.length ? 'visible' : 'hidden';
+  document.getElementById('chart-next').style.visibility = chartEndOffset > 0 ? 'visible' : 'hidden';
 
   const maxRaw = Math.max(...recent.map(e=>{
     let v = 0;
@@ -5671,11 +5678,11 @@ document.getElementById('salary-detail-close').addEventListener('click', ()=>{
   currentSalaryDetail = null;
 });
 document.getElementById('chart-prev').addEventListener('click', ()=>{
-  chartWindowEnd = Math.max(CHART_WINDOW, (chartWindowEnd||CHART_WINDOW) - 1);
+  chartEndOffset += 1;
   renderSalaryChart();
 });
 document.getElementById('chart-next').addEventListener('click', ()=>{
-  chartWindowEnd = (chartWindowEnd||CHART_WINDOW) + 1;
+  chartEndOffset = Math.max(0, chartEndOffset - 1);
   renderSalaryChart();
 });
 
