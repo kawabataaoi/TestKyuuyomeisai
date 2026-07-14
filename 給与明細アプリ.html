@@ -5494,7 +5494,21 @@ function renderSalaryChart(){
     ...Object.keys(payHistory).map(k=>{ const [y,mo]=k.split('#')[0].split('-').map(Number); return {y,mo}; }),
     ...Object.keys(otHoursByMonth).map(k=>{ const [y,mo]=k.split('-').map(Number); return {y,mo}; })
   ];
-  const fullRange = getFullMonthRange(dataMonths);
+  const rawRange = getFullMonthRange(dataMonths);
+  // 実データが1〜2ヶ月分しか無い場合でも、前後の月が見えるように最低でも
+  // CHART_WINDOW分の月数を表示する（足りない分は「記録なし」の空白月で埋める）。
+  // 複数の明細がある月だけ、そのぶん横幅を広げる（totalUnits側で対応）。
+  const today = new Date();
+  let rangeStart = rawRange.length ? rawRange[0] : {y:today.getFullYear(), mo:today.getMonth()+1};
+  let rangeEnd = rawRange.length ? rawRange[rawRange.length-1] : {y:today.getFullYear(), mo:today.getMonth()+1};
+  const todayKey = today.getFullYear()*12 + (today.getMonth()+1);
+  if(rangeEnd.y*12+rangeEnd.mo < todayKey){ rangeEnd = {y:today.getFullYear(), mo:today.getMonth()+1}; }
+  while((rangeEnd.y*12+rangeEnd.mo) - (rangeStart.y*12+rangeStart.mo) + 1 < CHART_WINDOW){
+    let mo = rangeStart.mo - 1, y = rangeStart.y;
+    if(mo < 1){ mo = 12; y--; }
+    rangeStart = {y, mo};
+  }
+  const fullRange = getFullMonthRange([rangeStart, rangeEnd]);
   // 同月に複数の実績（明細①②…）がある場合は、合算せず別々の棒として保持する
   // （賞与月で既に複数棒を表示している仕組みを、通常の給与実績にも広げる）。
   const entries = fullRange.map(({y,mo:m})=>{
