@@ -2771,6 +2771,26 @@ function openMasterSpreadsheet() {
   return f ? SpreadsheetApp.openById(f.getId()) : null;
 }
 
+// 日付らしい文字列（生年月日・削除日・対象年月など）をAPI経由で新規セルに書き込むと、
+// Googleスプレッドシートが自動的に日付型に変換してしまい、読み戻すとDateオブジェクトの
+// 文字列表現に化けてしまう。書き込み前に必ずテキスト書式を明示することで防ぐ。
+function appendRowAsText(sheet, values) {
+  var row = sheet.getLastRow() + 1;
+  var range = sheet.getRange(row, 1, 1, values.length);
+  range.setNumberFormat('@');
+  range.setValues([values]);
+}
+function setCellAsText(sheet, row, col, value) {
+  var range = sheet.getRange(row, col);
+  range.setNumberFormat('@');
+  range.setValue(value);
+}
+function setRangeAsText(sheet, row, col, numRows, numCols, values) {
+  var range = sheet.getRange(row, col, numRows, numCols);
+  range.setNumberFormat('@');
+  range.setValues(values);
+}
+
 function getSheetData(ss, sheetName) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return { sheet: null, header: [], rows: [] };
@@ -3047,9 +3067,9 @@ function doGet(e) {
         }
         if (dateP) {
           if (foundRowIdxP > 0) {
-            sheetP.getRange(foundRowIdxP, 2).setValue(dateP);
+            setCellAsText(sheetP, foundRowIdxP, 2, dateP);
           } else {
-            sheetP.appendRow([ymP, dateP]);
+            appendRowAsText(sheetP, [ymP, dateP]);
           }
         } else if (foundRowIdxP > 0) {
           sheetP.deleteRow(foundRowIdxP);
@@ -3273,13 +3293,13 @@ function doGet(e) {
           var hIdx = {};
           getSheetData(ssDel, 'ユーザー情報').header.forEach(function (h, i) { hIdx[String(h).trim()] = i + 1; });
           sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除フラグ']).setValue('1');
-          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除日']).setValue(todayDel);
-          sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除予定日']).setValue(scheduledDel);
+          setCellAsText(sheetUserDel, userRowDel.rowIndex, hIdx['削除日'], todayDel);
+          setCellAsText(sheetUserDel, userRowDel.rowIndex, hIdx['削除予定日'], scheduledDel);
           sheetUserDel.getRange(userRowDel.rowIndex, hIdx['削除理由']).setValue(reasonDel || '（理由未入力）');
           sheetUserDel.getRange(userRowDel.rowIndex, hIdx['告知済み']).setValue('0');
         } else if (findEmployeeRowSS(ssDel, targetIdDel)) {
           // ユーザー情報行が無い社員一覧のみの社員も削除予定にできるよう、新規に行を追加する
-          sheetUserDel.appendRow([targetIdDel, '', '', '', '', '', '', '', '1', todayDel, scheduledDel, reasonDel || '（理由未入力）', '0']);
+          appendRowAsText(sheetUserDel, [targetIdDel, '', '', '', '', '', '', '', '1', todayDel, scheduledDel, reasonDel || '（理由未入力）', '0']);
         } else {
           out = { error: '該当するユーザーが見つかりませんでした' };
         }
@@ -3350,8 +3370,8 @@ function doGet(e) {
           newSettingsDocC.getBody().editAsText().setText(initialTextC);
           newSettingsDocC.saveAndClose();
 
-          ssC.getSheetByName('社員一覧').appendRow([newRoleC, newIdC, newPwC, newEmpFolderC.getId(), newSeiC + newMeiC]);
-          ssC.getSheetByName('ユーザー情報').appendRow([newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
+          appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, newPwC, newEmpFolderC.getId(), newSeiC + newMeiC]);
+          appendRowAsText(ssC.getSheetByName('ユーザー情報'), [newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
 
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
         }
@@ -3389,11 +3409,11 @@ function doGet(e) {
             var sheetUserI = ssI.getSheetByName('ユーザー情報');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['苗字']).setValue(e.parameter.sei || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['名前']).setValue(e.parameter.mei || '');
-            sheetUserI.getRange(userRowI.rowIndex, hIdxI['生年月日']).setValue(e.parameter.dob || '');
+            setCellAsText(sheetUserI, userRowI.rowIndex, hIdxI['生年月日'], e.parameter.dob || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['管理者権限']).setValue(newRole);
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['役員フラグ']).setValue(e.parameter.isExecutive || '0');
           } else {
-            ssI.getSheetByName('ユーザー情報').appendRow(valsI);
+            appendRowAsText(ssI.getSheetByName('ユーザー情報'), valsI);
           }
           out = { success: true };
         }
@@ -3616,16 +3636,16 @@ function doGet(e) {
         var sheetCS = dataCS.sheet;
         if (!sheetCS) {
           sheetCS = ssCS.insertSheet('会社共通設定');
-          sheetCS.appendRow(['設定項目', '値']);
+          appendRowAsText(sheetCS, ['設定項目', '値']);
           dataCS = getSheetData(ssCS, '会社共通設定');
         }
         var rowIdxByKeyCS = {};
         dataCS.rows.forEach(function (row, i) { rowIdxByKeyCS[String(row[0]).trim()] = i + 2; });
         for (var ukCS in updatesCS) {
           if (rowIdxByKeyCS[ukCS]) {
-            sheetCS.getRange(rowIdxByKeyCS[ukCS], 2).setValue(updatesCS[ukCS]);
+            setCellAsText(sheetCS, rowIdxByKeyCS[ukCS], 2, updatesCS[ukCS]);
           } else {
-            sheetCS.appendRow([ukCS, updatesCS[ukCS]]);
+            appendRowAsText(sheetCS, [ukCS, updatesCS[ukCS]]);
             rowIdxByKeyCS[ukCS] = sheetCS.getLastRow();
           }
         }
@@ -3699,32 +3719,32 @@ function doGet(e) {
 
           var sheetEmp = newSS.getSheets()[0];
           sheetEmp.setName('社員一覧');
-          sheetEmp.appendRow(['区分', '社員ID', 'パスワード', 'フォルダID', '氏名']);
-          sheetEmp.getRange('B:C').setNumberFormat('@'); // ID・パスワードは常にテキスト扱いにする
-          if (empRowsOld.length > 0) sheetEmp.getRange(2, 1, empRowsOld.length, 5).setValues(empRowsOld);
+          sheetEmp.getRange('A:E').setNumberFormat('@'); // ID・パスワード等は常にテキスト扱いにする（列全体への保険）
+          appendRowAsText(sheetEmp, ['区分', '社員ID', 'パスワード', 'フォルダID', '氏名']);
+          if (empRowsOld.length > 0) setRangeAsText(sheetEmp, 2, 1, empRowsOld.length, 5, empRowsOld);
 
           var sheetUser = newSS.insertSheet('ユーザー情報');
-          sheetUser.appendRow(USER_INFO_HEADER);
-          sheetUser.getRange('A:M').setNumberFormat('@'); // 生年月日・削除日などが日付として自動変換されるのを防ぐ
+          sheetUser.getRange('A:M').setNumberFormat('@'); // 生年月日・削除日などが日付として自動変換されるのを防ぐ（列全体への保険）
+          appendRowAsText(sheetUser, USER_INFO_HEADER);
           if (userRecordsOld.length > 0) {
             var userRowsOld = userRecordsOld.map(function (r) {
               return USER_INFO_HEADER.map(function (k) { return r[k] !== undefined ? r[k] : ''; });
             });
-            sheetUser.getRange(2, 1, userRowsOld.length, USER_INFO_HEADER.length).setValues(userRowsOld);
+            setRangeAsText(sheetUser, 2, 1, userRowsOld.length, USER_INFO_HEADER.length, userRowsOld);
           }
 
           var sheetCompany = newSS.insertSheet('会社共通設定');
-          sheetCompany.appendRow(['設定項目', '値']);
           sheetCompany.getRange('A:B').setNumberFormat('@');
+          appendRowAsText(sheetCompany, ['設定項目', '値']);
           COMPANY_SETTING_KEYS.forEach(function (k) {
-            if (companySettingsOld[k] !== undefined) sheetCompany.appendRow([k, companySettingsOld[k]]);
+            if (companySettingsOld[k] !== undefined) appendRowAsText(sheetCompany, [k, companySettingsOld[k]]);
           });
 
           var sheetPayday = newSS.insertSheet('給料日特例');
-          sheetPayday.appendRow(['対象年月', '給料日']);
           sheetPayday.getRange('A:B').setNumberFormat('@');
+          appendRowAsText(sheetPayday, ['対象年月', '給料日']);
           Object.keys(paydayOverridesOld).forEach(function (ym) {
-            sheetPayday.appendRow([ym, paydayOverridesOld[ym]]);
+            appendRowAsText(sheetPayday, [ym, paydayOverridesOld[ym]]);
           });
 
           // 旧ドキュメントは削除せず、バックアップとして名前を変えて残す（非破壊的な移行）
