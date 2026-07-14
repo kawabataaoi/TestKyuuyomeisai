@@ -988,6 +988,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <p class="confirm-message" id="salary-detail-title" style="font-weight:700;margin-bottom:14px;"></p>
     <div id="salary-detail-rows"></div>
     <div class="confirm-actions mt-14">
+      <button class="btn ghost is-hidden" id="salary-detail-delete" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">実績削除</button>
       <button class="btn" id="salary-detail-close">閉じる</button>
     </div>
   </div>
@@ -5499,13 +5500,13 @@ function renderSalaryChart(){
   const entries = fullRange.map(({y,mo:m})=>{
     const k = `${y}-${String(m).padStart(2,'0')}`;
     const matchingKeys = Object.keys(payHistory).filter(pk => pk === k || pk.startsWith(k+'#')).sort();
-    let salaries = matchingKeys.filter(pk => payHistory[pk].salary).map(pk => Object.assign({isEstimate:false}, payHistory[pk].salary));
+    let salaries = matchingKeys.filter(pk => payHistory[pk].salary).map(pk => Object.assign({isEstimate:false, payKey:pk}, payHistory[pk].salary));
     if(salaries.length===0 && otHoursByMonth[k] !== undefined){
       const hours = otHoursByMonth[k]||0;
       const otPay = (settingsBase && std) ? Math.round((settingsBase/std)*rate*hours) : 0;
-      salaries = [{ base:settingsBase, otPay, total:settingsBase+otPay, isEstimate:true }];
+      salaries = [{ base:settingsBase, otPay, total:settingsBase+otPay, isEstimate:true, payKey:null }];
     }
-    const bonuses = matchingKeys.filter(pk => payHistory[pk].bonus).map(pk => Object.assign({}, payHistory[pk].bonus));
+    const bonuses = matchingKeys.filter(pk => payHistory[pk].bonus).map(pk => Object.assign({payKey:pk}, payHistory[pk].bonus));
     const isGap = salaries.length===0 && bonuses.length===0;
     return {y, m, key:k, salaries, bonuses, isGap, gapBase: settingsBase};
   });
@@ -5574,7 +5575,7 @@ function renderSalaryChart(){
         salaryChartDetails.push({
           type: 'salary',
           label: e.salaries.length>1 ? `${e.y}年${e.m}月度${CIRCLED_NUMS[si]||('('+(si+1)+')')}` : `${e.y}年${e.m}月度`,
-          base: sal.base, otPay: sal.otPay, total: sal.total, isEstimate: sal.isEstimate
+          base: sal.base, otPay: sal.otPay, total: sal.total, isEstimate: sal.isEstimate, payKey: sal.payKey
         });
         svg += `<g class="chart-bar-group" data-detail-idx="${detailIdx}" style="cursor:pointer;">`;
         svg += `<rect x="${sx}" y="${padTop}" width="${subW}" height="${H-padTop-padBottom}" fill="transparent"/>`;
@@ -5589,7 +5590,7 @@ function renderSalaryChart(){
         const h = scale(b.net);
         const yTop = H - padBottom - h;
         const detailIdx = salaryChartDetails.length;
-        salaryChartDetails.push({ type:'bonus', label: `${e.y}年${e.m}月度賞与`, bonusTotal: b.total, bonusNet: b.net });
+        salaryChartDetails.push({ type:'bonus', label: `${e.y}年${e.m}月度賞与`, bonusTotal: b.total, bonusNet: b.net, payKey: b.payKey });
         svg += `<g class="chart-bar-group" data-detail-idx="${detailIdx}" style="cursor:pointer;">`;
         svg += `<rect x="${sx}" y="${padTop}" width="${subW}" height="${H-padTop-padBottom}" fill="transparent"/>`;
         svg += `<rect x="${sx}" y="${yTop}" width="${subW}" height="${h}" rx="2" style="fill:var(--money);"><title>${monthLabel}賞与\n差引支給額：${formatYen(b.net)}</title></rect>`;
@@ -5608,11 +5609,13 @@ function renderSalaryChart(){
   svg += '</svg>';
   container.innerHTML = svg;
 }
+let currentSalaryDetail = null;
 document.getElementById('salary-chart').addEventListener('click', (ev)=>{
   const g = ev.target.closest('.chart-bar-group');
   if(!g) return;
   const detail = salaryChartDetails[parseInt(g.dataset.detailIdx, 10)];
   if(!detail) return;
+  currentSalaryDetail = detail;
   document.getElementById('salary-detail-title').textContent = detail.label;
   const rowsEl = document.getElementById('salary-detail-rows');
   if(detail.type === 'salary'){
@@ -5628,10 +5631,30 @@ document.getElementById('salary-chart').addEventListener('click', (ev)=>{
       <div class="row mt-8"><span class="muted">差引支給額</span><span class="mono" style="font-weight:700;">${formatYen(detail.bonusNet)}</span></div>
     `;
   }
+  document.getElementById('salary-detail-delete').classList.toggle('is-hidden', !detail.payKey);
   document.getElementById('salary-detail-modal').classList.remove('hidden');
+});
+document.getElementById('salary-detail-delete').addEventListener('click', async ()=>{
+  const detail = currentSalaryDetail;
+  if(!detail || !detail.payKey) return;
+  const kindLabel = detail.type === 'salary' ? '給与実績' : '賞与実績';
+  if(!(await showConfirmModal(`「${detail.label}」の${kindLabel}を削除しますか？この操作は元に戻せません。`))) return;
+  const rec = payHistory[detail.payKey];
+  if(rec){
+    if(detail.type === 'salary') delete rec.salary; else delete rec.bonus;
+    if(!rec.salary && !rec.bonus) delete payHistory[detail.payKey];
+  }
+  saveJSON('payHistory', payHistory);
+  document.getElementById('salary-detail-modal').classList.add('hidden');
+  currentSalaryDetail = null;
+  renderSalaryChart();
+  renderMeisaiLists();
+  renderYTDTotals();
+  if(settings.scriptUrl && settings.driveFolderId) await pushSettingsToDrive();
 });
 document.getElementById('salary-detail-close').addEventListener('click', ()=>{
   document.getElementById('salary-detail-modal').classList.add('hidden');
+  currentSalaryDetail = null;
 });
 document.getElementById('chart-prev').addEventListener('click', ()=>{
   chartWindowEnd = Math.max(CHART_WINDOW, (chartWindowEnd||CHART_WINDOW) - 1);
