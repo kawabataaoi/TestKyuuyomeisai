@@ -983,6 +983,16 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="salary-detail-modal">
+  <div class="confirm-card">
+    <p class="confirm-message" id="salary-detail-title" style="font-weight:700;margin-bottom:14px;"></p>
+    <div id="salary-detail-rows"></div>
+    <div class="confirm-actions mt-14">
+      <button class="btn" id="salary-detail-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="leave-range-modal">
   <div class="modal-sheet">
     <header>
@@ -4535,22 +4545,53 @@ function getFullMonthRange(docs){
 }
 
 const CIRCLED_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
-function numberedLabel(baseLabel, index, total){
-  if(total <= 1) return baseLabel;
+function numberedLabel(baseLabel, index, total, forceNumber){
+  if(total <= 1 && !forceNumber) return baseLabel;
   const num = CIRCLED_NUMS[index] || `(${index+1})`;
   return `${baseLabel}${num}`;
 }
-function renderMonthDocs(container, docsForMonth, ym, baseLabel){
+// 明細の実績（payHistory）は、その月の書類の「並び順」ではなく「書類そのもの」に
+// 紐づく必要がある。以前は並び順から都度キーを計算していたため、同月に明細が
+// 追加されるたびに既存の明細のキーがずれ、実績が迷子になる不具合があった。
+// doc.id -> payKey の対応を一度決めたら永続化し、以後は変更しない。
+let docPayKeys = loadJSON('docPayKeys', {});
+function saveDocPayKeys(){ saveJSON('docPayKeys', docPayKeys); }
+function ensureDocPayKeys(docsForMonth, plainYm){
+  if(!plainYm) return;
+  const used = new Set();
+  docsForMonth.forEach(d=>{ if(docPayKeys[d.id]) used.add(docPayKeys[d.id]); });
+  let changed = false;
+  docsForMonth.forEach(d=>{
+    if(docPayKeys[d.id]) return;
+    let candidate = plainYm, n = 2;
+    while(used.has(candidate)){ candidate = `${plainYm}#${n}`; n++; }
+    docPayKeys[d.id] = candidate;
+    used.add(candidate);
+    changed = true;
+  });
+  if(changed) saveDocPayKeys();
+}
+function renderMonthDocs(container, docsForMonth, ym, baseLabel, forceNumber){
   if(docsForMonth.length === 0){
     renderLedgerRow(container, null, ym, baseLabel);
     return;
   }
   const sorted = docsForMonth.slice().sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
+  const plainYm = `${ym.y}-${String(ym.mo).padStart(2,'0')}`;
+  ensureDocPayKeys(sorted, plainYm);
   sorted.forEach((doc, i)=>{
-    const plainYm = (doc.y && doc.mo) ? `${doc.y}-${String(doc.mo).padStart(2,'0')}` : null;
-    const payKey = (sorted.length > 1 && plainYm) ? `${plainYm}#${i}` : plainYm;
-    renderLedgerRow(container, doc, ym, numberedLabel(baseLabel, i, sorted.length), payKey);
+    const payKey = docPayKeys[doc.id] || plainYm;
+    renderLedgerRow(container, doc, ym, numberedLabel(baseLabel, i, sorted.length, forceNumber), payKey);
   });
+}
+function isLocalOnlyDoc(d){ return !(d.source === 'drive' || d.source === 'localfolder'); }
+// Drive同期済みの明細と、まだローカルにしかない明細を別枠で表示する。
+// ローカル分は「その他明細L①」のように、常に番号つきの専用ラベルにする。
+function renderMonthDocsSplit(container, docsForMonth, ym, driveLabel, localLabel){
+  const driveGroup = docsForMonth.filter(d=>!isLocalOnlyDoc(d));
+  const localGroup = docsForMonth.filter(isLocalOnlyDoc);
+  renderMonthDocs(container, driveGroup, ym, driveLabel);
+  if(localGroup.length > 0) renderMonthDocs(container, localGroup, ym, localLabel, true);
 }
 
 function renderMeisaiLists(){
@@ -4563,9 +4604,9 @@ function renderMeisaiLists(){
   listEl.innerHTML = '';
   recent.forEach(ym=>{
     const docsThisMonth = salaryDocs.filter(d=>d.y===ym.y && d.mo===ym.mo);
-    renderMonthDocs(listEl, docsThisMonth, ym, `${ym.y}年${ym.mo}月度の明細`);
+    renderMonthDocsSplit(listEl, docsThisMonth, ym, `${ym.y}年${ym.mo}月度の明細`, `${ym.y}年${ym.mo}月度その他明細L`);
     const bonusDocsThisMonth = bonusDocs.filter(d=>d.y===ym.y && d.mo===ym.mo);
-    if(bonusDocsThisMonth.length>0) renderMonthDocs(listEl, bonusDocsThisMonth, ym, `${ym.y}年${ym.mo}月度の賞与明細`);
+    if(bonusDocsThisMonth.length>0) renderMonthDocsSplit(listEl, bonusDocsThisMonth, ym, `${ym.y}年${ym.mo}月度の賞与明細`, `${ym.y}年${ym.mo}月度その他賞与明細L`);
   });
 
   const allEl = document.getElementById('meisai-all');
@@ -4591,10 +4632,10 @@ function renderMeisaiLists(){
       items.forEach(item=>{
         if(item.kind==='salary'){
           const docsThisMonth = salaryDocs.filter(d=>d.y===y && d.mo===item.mo);
-          renderMonthDocs(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の明細`);
+          renderMonthDocsSplit(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の明細`, `${y}年${item.mo}月度その他明細L`);
         }else{
           const docsThisMonth = bonusDocs.filter(d=>d.y===y && d.mo===item.mo);
-          renderMonthDocs(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の賞与明細`);
+          renderMonthDocsSplit(allEl, docsThisMonth, {y,mo:item.mo}, `${y}年${item.mo}月度の賞与明細`, `${y}年${item.mo}月度その他賞与明細L`);
         }
       });
     });
@@ -5426,13 +5467,12 @@ document.getElementById('ot-save').addEventListener('click', async ()=>{
   if(settings.scriptUrl && settings.driveFolderId) await pushSettingsToDrive();
 });
 
-function formatMan(v){
-  const man = v/10000;
-  const rounded = Math.round(man*10)/10;
-  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}万円`;
+function formatYen(v){
+  return `¥${Math.round(v||0).toLocaleString('en-US')}`;
 }
 let chartWindowEnd = null;
 const CHART_WINDOW = 6;
+let salaryChartDetails = [];
 function renderSalaryChart(){
   const container = document.getElementById('salary-chart');
   const settingsBase = settings.baseSalary || 0;
@@ -5454,28 +5494,20 @@ function renderSalaryChart(){
     ...Object.keys(otHoursByMonth).map(k=>{ const [y,mo]=k.split('-').map(Number); return {y,mo}; })
   ];
   const fullRange = getFullMonthRange(dataMonths);
+  // 同月に複数の実績（明細①②…）がある場合は、合算せず別々の棒として保持する
+  // （賞与月で既に複数棒を表示している仕組みを、通常の給与実績にも広げる）。
   const entries = fullRange.map(({y,mo:m})=>{
     const k = `${y}-${String(m).padStart(2,'0')}`;
-    const matchingKeys = Object.keys(payHistory).filter(pk => pk === k || pk.startsWith(k+'#'));
-    let salary = null;
-    const salaryKeys = matchingKeys.filter(pk => payHistory[pk].salary);
-    if(salaryKeys.length>0){
-      const base = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.base||0), 0);
-      const otPay = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.otPay||0), 0);
-      const total = salaryKeys.reduce((s,pk)=>s+(payHistory[pk].salary.total||0), 0);
-      salary = { base, otPay, total, isEstimate:false };
-    }else if(otHoursByMonth[k] !== undefined){
+    const matchingKeys = Object.keys(payHistory).filter(pk => pk === k || pk.startsWith(k+'#')).sort();
+    let salaries = matchingKeys.filter(pk => payHistory[pk].salary).map(pk => Object.assign({isEstimate:false}, payHistory[pk].salary));
+    if(salaries.length===0 && otHoursByMonth[k] !== undefined){
       const hours = otHoursByMonth[k]||0;
       const otPay = (settingsBase && std) ? Math.round((settingsBase/std)*rate*hours) : 0;
-      salary = { base:settingsBase, otPay, total:settingsBase+otPay, isEstimate:true };
+      salaries = [{ base:settingsBase, otPay, total:settingsBase+otPay, isEstimate:true }];
     }
-    const bonusKeys = matchingKeys.filter(pk => payHistory[pk].bonus);
-    const bonus = bonusKeys.length>0 ? {
-      total: bonusKeys.reduce((s,pk)=>s+(payHistory[pk].bonus.total||0), 0),
-      net: bonusKeys.reduce((s,pk)=>s+((payHistory[pk].bonus.net!==undefined?payHistory[pk].bonus.net:payHistory[pk].bonus.total)||0), 0)
-    } : null;
-    const isGap = !salary && !bonus;
-    return {y, m, key:k, salary, bonus, isGap, gapBase: settingsBase};
+    const bonuses = matchingKeys.filter(pk => payHistory[pk].bonus).map(pk => Object.assign({}, payHistory[pk].bonus));
+    const isGap = salaries.length===0 && bonuses.length===0;
+    return {y, m, key:k, salaries, bonuses, isGap, gapBase: settingsBase};
   });
 
   if(chartWindowEnd === null || chartWindowEnd > entries.length) chartWindowEnd = entries.length;
@@ -5487,8 +5519,8 @@ function renderSalaryChart(){
 
   const maxRaw = Math.max(...recent.map(e=>{
     let v = 0;
-    if(e.salary) v = Math.max(v, e.salary.total, e.salary.base+e.salary.otPay);
-    if(e.bonus) v = Math.max(v, e.bonus.total, e.bonus.net);
+    e.salaries.forEach(s=>{ v = Math.max(v, s.total, s.base+s.otPay); });
+    e.bonuses.forEach(b=>{ v = Math.max(v, b.total, b.net); });
     if(e.isGap) v = Math.max(v, e.gapBase);
     return v;
   }), 1);
@@ -5496,10 +5528,18 @@ function renderSalaryChart(){
   const maxVal = Math.ceil(maxRaw / GRID_STEP) * GRID_STEP || GRID_STEP;
 
   const W = 320, H = 196, padBottom = 28, padTop = 14, padLeft = 30;
-  const usable = recent.length;
   const gapX = 12;
   const plotW = W - padLeft - 6;
-  const barW = Math.max(18, (plotW - gapX*(usable+1)) / usable);
+  // 棒が増えた月は、最大3ヶ月分ぶんの幅まで広げてよい。
+  recent.forEach(e=>{ e.units = Math.max(1, Math.min(3, e.salaries.length + e.bonuses.length)); });
+  const totalUnits = recent.reduce((s,e)=>s+e.units, 0) || recent.length || 1;
+  const unitW = Math.max(14, (plotW - gapX*(recent.length+1)) / totalUnits);
+  let cursorX = padLeft + gapX;
+  recent.forEach(e=>{
+    e.slotX = cursorX;
+    e.slotW = unitW * e.units;
+    cursorX += e.slotW + gapX;
+  });
   const scale = v => (v/maxVal)*(H-padBottom-padTop);
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">`;
@@ -5511,46 +5551,88 @@ function renderSalaryChart(){
   }
   svg += `<line x1="${padLeft}" y1="${H-padBottom}" x2="${W-4}" y2="${H-padBottom}" style="stroke:var(--border);stroke-width:1;"/>`;
 
-  recent.forEach((e,i)=>{
-    const slotX = padLeft + gapX + i*(barW+gapX);
+  salaryChartDetails = [];
+  recent.forEach((e, mi)=>{
+    const slotX = e.slotX, barW = e.slotW;
     const monthLabel = `${e.m}月`;
-    const hasBoth = e.salary && e.bonus;
-    const subW = hasBoth ? (barW-4)/2 : barW;
+    const subCount = e.salaries.length + e.bonuses.length;
 
     if(e.isGap){
       const baseY = H - padBottom - scale(e.gapBase);
       svg += `<line x1="${slotX}" y1="${baseY}" x2="${slotX+barW}" y2="${baseY}" style="stroke:#3B6FD6;stroke-width:1.5;stroke-dasharray:4,3;opacity:0.8;"><title>${monthLabel}\nこの月の記録がありません</title></line>`;
     }else{
+      const subGap = subCount > 1 ? 3 : 0;
+      const subW = (barW - subGap*(subCount-1)) / Math.max(1,subCount);
       let sx = slotX;
-      if(e.salary){
-        const opacity = e.salary.isEstimate ? '0.45' : '1';
-        const baseH = scale(e.salary.base);
-        const otH = scale(e.salary.otPay);
+      e.salaries.forEach((sal, si)=>{
+        const opacity = sal.isEstimate ? '0.45' : '1';
+        const baseH = scale(sal.base);
+        const otH = scale(sal.otPay);
         const baseTop = H - padBottom - baseH;
         const otTop = baseTop - otH;
-        svg += `<rect x="${sx}" y="${baseTop}" width="${subW}" height="${baseH}" rx="2" style="fill:#3B6FD6;opacity:${opacity};"><title>${monthLabel}\n基本給：${formatMan(e.salary.base)}</title></rect>`;
-        if(otH>0.5) svg += `<rect x="${sx}" y="${otTop}" width="${subW}" height="${otH}" rx="2" style="fill:#D64545;opacity:${opacity};"><title>${monthLabel}\n残業代：${formatMan(e.salary.otPay)}</title></rect>`;
-        const totalY = H - padBottom - scale(e.salary.total);
-        svg += `<line x1="${sx-1}" y1="${totalY}" x2="${sx+subW+1}" y2="${totalY}" style="stroke:var(--text);stroke-width:1.5;stroke-dasharray:4,3;opacity:${e.salary.isEstimate?0.6:1};"><title>${monthLabel}\n総支給額：${formatMan(e.salary.total)}</title></line>`;
-        sx += subW + 4;
-      }
-      if(e.bonus){
-        const h = scale(e.bonus.net);
+        const detailIdx = salaryChartDetails.length;
+        salaryChartDetails.push({
+          type: 'salary',
+          label: e.salaries.length>1 ? `${e.y}年${e.m}月度${CIRCLED_NUMS[si]||('('+(si+1)+')')}` : `${e.y}年${e.m}月度`,
+          base: sal.base, otPay: sal.otPay, total: sal.total, isEstimate: sal.isEstimate
+        });
+        svg += `<g class="chart-bar-group" data-detail-idx="${detailIdx}" style="cursor:pointer;">`;
+        svg += `<rect x="${sx}" y="${padTop}" width="${subW}" height="${H-padTop-padBottom}" fill="transparent"/>`;
+        svg += `<rect x="${sx}" y="${baseTop}" width="${subW}" height="${baseH}" rx="2" style="fill:#3B6FD6;opacity:${opacity};"><title>${monthLabel}\n基本給：${formatYen(sal.base)}</title></rect>`;
+        if(otH>0.5) svg += `<rect x="${sx}" y="${otTop}" width="${subW}" height="${otH}" rx="2" style="fill:#D64545;opacity:${opacity};"><title>${monthLabel}\n残業代：${formatYen(sal.otPay)}</title></rect>`;
+        const totalY = H - padBottom - scale(sal.total);
+        svg += `<line x1="${sx-1}" y1="${totalY}" x2="${sx+subW+1}" y2="${totalY}" style="stroke:var(--text);stroke-width:1.5;stroke-dasharray:4,3;opacity:${sal.isEstimate?0.6:1};"><title>${monthLabel}\n総支給額：${formatYen(sal.total)}</title></line>`;
+        svg += `</g>`;
+        sx += subW + subGap;
+      });
+      e.bonuses.forEach((b)=>{
+        const h = scale(b.net);
         const yTop = H - padBottom - h;
-        svg += `<rect x="${sx}" y="${yTop}" width="${subW}" height="${h}" rx="2" style="fill:var(--money);"><title>${monthLabel}賞与\n差引支給額：${formatMan(e.bonus.net)}</title></rect>`;
-        const totalY2 = H - padBottom - scale(e.bonus.total);
-        svg += `<line x1="${sx-1}" y1="${totalY2}" x2="${sx+subW+1}" y2="${totalY2}" style="stroke:var(--text);stroke-width:1.5;stroke-dasharray:4,3;"><title>${monthLabel}賞与\n総支給額：${formatMan(e.bonus.total)}</title></line>`;
-      }
+        const detailIdx = salaryChartDetails.length;
+        salaryChartDetails.push({ type:'bonus', label: `${e.y}年${e.m}月度賞与`, bonusTotal: b.total, bonusNet: b.net });
+        svg += `<g class="chart-bar-group" data-detail-idx="${detailIdx}" style="cursor:pointer;">`;
+        svg += `<rect x="${sx}" y="${padTop}" width="${subW}" height="${H-padTop-padBottom}" fill="transparent"/>`;
+        svg += `<rect x="${sx}" y="${yTop}" width="${subW}" height="${h}" rx="2" style="fill:var(--money);"><title>${monthLabel}賞与\n差引支給額：${formatYen(b.net)}</title></rect>`;
+        const totalY2 = H - padBottom - scale(b.total);
+        svg += `<line x1="${sx-1}" y1="${totalY2}" x2="${sx+subW+1}" y2="${totalY2}" style="stroke:var(--text);stroke-width:1.5;stroke-dasharray:4,3;"><title>${monthLabel}賞与\n総支給額：${formatYen(b.total)}</title></line>`;
+        svg += `</g>`;
+        sx += subW + subGap;
+      });
     }
     const labelColor = e.isGap ? '#D64545' : 'var(--text-2)';
     svg += `<text x="${slotX+barW/2}" y="${H-14}" text-anchor="middle" font-size="10" style="fill:${labelColor};font-weight:${e.isGap?700:400};">${monthLabel}</text>`;
-    if(i===0 || e.m===1){
+    if(mi===0 || e.m===1){
       svg += `<text x="${slotX+barW/2}" y="${H-4}" text-anchor="middle" font-size="8" style="fill:var(--text-3);">${e.y}年</text>`;
     }
   });
   svg += '</svg>';
   container.innerHTML = svg;
 }
+document.getElementById('salary-chart').addEventListener('click', (ev)=>{
+  const g = ev.target.closest('.chart-bar-group');
+  if(!g) return;
+  const detail = salaryChartDetails[parseInt(g.dataset.detailIdx, 10)];
+  if(!detail) return;
+  document.getElementById('salary-detail-title').textContent = detail.label;
+  const rowsEl = document.getElementById('salary-detail-rows');
+  if(detail.type === 'salary'){
+    rowsEl.innerHTML = `
+      <div class="row mt-8"><span class="muted">基本給</span><span class="mono">${formatYen(detail.base)}</span></div>
+      <div class="row mt-8"><span class="muted">残業代</span><span class="mono">${formatYen(detail.otPay)}</span></div>
+      <div class="row mt-8"><span class="muted">総支給額</span><span class="mono" style="font-weight:700;">${formatYen(detail.total)}</span></div>
+      ${detail.isEstimate ? '<p class="muted mt-8" style="font-size:11px;">※実績未登録のため、設定値からの見込み額です。</p>' : ''}
+    `;
+  }else{
+    rowsEl.innerHTML = `
+      <div class="row mt-8"><span class="muted">賞与総支給額</span><span class="mono">${formatYen(detail.bonusTotal)}</span></div>
+      <div class="row mt-8"><span class="muted">差引支給額</span><span class="mono" style="font-weight:700;">${formatYen(detail.bonusNet)}</span></div>
+    `;
+  }
+  document.getElementById('salary-detail-modal').classList.remove('hidden');
+});
+document.getElementById('salary-detail-close').addEventListener('click', ()=>{
+  document.getElementById('salary-detail-modal').classList.add('hidden');
+});
 document.getElementById('chart-prev').addEventListener('click', ()=>{
   chartWindowEnd = Math.max(CHART_WINDOW, (chartWindowEnd||CHART_WINDOW) - 1);
   renderSalaryChart();
