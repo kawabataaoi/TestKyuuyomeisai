@@ -74,8 +74,10 @@ function findTransportFolder() {
   var it = masterFolder.getFoldersByName(TRANSPORT_FOLDER_NAME);
   return it.hasNext() ? it.next() : null;
 }
-function findTransportTemplateFile(transportFolder) {
-  var it = transportFolder.getFilesByName(TRANSPORT_TEMPLATE_NAME);
+function findTransportTemplateFile() {
+  // 原紙はリクエストごとのコピー置き場（交通費申請フォルダ）ではなく、管理情報などと同じマスターフォルダ直下に置く運用
+  var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
+  var it = masterFolder.getFilesByName(TRANSPORT_TEMPLATE_NAME);
   while (it.hasNext()) {
     var f = it.next();
     if (f.getMimeType() === MimeType.GOOGLE_SHEETS) return f;
@@ -1351,7 +1353,7 @@ function doGet(e) {
         if (!transportFolder) {
           out = { error: '「交通費申請」フォルダが見つかりません（管理者にご確認ください）' };
         } else {
-          var templateFile = findTransportTemplateFile(transportFolder);
+          var templateFile = findTransportTemplateFile();
           if (!templateFile) {
             out = { error: '「交通費申請書(原紙)」が見つかりません（管理者にご確認ください）' };
           } else {
