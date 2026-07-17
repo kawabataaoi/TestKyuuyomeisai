@@ -102,6 +102,7 @@ nav.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100
 nav.tabbar button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;color:var(--text-3);font-size:10px;border-radius:10px;}
 nav.tabbar button.active{background:var(--accent);color:#fff;}
 nav.tabbar button svg{width:20px;height:20px;}
+.tab-badge{position:absolute;top:2px;right:14px;width:9px;height:9px;border-radius:50%;background:var(--danger);border:1.5px solid var(--surface);}
 .log-item{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid var(--border);}
 .log-item:last-child{border-bottom:none;}
 .log-item .d{color:var(--text-3);font-size:11px;}
@@ -393,6 +394,9 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <div class="news-detail-actions is-hidden" id="news-detail-leave-actions">
           <button class="btn ghost" id="news-detail-leave-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">不許可</button>
           <button class="btn" id="news-detail-leave-approve">許可</button>
+        </div>
+        <div class="news-detail-actions is-hidden" id="news-detail-transport-actions">
+          <button class="btn" id="news-detail-transport-open">詳細を確認して承認・却下</button>
         </div>
         <div class="news-detail-actions" id="news-detail-read-actions">
           <button class="btn ghost" id="news-detail-keep-unread">未読のままにする</button>
@@ -688,6 +692,32 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     </div>
   </section>
 
+  <!-- 交通費タブ -->
+  <section class="view" id="view-transport">
+    <div class="card is-hidden" id="card-transport-admin-summary">
+      <div class="row">
+        <span class="section-title mb-0" id="transport-admin-count-text">0件申請あり</span>
+      </div>
+      <div id="transport-admin-requests" class="mt-8"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">交通費を申請</div>
+      <p class="muted">日付・区間・金額を入力して申請してください。</p>
+      <div id="transport-trip-list"></div>
+      <button class="btn ghost small w-full mt-8" id="btn-transport-add-trip">＋ 行を追加</button>
+      <div class="row mt-12">
+        <span class="muted">合計金額</span>
+        <span class="mono money-value-lg" id="transport-total">¥0</span>
+      </div>
+      <button class="btn mt-12" id="btn-transport-submit">申請する</button>
+      <p class="muted mt-8" id="transport-submit-status"></p>
+    </div>
+    <div class="card">
+      <div class="section-title">申請状況・履歴</div>
+      <div id="transport-my-requests"><div class="empty">申請はまだありません。</div></div>
+    </div>
+  </section>
+
   <!-- 設定タブ -->
   <section class="view" id="view-settings">
     <div class="card">
@@ -723,6 +753,11 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="text" id="admin-inquiry-name" placeholder="青山">
       <button class="btn ghost small mt-6 w-full" id="btn-save-inquiry-contact">受信先を変更</button>
       <p class="muted mt-6" id="admin-inquiry-contact-status"></p>
+      <div class="divider-16"></div>
+      <label class="field mt-0">交通費申請メールの受信先</label>
+      <input type="email" id="admin-transport-email" placeholder="a_aoyama@dsbz.jp">
+      <button class="btn ghost small mt-6 w-full" id="btn-save-transport-contact">受信先を変更</button>
+      <p class="muted mt-6" id="admin-transport-contact-status"></p>
       <div class="divider-16"></div>
       <label class="field mt-0">共通フォルダID（社員一覧の場所）</label>
       <input type="text" id="admin-master-folder" placeholder="1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
@@ -952,6 +987,11 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
     給与
   </button>
+  <button data-view="transport" style="position:relative;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8"/><path d="M3 16h18"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="16.5" cy="18.5" r="1.5"/><path d="M5 12h14"/></svg>
+    交通費
+    <span class="tab-badge is-hidden" id="tab-transport-badge"></span>
+  </button>
   <button data-view="settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2L10 21h4l.6-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.07-.4.1-.8.1-1.2Z"/></svg>
     設定
@@ -990,6 +1030,28 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <div class="confirm-actions mt-14">
       <button class="btn ghost is-hidden" id="salary-detail-delete" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">実績削除</button>
       <button class="btn" id="salary-detail-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="transport-detail-modal">
+  <div class="modal-sheet modal-sheet-80vh">
+    <header>
+      <h3>交通費申請</h3>
+      <button class="x-btn" id="transport-detail-close-x">×</button>
+    </header>
+    <div class="modal-body" id="transport-detail-body">
+      <p class="muted mt-0" id="transport-detail-summary"></p>
+      <div id="transport-detail-trips"></div>
+      <div class="row mt-8">
+        <span class="muted">合計金額</span>
+        <span class="mono" style="font-weight:700;" id="transport-detail-total"></span>
+      </div>
+      <p class="muted mt-8 is-hidden" id="transport-detail-reject-reason"></p>
+      <div class="news-detail-actions is-hidden" id="transport-detail-actions">
+        <button class="btn ghost" id="transport-detail-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">却下</button>
+        <button class="btn" id="transport-detail-approve">承認</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1260,6 +1322,7 @@ function parseLeaveRequestMessage(message){
   try{ return JSON.parse(b64DecodeUnicode(message.slice(LEAVE_REQUEST_MARKER.length))); }catch(e){ return null; }
 }
 let currentLeaveRequest = null;
+let currentTransportRequest = null;
 function openNewsDetail(n){
   currentDetailNews = n;
   document.getElementById('news-detail-view').classList.remove('is-hidden');
@@ -1268,6 +1331,8 @@ function openNewsDetail(n){
   document.getElementById('news-detail-title').textContent = `${newsPriorityIcon(n)} ${n.title || '（無題）'}`;
   const alreadyRead = isReadNews(n);
   currentLeaveRequest = parseLeaveRequestMessage(n.message);
+  currentTransportRequest = parseTransportRequestMessage(n.message);
+  if(currentTransportRequest) currentTransportRequest.status = 'pending';
   const keepUnreadBtn = document.getElementById('news-detail-keep-unread');
   const markReadBtn = document.getElementById('news-detail-mark-read');
   const deleteBtn = document.getElementById('news-detail-delete');
@@ -1279,6 +1344,19 @@ function openNewsDetail(n){
     document.getElementById('news-detail-message').textContent =
       `申請者：${req.empName}（${req.empId}）\n種別：${typeLabel}\n対象日：${isoToDisplay(req.date)}\n日数：${Math.abs(req.delta)}日\n理由：${req.note || '（未入力）'}`;
     document.getElementById('news-detail-leave-actions').classList.toggle('is-hidden', !currentIsAdmin || alreadyResolved);
+    document.getElementById('news-detail-transport-actions').classList.add('is-hidden');
+    document.getElementById('news-detail-read-actions').classList.toggle('is-hidden', currentIsAdmin && !alreadyResolved);
+    editIcon.classList.add('is-hidden');
+    keepUnreadBtn.classList.remove('is-hidden');
+    markReadBtn.classList.toggle('is-hidden', alreadyRead);
+    deleteBtn.classList.add('is-hidden');
+  }else if(currentTransportRequest){
+    const req = currentTransportRequest;
+    const alreadyResolved = /^\[処理済み\]/.test(n.title||'');
+    document.getElementById('news-detail-message').textContent =
+      `申請者：${req.empName}（${req.empId}）\n件数：${req.trips.length}件\n合計金額：¥${req.total.toLocaleString('en-US')}`;
+    document.getElementById('news-detail-leave-actions').classList.add('is-hidden');
+    document.getElementById('news-detail-transport-actions').classList.toggle('is-hidden', !currentIsAdmin || alreadyResolved);
     document.getElementById('news-detail-read-actions').classList.toggle('is-hidden', currentIsAdmin && !alreadyResolved);
     editIcon.classList.add('is-hidden');
     keepUnreadBtn.classList.remove('is-hidden');
@@ -1288,6 +1366,7 @@ function openNewsDetail(n){
     const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
     document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
     document.getElementById('news-detail-leave-actions').classList.add('is-hidden');
+    document.getElementById('news-detail-transport-actions').classList.add('is-hidden');
     document.getElementById('news-detail-read-actions').classList.remove('is-hidden');
     editIcon.classList.toggle('is-hidden', !currentIsAdmin);
     keepUnreadBtn.classList.remove('is-hidden');
@@ -1494,7 +1573,7 @@ function applyAdminVisibility(isAdmin){
   if(sysCard) sysCard.style.display = isAdmin ? 'block' : 'none';
   if(usersCard) usersCard.style.display = isAdmin ? 'block' : 'none';
   if(maintTab) maintTab.style.display = isAdmin ? 'flex' : 'none';
-  if(isAdmin){ loadInquiryContactForAdmin(); loadRetentionDaysForAdmin(); }
+  if(isAdmin){ loadInquiryContactForAdmin(); loadTransportContactForAdmin(); loadRetentionDaysForAdmin(); refreshTransportRequestsAdmin(); }
 }
 
 async function doEmployeeLogin(id, password){
@@ -2396,6 +2475,313 @@ async function loadInquiryContactForAdmin(){
   }catch(e){ /* 取得失敗は無視 */ }
 }
 
+document.getElementById('btn-save-transport-contact').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-transport-contact-status');
+  const newEmail = document.getElementById('admin-transport-email').value.trim();
+  if(!newEmail){ status.textContent = 'メールアドレスを入力してください。'; return; }
+  status.textContent = '変更しています…';
+  try{
+    const url = `${COMPANY_SCRIPT_URL}?action=updateTransportContact&newEmail=${encodeURIComponent(newEmail)}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ status.textContent = data.error; return; }
+    status.textContent = '変更しました。';
+    logEvent('admin_change', `交通費申請受信先を変更：${newEmail}`);
+  }catch(e){
+    status.textContent = '変更に失敗しました：' + e.message;
+  }
+});
+async function loadTransportContactForAdmin(){
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportContact`);
+    if(data && !data.error){
+      document.getElementById('admin-transport-email').value = data.email || '';
+    }
+  }catch(e){ /* 取得失敗は無視 */ }
+}
+
+// ============================================================
+// 交通費申請
+// ============================================================
+const TRANSPORT_REQUEST_MARKER = '##TRANSPORT_REQUEST##';
+function parseTransportRequestMessage(message){
+  if(!message || message.indexOf(TRANSPORT_REQUEST_MARKER) !== 0) return null;
+  try{ return JSON.parse(b64DecodeUnicode(message.slice(TRANSPORT_REQUEST_MARKER.length))); }catch(e){ return null; }
+}
+const TRANSPORT_METHODS = ['電車','バス','自動車','その他'];
+let transportTrips = [];
+function newTransportTrip(){
+  return { date: isoDate(new Date()), from:'', to:'', method:'電車', roundTrip:'往復', amount:'', note:'' };
+}
+function transportTotal(){
+  return transportTrips.reduce((s,t)=>s+(parseAmount(t.amount)||0), 0);
+}
+function updateTransportTotalDisplay(){
+  document.getElementById('transport-total').textContent = `¥${transportTotal().toLocaleString('en-US')}`;
+}
+function renderTransportTripRows(){
+  const container = document.getElementById('transport-trip-list');
+  container.innerHTML = transportTrips.map((t,i)=>`
+    <div class="card" style="background:var(--surface-2);margin-bottom:8px;">
+      <div class="row mb-2">
+        <span class="muted" style="font-size:12px;">明細 ${i+1}</span>
+        <button class="x-btn" data-remove-trip="${i}" ${transportTrips.length<=1 ? 'style="visibility:hidden;"' : ''}>×</button>
+      </div>
+      <label class="field mt-0">日付</label>
+      <input type="date" data-field="date" data-idx="${i}" value="${t.date}">
+      <label class="field">出発</label>
+      <input type="text" data-field="from" data-idx="${i}" value="${t.from}" placeholder="例：本町">
+      <label class="field">到着</label>
+      <input type="text" data-field="to" data-idx="${i}" value="${t.to}" placeholder="例：扇町">
+      <label class="field">交通手段</label>
+      <select data-field="method" data-idx="${i}">
+        ${TRANSPORT_METHODS.map(m=>`<option value="${m}" ${t.method===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+      <label class="field">往復／片道</label>
+      <select data-field="roundTrip" data-idx="${i}">
+        <option value="往復" ${t.roundTrip==='往復'?'selected':''}>往復</option>
+        <option value="片道" ${t.roundTrip==='片道'?'selected':''}>片道</option>
+      </select>
+      <label class="field">金額</label>
+      <input type="text" inputmode="numeric" class="man-amount" data-field="amount" data-idx="${i}" value="${t.amount}">
+      <label class="field">備考</label>
+      <input type="text" data-field="note" data-idx="${i}" value="${t.note}" placeholder="任意">
+    </div>
+  `).join('');
+  container.querySelectorAll('[data-field]').forEach(elx=>{
+    elx.addEventListener('input', ()=>{
+      const idx = parseInt(elx.dataset.idx, 10);
+      let val = elx.value;
+      if(elx.dataset.field === 'amount'){
+        const raw = val.replace(/[^\d]/g,'');
+        val = raw === '' ? '' : parseInt(raw,10).toLocaleString('en-US');
+        elx.value = val;
+      }
+      transportTrips[idx][elx.dataset.field] = val;
+      updateTransportTotalDisplay();
+    });
+  });
+  container.querySelectorAll('[data-remove-trip]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = parseInt(btn.dataset.removeTrip, 10);
+      if(transportTrips.length<=1) return;
+      transportTrips.splice(idx,1);
+      renderTransportTripRows();
+      updateTransportTotalDisplay();
+    });
+  });
+}
+function resetTransportForm(){
+  transportTrips = [newTransportTrip()];
+  renderTransportTripRows();
+  updateTransportTotalDisplay();
+}
+resetTransportForm();
+document.getElementById('btn-transport-add-trip').addEventListener('click', ()=>{
+  if(transportTrips.length >= 31){ showAlertModal('一度に申請できる件数は31件までです。'); return; }
+  transportTrips.push(newTransportTrip());
+  renderTransportTripRows();
+});
+document.getElementById('btn-transport-submit').addEventListener('click', async ()=>{
+  const status = document.getElementById('transport-submit-status');
+  for(const t of transportTrips){
+    if(!t.date || !t.from.trim() || !t.to.trim() || !parseAmount(t.amount)){
+      status.textContent = 'すべての行の日付・出発・到着・金額を入力してください。';
+      return;
+    }
+  }
+  const tripsPayload = transportTrips.map(t=>{
+    const [y,m,d] = t.date.split('-').map(Number);
+    return { y, m, d, from:t.from.trim(), to:t.to.trim(), method:t.method, roundTrip:t.roundTrip, amount: parseAmount(t.amount), note: t.note.trim() };
+  });
+  const btn = document.getElementById('btn-transport-submit');
+  setButtonLoading(btn, '申請しています…');
+  status.textContent = '';
+  try{
+    const url = `${COMPANY_SCRIPT_URL}?action=submitTransportRequest&empId=${encodeURIComponent(currentEmployeeId)}&empName=${encodeURIComponent(currentEmployeeName||'')}&tripsJson=${encodeURIComponent(JSON.stringify(tripsPayload))}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ status.textContent = data.error; return; }
+    logEvent('transport_request', `交通費申請（${tripsPayload.length}件・${tripsPayload.reduce((s,t)=>s+t.amount,0)}円）`);
+    resetTransportForm();
+    await showAlertModal('申請しました。管理者の承認をお待ちください。');
+    loadMyTransportRequests();
+  }catch(e){
+    status.textContent = '申請に失敗しました：' + e.message;
+  }finally{
+    clearButtonLoading(btn);
+  }
+});
+
+function transportStatusLabel(status){
+  if(status==='approved') return '許諾済み';
+  if(status==='rejected') return '不許可';
+  return '申請中';
+}
+function transportStatusTagClass(status){
+  if(status==='approved') return 'tag ok';
+  if(status==='rejected') return 'tag missing';
+  return 'tag warn';
+}
+let myTransportRequests = [];
+async function loadMyTransportRequests(){
+  if(!currentEmployeeId) return;
+  const container = document.getElementById('transport-my-requests');
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportRequests&empId=${encodeURIComponent(currentEmployeeId)}`);
+    myTransportRequests = (data && data.requests) || [];
+    if(myTransportRequests.length===0){
+      container.innerHTML = '<div class="empty">申請はまだありません。</div>';
+      return;
+    }
+    container.innerHTML = myTransportRequests.map((r,i)=>`
+      <div class="log-item" style="cursor:pointer;" data-my-transport-idx="${i}">
+        <span>${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
+        <span class="${transportStatusTagClass(r.status)}">${transportStatusLabel(r.status)}</span>
+      </div>
+    `).join('');
+    container.querySelectorAll('[data-my-transport-idx]').forEach(elx=>{
+      elx.addEventListener('click', ()=>{
+        const r = myTransportRequests[parseInt(elx.dataset.myTransportIdx, 10)];
+        openTransportDetailModal(r, { canResolve:false });
+      });
+    });
+  }catch(e){ container.innerHTML = '<div class="empty">取得に失敗しました。</div>'; }
+}
+
+let transportAdminRequests = [];
+async function refreshTransportRequestsAdmin(){
+  if(!currentIsAdmin) return;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportRequests`);
+    transportAdminRequests = (data && data.requests) || [];
+  }catch(e){ transportAdminRequests = []; }
+  const pending = transportAdminRequests.filter(r=>r.status==='pending');
+  const badge = document.getElementById('tab-transport-badge');
+  if(badge) badge.classList.toggle('is-hidden', pending.length===0);
+  const summaryCard = document.getElementById('card-transport-admin-summary');
+  summaryCard.classList.toggle('is-hidden', transportAdminRequests.length===0);
+  document.getElementById('transport-admin-count-text').textContent = `${pending.length}件申請あり`;
+  const listEl = document.getElementById('transport-admin-requests');
+  listEl.innerHTML = transportAdminRequests.map((r,i)=>`
+    <div class="log-item" style="cursor:pointer;" data-admin-transport-idx="${i}">
+      <span>${r.empId}:${r.empName}　${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
+      <span class="${transportStatusTagClass(r.status)}">${transportStatusLabel(r.status)}</span>
+    </div>
+  `).join('') || '<div class="empty">申請はまだありません。</div>';
+  listEl.querySelectorAll('[data-admin-transport-idx]').forEach(elx=>{
+    elx.addEventListener('click', ()=>{
+      const r = transportAdminRequests[parseInt(elx.dataset.adminTransportIdx, 10)];
+      openTransportDetailModal(r, { canResolve: true });
+    });
+  });
+}
+
+let currentTransportDetail = null;
+function openTransportDetailModal(req, opts){
+  currentTransportDetail = req;
+  document.getElementById('transport-detail-summary').textContent = `申請者：${req.empName}（${req.empId}）　申請日時：${new Date(req.appliedAt).toLocaleString('ja-JP')}`;
+  const tripsEl = document.getElementById('transport-detail-trips');
+  tripsEl.innerHTML = (req.trips||[]).map(t=>`
+    <div class="row" style="border-bottom:1px solid var(--border);padding:6px 0;">
+      <span style="font-size:12px;">${t.y}/${t.m}/${t.d}　${t.from}→${t.to}（${t.method}・${t.roundTrip}）${t.note?'　'+t.note:''}</span>
+      <span class="mono" style="flex-shrink:0;">¥${(t.amount||0).toLocaleString('en-US')}</span>
+    </div>
+  `).join('');
+  document.getElementById('transport-detail-total').textContent = `¥${(req.total||0).toLocaleString('en-US')}`;
+  const reasonEl = document.getElementById('transport-detail-reject-reason');
+  if(req.status === 'rejected' && req.rejectReason){
+    reasonEl.textContent = `不許可の理由：${req.rejectReason}`;
+    reasonEl.classList.remove('is-hidden');
+  }else{
+    reasonEl.classList.add('is-hidden');
+  }
+  document.getElementById('transport-detail-actions').classList.toggle('is-hidden', !(opts.canResolve && req.status==='pending'));
+  document.getElementById('transport-detail-modal').classList.remove('hidden');
+}
+document.getElementById('transport-detail-close-x').addEventListener('click', ()=>{
+  document.getElementById('transport-detail-modal').classList.add('hidden');
+  currentTransportDetail = null;
+});
+async function notifyTransportResult(req, approved, reason){
+  try{
+    const msg = approved
+      ? `${new Date(req.appliedAt).toLocaleDateString('ja-JP')}の交通費申請（¥${req.total.toLocaleString('en-US')}）が許諾されました。`
+      : `${new Date(req.appliedAt).toLocaleDateString('ja-JP')}の交通費申請（¥${req.total.toLocaleString('en-US')}）が不許可となりました。不許可：${reason}`;
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=${encodeURIComponent('emp:'+req.empId)}&priority=critical&title=${encodeURIComponent('交通費申請の結果')}&message=${encodeURIComponent(msg)}`);
+  }catch(e){ /* 通知失敗は致命的ではないため無視 */ }
+}
+async function markTransportRequestNewsHandled(requestId){
+  try{
+    const match = relevantNews(lastFetchedNews).find(n => {
+      const p = parseTransportRequestMessage(n.message);
+      return p && p.requestId === requestId && !/^\[処理済み\]/.test(n.title||'');
+    });
+    if(match){
+      await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=editNews&id=${encodeURIComponent(match.id)}&scope=${encodeURIComponent(match.scope||'admin')}&priority=${encodeURIComponent(match.priority||'critical')}&title=${encodeURIComponent('[処理済み] '+(match.title||''))}&message=${encodeURIComponent(match.message||'')}`);
+    }
+  }catch(e){ /* 失敗しても致命的ではないため無視 */ }
+}
+document.getElementById('transport-detail-approve').addEventListener('click', async ()=>{
+  const req = currentTransportDetail;
+  if(!req) return;
+  const ok = await showConfirmModal(`${req.empName}さんの交通費申請（¥${req.total.toLocaleString('en-US')}）を許諾しますか？`);
+  if(!ok) return;
+  const approveBtn = document.getElementById('transport-detail-approve');
+  const rejectBtn = document.getElementById('transport-detail-reject');
+  setButtonLoading(approveBtn, '処理中…');
+  rejectBtn.disabled = true;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=resolveTransportRequest&requestId=${encodeURIComponent(req.requestId)}&decision=approve`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    await notifyTransportResult(req, true, '');
+    await markTransportRequestNewsHandled(req.requestId);
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('transport_request_approve', `${empLabel} が ${req.empId}:${req.empName} の交通費申請（¥${req.total}）を許諾`);
+    document.getElementById('transport-detail-modal').classList.add('hidden');
+    document.getElementById('news-detail-modal').classList.add('hidden');
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
+    refreshTransportRequestsAdmin();
+  }catch(e){
+    await showAlertModal('処理に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(approveBtn);
+    rejectBtn.disabled = false;
+  }
+});
+document.getElementById('transport-detail-reject').addEventListener('click', async ()=>{
+  const req = currentTransportDetail;
+  if(!req) return;
+  const reason = await showReasonModal('不許可の理由を入力してください（例：金額の不一致、日付不良など）。');
+  if(reason === null) return;
+  const approveBtn = document.getElementById('transport-detail-approve');
+  const rejectBtn = document.getElementById('transport-detail-reject');
+  setButtonLoading(rejectBtn, '処理中…');
+  approveBtn.disabled = true;
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=resolveTransportRequest&requestId=${encodeURIComponent(req.requestId)}&decision=reject&reason=${encodeURIComponent(reason)}`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    await notifyTransportResult(req, false, reason);
+    await markTransportRequestNewsHandled(req.requestId);
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('transport_request_reject', `${empLabel} が ${req.empId}:${req.empName} の交通費申請（¥${req.total}）を不許可（理由：${reason}）`);
+    document.getElementById('transport-detail-modal').classList.add('hidden');
+    document.getElementById('news-detail-modal').classList.add('hidden');
+    await fetchAndRenderNews();
+    refreshOpenNewsModalList();
+    refreshTransportRequestsAdmin();
+  }catch(e){
+    await showAlertModal('処理に失敗しました：' + e.message);
+  }finally{
+    clearButtonLoading(rejectBtn);
+    approveBtn.disabled = false;
+  }
+});
+document.getElementById('news-detail-transport-open').addEventListener('click', ()=>{
+  if(!currentTransportRequest) return;
+  document.getElementById('news-detail-modal').classList.add('hidden');
+  openTransportDetailModal(currentTransportRequest, { canResolve: true });
+});
+
 document.getElementById('btn-save-company-rules').addEventListener('click', async ()=>{
   const status = document.getElementById('company-rules-status');
   const grantDateRaw = document.getElementById('set-grant-date-company').value;
@@ -2564,6 +2950,82 @@ function getInquiryEmail() {
 function getInquiryName() {
   var v = PropertiesService.getScriptProperties().getProperty('INQUIRY_NAME');
   return v || DEFAULT_INQUIRY_NAME;
+}
+
+var DEFAULT_TRANSPORT_EMAIL = 'a_aoyama@dsbz.jp';
+function getTransportEmail() {
+  var v = PropertiesService.getScriptProperties().getProperty('TRANSPORT_EMAIL');
+  return v || DEFAULT_TRANSPORT_EMAIL;
+}
+
+// ============================================================
+// 交通費申請
+// ============================================================
+var TRANSPORT_FOLDER_NAME = '交通費申請';
+var TRANSPORT_TEMPLATE_NAME = '交通費申請書(原紙)';
+var TRANSPORT_LEDGER_NAME = '交通費申請一覧';
+var TRANSPORT_REQUEST_MARKER = '##TRANSPORT_REQUEST##';
+var TRANSPORT_TRIP_HEADER_ROW = 4;
+var TRANSPORT_TRIP_START_ROW = 5;
+var TRANSPORT_TRIP_MAX_ROWS = 31; // 原紙の行5〜35（合計行は36）
+
+function findTransportFolder() {
+  var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
+  var it = masterFolder.getFoldersByName(TRANSPORT_FOLDER_NAME);
+  return it.hasNext() ? it.next() : null;
+}
+function findTransportTemplateFile(transportFolder) {
+  var it = transportFolder.getFilesByName(TRANSPORT_TEMPLATE_NAME);
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() === MimeType.GOOGLE_SHEETS) return f;
+  }
+  return null;
+}
+function getOrCreateTransportLedgerDoc(transportFolder) {
+  var it = transportFolder.getFilesByName(TRANSPORT_LEDGER_NAME);
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() === MimeType.GOOGLE_DOCS) return DocumentApp.openById(f.getId());
+  }
+  var newDoc = DocumentApp.create(TRANSPORT_LEDGER_NAME);
+  var newFile = DriveApp.getFileById(newDoc.getId());
+  transportFolder.addFile(newFile);
+  DriveApp.getRootFolder().removeFile(newFile);
+  return newDoc;
+}
+// 交通費申請一覧の1行は「requestId:empId:empName:appliedAtISO:status:decidedAtISO:reasonB64:payloadB64」。
+// reasonB64は却下理由（無ければ空）、payloadB64は{trips,total,sheetFileId,sheetUrl}のJSONをUTF-8セーフなbase64で埋め込む
+// （コロンを含む自由記述の理由や、明細行を安全にテキスト行へ収めるため）。
+function encodeTransportPayload(obj) {
+  return Utilities.base64Encode(JSON.stringify(obj), Utilities.Charset.UTF_8);
+}
+function decodeTransportPayload(b64) {
+  if (!b64) return null;
+  try { return JSON.parse(Utilities.newBlob(Utilities.base64Decode(b64, Utilities.Charset.UTF_8)).getDataAsString('UTF-8')); } catch (e) { return null; }
+}
+function parseTransportLedgerLine(line) {
+  var parts = line.split(':');
+  if (parts.length < 8) return null;
+  var reasonB64 = parts[6];
+  var payload = decodeTransportPayload(parts[7]) || { trips: [], total: 0 };
+  return {
+    requestId: parts[0], empId: parts[1], empName: parts[2],
+    appliedAt: parts[3] ? Utilities.newBlob(Utilities.base64Decode(parts[3], Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    status: parts[4],
+    decidedAt: parts[5] ? Utilities.newBlob(Utilities.base64Decode(parts[5], Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    rejectReason: reasonB64 ? Utilities.newBlob(Utilities.base64Decode(reasonB64, Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    trips: payload.trips || [], total: payload.total || 0,
+    sheetFileId: payload.sheetFileId || '', sheetUrl: payload.sheetUrl || ''
+  };
+}
+function serializeTransportLedgerLine(r) {
+  // appliedAt/decidedAtはISO日時（コロンを含む）なので、コロン区切りの行フォーマットと衝突しないようbase64化する
+  var appliedAtB64 = Utilities.base64Encode(r.appliedAt || '', Utilities.Charset.UTF_8);
+  var decidedAtB64 = r.decidedAt ? Utilities.base64Encode(r.decidedAt, Utilities.Charset.UTF_8) : '';
+  var reasonB64 = r.rejectReason ? Utilities.base64Encode(r.rejectReason, Utilities.Charset.UTF_8) : '';
+  var payloadB64 = encodeTransportPayload({ trips: r.trips, total: r.total, sheetFileId: r.sheetFileId, sheetUrl: r.sheetUrl });
+  return [r.requestId, r.empId, r.empName, appliedAtB64, r.status, decidedAtB64, reasonB64, payloadB64].join(':');
 }
 
 function getSettingsDocFile(folder) {
@@ -3049,6 +3511,16 @@ function doGet(e) {
       } else {
         PropertiesService.getScriptProperties().setProperty('INQUIRY_EMAIL', newEmail);
         PropertiesService.getScriptProperties().setProperty('INQUIRY_NAME', newName || DEFAULT_INQUIRY_NAME);
+        out = { success: true };
+      }
+    } else if (action === 'getTransportContact') {
+      out = { success: true, email: getTransportEmail() };
+    } else if (action === 'updateTransportContact') {
+      var newTransportEmail = (e.parameter.newEmail || '').trim();
+      if (!newTransportEmail) {
+        out = { error: 'メールアドレスを入力してください' };
+      } else {
+        PropertiesService.getScriptProperties().setProperty('TRANSPORT_EMAIL', newTransportEmail);
         out = { success: true };
       }
     } else if (action === 'companySettings') {
@@ -3763,6 +4235,120 @@ function doGet(e) {
 
           logSystemEvent('migrate_to_spreadsheet', '管理情報をスプレッドシートに移行しました（社員' + empRowsOld.length + '件、ユーザー情報' + userRecordsOld.length + '件）');
           out = { success: true, employeeCount: empRowsOld.length, userInfoCount: userRecordsOld.length, spreadsheetId: newSS.getId() };
+        }
+      }
+    } else if (action === 'submitTransportRequest') {
+      var tEmpId = (e.parameter.empId || '').trim();
+      var tEmpName = (e.parameter.empName || '').trim();
+      var trips;
+      try { trips = JSON.parse(e.parameter.tripsJson || '[]'); } catch (parseErrT) { trips = null; }
+      if (!tEmpId || !trips || !Array.isArray(trips) || trips.length === 0) {
+        out = { error: '申請内容が正しくありません' };
+      } else if (trips.length > TRANSPORT_TRIP_MAX_ROWS) {
+        out = { error: '一度に申請できる件数は' + TRANSPORT_TRIP_MAX_ROWS + '件までです' };
+      } else {
+        var transportFolder = findTransportFolder();
+        if (!transportFolder) {
+          out = { error: '「交通費申請」フォルダが見つかりません（管理者にご確認ください）' };
+        } else {
+          var templateFile = findTransportTemplateFile(transportFolder);
+          if (!templateFile) {
+            out = { error: '「交通費申請書(原紙)」が見つかりません（管理者にご確認ください）' };
+          } else {
+            var nowT = new Date();
+            var tsStr = Utilities.formatDate(nowT, Session.getScriptTimeZone() || 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+            var copiedFile = templateFile.makeCopy(tEmpId + '_' + tsStr, transportFolder);
+            var copiedSS = SpreadsheetApp.openById(copiedFile.getId());
+            var sheetT = copiedSS.getSheets()[0];
+            sheetT.getRange(2, 4).setValue(todayDateString());
+            sheetT.getRange(3, 4).setValue(tEmpName || tEmpId);
+            var totalT = 0;
+            var tripRowsT = [];
+            for (var ti = 0; ti < trips.length; ti++) {
+              var tr = trips[ti];
+              var amt = parseFloat(tr.amount) || 0;
+              totalT += amt;
+              tripRowsT.push([tr.y || '', tr.m || '', tr.d || '', tr.from || '', tr.to || '', tr.method || '', tr.roundTrip || '', amt, tr.note || '']);
+            }
+            sheetT.getRange(TRANSPORT_TRIP_START_ROW, 1, tripRowsT.length, 9).setValues(tripRowsT);
+
+            var requestId = 'tr_' + Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+            var nowIsoT = nowT.toISOString();
+            var recordT = {
+              requestId: requestId, empId: tEmpId, empName: tEmpName, appliedAt: nowIsoT,
+              status: 'pending', decidedAt: '', rejectReason: '',
+              trips: trips, total: totalT, sheetFileId: copiedFile.getId(), sheetUrl: copiedFile.getUrl()
+            };
+            var ledgerDocC = getOrCreateTransportLedgerDoc(transportFolder);
+            appendLine(ledgerDocC, serializeTransportLedgerLine(recordT));
+
+            var newsDocT = getOrCreateMasterDoc('ニュース');
+            var newsIdT = new Date().getTime();
+            var newsPayloadT = encodeTransportPayload({ requestId: requestId, empId: tEmpId, empName: tEmpName, total: totalT, trips: trips, appliedAt: nowIsoT });
+            appendLine(newsDocT, [newsIdT, 'admin', 'critical', '交通費申請', '', '', TRANSPORT_REQUEST_MARKER + newsPayloadT].join(':'));
+
+            try {
+              var mailBodyT = (tEmpName || tEmpId) + '（' + tEmpId + '）さんから交通費申請が届きました。\n件数：' + trips.length + '件\n合計金額：' + totalT + '円\n\nアプリより内容を確認し、承認・却下を行ってください。\n※本メールは給与台帳より自動送信されています。';
+              MailApp.sendEmail(getTransportEmail(), '給与台帳：交通費申請', mailBodyT);
+            } catch (mailErrT) { /* メール送信失敗は申請自体の成功を妨げない */ }
+
+            logSystemEvent('transport_request', tEmpId + ':' + tEmpName + ' が交通費申請（' + trips.length + '件・' + totalT + '円）');
+            out = { success: true, requestId: requestId, sheetUrl: copiedFile.getUrl() };
+          }
+        }
+      }
+    } else if (action === 'getTransportRequests') {
+      var transportFolderG = findTransportFolder();
+      if (!transportFolderG) {
+        out = { success: true, requests: [] };
+      } else {
+        var ledgerDocG = getOrCreateTransportLedgerDoc(transportFolderG);
+        var linesG = ledgerDocG.getBody().getText().split('\n').filter(function (l) { return l.trim(); });
+        var empFilterG = (e.parameter.empId || '').trim();
+        var requestsG = [];
+        for (var gi = 0; gi < linesG.length; gi++) {
+          var recG = parseTransportLedgerLine(linesG[gi].trim());
+          if (!recG) continue;
+          if (empFilterG && recG.empId !== empFilterG) continue;
+          requestsG.push(recG);
+        }
+        requestsG.sort(function (a, b) { return (b.appliedAt || '').localeCompare(a.appliedAt || ''); });
+        out = { success: true, requests: requestsG };
+      }
+    } else if (action === 'resolveTransportRequest') {
+      var transportFolderR = findTransportFolder();
+      if (!transportFolderR) {
+        out = { error: '「交通費申請」フォルダが見つかりません' };
+      } else {
+        var requestIdR2 = (e.parameter.requestId || '').trim();
+        var decisionR2 = e.parameter.decision === 'reject' ? 'reject' : 'approve';
+        var reasonR2 = (e.parameter.reason || '').trim();
+        if (decisionR2 === 'reject' && !reasonR2) {
+          out = { error: '却下の理由を入力してください' };
+        } else {
+          var ledgerDocR2 = getOrCreateTransportLedgerDoc(transportFolderR);
+          var bodyR2 = ledgerDocR2.getBody();
+          var linesR2 = bodyR2.getText().split('\n');
+          var targetIdxR2 = -1, targetRecR2 = null;
+          for (var ri2 = 0; ri2 < linesR2.length; ri2++) {
+            var rowR2 = linesR2[ri2].trim();
+            if (!rowR2) continue;
+            var recR2 = parseTransportLedgerLine(rowR2);
+            if (recR2 && recR2.requestId === requestIdR2) { targetIdxR2 = ri2; targetRecR2 = recR2; break; }
+          }
+          if (targetIdxR2 === -1) {
+            out = { error: '対象の申請が見つかりませんでした' };
+          } else if (targetRecR2.status !== 'pending') {
+            out = { error: 'この申請は既に処理済みです' };
+          } else {
+            targetRecR2.status = decisionR2 === 'approve' ? 'approved' : 'rejected';
+            targetRecR2.decidedAt = new Date().toISOString();
+            targetRecR2.rejectReason = decisionR2 === 'reject' ? reasonR2 : '';
+            linesR2[targetIdxR2] = serializeTransportLedgerLine(targetRecR2);
+            bodyR2.editAsText().setText(linesR2.join('\n'));
+            ledgerDocR2.saveAndClose();
+            out = { success: true, empId: targetRecR2.empId, empName: targetRecR2.empName, total: targetRecR2.total };
+          }
         }
       }
     } else if (action === 'debugMatch') {

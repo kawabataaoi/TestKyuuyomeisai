@@ -52,6 +52,82 @@ function getInquiryName() {
   return v || DEFAULT_INQUIRY_NAME;
 }
 
+var DEFAULT_TRANSPORT_EMAIL = 'a_aoyama@dsbz.jp';
+function getTransportEmail() {
+  var v = PropertiesService.getScriptProperties().getProperty('TRANSPORT_EMAIL');
+  return v || DEFAULT_TRANSPORT_EMAIL;
+}
+
+// ============================================================
+// 交通費申請
+// ============================================================
+var TRANSPORT_FOLDER_NAME = '交通費申請';
+var TRANSPORT_TEMPLATE_NAME = '交通費申請書(原紙)';
+var TRANSPORT_LEDGER_NAME = '交通費申請一覧';
+var TRANSPORT_REQUEST_MARKER = '##TRANSPORT_REQUEST##';
+var TRANSPORT_TRIP_HEADER_ROW = 4;
+var TRANSPORT_TRIP_START_ROW = 5;
+var TRANSPORT_TRIP_MAX_ROWS = 31; // 原紙の行5〜35（合計行は36）
+
+function findTransportFolder() {
+  var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
+  var it = masterFolder.getFoldersByName(TRANSPORT_FOLDER_NAME);
+  return it.hasNext() ? it.next() : null;
+}
+function findTransportTemplateFile(transportFolder) {
+  var it = transportFolder.getFilesByName(TRANSPORT_TEMPLATE_NAME);
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() === MimeType.GOOGLE_SHEETS) return f;
+  }
+  return null;
+}
+function getOrCreateTransportLedgerDoc(transportFolder) {
+  var it = transportFolder.getFilesByName(TRANSPORT_LEDGER_NAME);
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getMimeType() === MimeType.GOOGLE_DOCS) return DocumentApp.openById(f.getId());
+  }
+  var newDoc = DocumentApp.create(TRANSPORT_LEDGER_NAME);
+  var newFile = DriveApp.getFileById(newDoc.getId());
+  transportFolder.addFile(newFile);
+  DriveApp.getRootFolder().removeFile(newFile);
+  return newDoc;
+}
+// 交通費申請一覧の1行は「requestId:empId:empName:appliedAtISO:status:decidedAtISO:reasonB64:payloadB64」。
+// reasonB64は却下理由（無ければ空）、payloadB64は{trips,total,sheetFileId,sheetUrl}のJSONをUTF-8セーフなbase64で埋め込む
+// （コロンを含む自由記述の理由や、明細行を安全にテキスト行へ収めるため）。
+function encodeTransportPayload(obj) {
+  return Utilities.base64Encode(JSON.stringify(obj), Utilities.Charset.UTF_8);
+}
+function decodeTransportPayload(b64) {
+  if (!b64) return null;
+  try { return JSON.parse(Utilities.newBlob(Utilities.base64Decode(b64, Utilities.Charset.UTF_8)).getDataAsString('UTF-8')); } catch (e) { return null; }
+}
+function parseTransportLedgerLine(line) {
+  var parts = line.split(':');
+  if (parts.length < 8) return null;
+  var reasonB64 = parts[6];
+  var payload = decodeTransportPayload(parts[7]) || { trips: [], total: 0 };
+  return {
+    requestId: parts[0], empId: parts[1], empName: parts[2],
+    appliedAt: parts[3] ? Utilities.newBlob(Utilities.base64Decode(parts[3], Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    status: parts[4],
+    decidedAt: parts[5] ? Utilities.newBlob(Utilities.base64Decode(parts[5], Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    rejectReason: reasonB64 ? Utilities.newBlob(Utilities.base64Decode(reasonB64, Utilities.Charset.UTF_8)).getDataAsString('UTF-8') : '',
+    trips: payload.trips || [], total: payload.total || 0,
+    sheetFileId: payload.sheetFileId || '', sheetUrl: payload.sheetUrl || ''
+  };
+}
+function serializeTransportLedgerLine(r) {
+  // appliedAt/decidedAtはISO日時（コロンを含む）なので、コロン区切りの行フォーマットと衝突しないようbase64化する
+  var appliedAtB64 = Utilities.base64Encode(r.appliedAt || '', Utilities.Charset.UTF_8);
+  var decidedAtB64 = r.decidedAt ? Utilities.base64Encode(r.decidedAt, Utilities.Charset.UTF_8) : '';
+  var reasonB64 = r.rejectReason ? Utilities.base64Encode(r.rejectReason, Utilities.Charset.UTF_8) : '';
+  var payloadB64 = encodeTransportPayload({ trips: r.trips, total: r.total, sheetFileId: r.sheetFileId, sheetUrl: r.sheetUrl });
+  return [r.requestId, r.empId, r.empName, appliedAtB64, r.status, decidedAtB64, reasonB64, payloadB64].join(':');
+}
+
 function getSettingsDocFile(folder) {
   for (var i = 0; i < SETTINGS_DOC_NAME_CANDIDATES.length; i++) {
     var it = folder.getFilesByName(SETTINGS_DOC_NAME_CANDIDATES[i]);
@@ -535,6 +611,16 @@ function doGet(e) {
       } else {
         PropertiesService.getScriptProperties().setProperty('INQUIRY_EMAIL', newEmail);
         PropertiesService.getScriptProperties().setProperty('INQUIRY_NAME', newName || DEFAULT_INQUIRY_NAME);
+        out = { success: true };
+      }
+    } else if (action === 'getTransportContact') {
+      out = { success: true, email: getTransportEmail() };
+    } else if (action === 'updateTransportContact') {
+      var newTransportEmail = (e.parameter.newEmail || '').trim();
+      if (!newTransportEmail) {
+        out = { error: 'メールアドレスを入力してください' };
+      } else {
+        PropertiesService.getScriptProperties().setProperty('TRANSPORT_EMAIL', newTransportEmail);
         out = { success: true };
       }
     } else if (action === 'companySettings') {
@@ -1249,6 +1335,120 @@ function doGet(e) {
 
           logSystemEvent('migrate_to_spreadsheet', '管理情報をスプレッドシートに移行しました（社員' + empRowsOld.length + '件、ユーザー情報' + userRecordsOld.length + '件）');
           out = { success: true, employeeCount: empRowsOld.length, userInfoCount: userRecordsOld.length, spreadsheetId: newSS.getId() };
+        }
+      }
+    } else if (action === 'submitTransportRequest') {
+      var tEmpId = (e.parameter.empId || '').trim();
+      var tEmpName = (e.parameter.empName || '').trim();
+      var trips;
+      try { trips = JSON.parse(e.parameter.tripsJson || '[]'); } catch (parseErrT) { trips = null; }
+      if (!tEmpId || !trips || !Array.isArray(trips) || trips.length === 0) {
+        out = { error: '申請内容が正しくありません' };
+      } else if (trips.length > TRANSPORT_TRIP_MAX_ROWS) {
+        out = { error: '一度に申請できる件数は' + TRANSPORT_TRIP_MAX_ROWS + '件までです' };
+      } else {
+        var transportFolder = findTransportFolder();
+        if (!transportFolder) {
+          out = { error: '「交通費申請」フォルダが見つかりません（管理者にご確認ください）' };
+        } else {
+          var templateFile = findTransportTemplateFile(transportFolder);
+          if (!templateFile) {
+            out = { error: '「交通費申請書(原紙)」が見つかりません（管理者にご確認ください）' };
+          } else {
+            var nowT = new Date();
+            var tsStr = Utilities.formatDate(nowT, Session.getScriptTimeZone() || 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+            var copiedFile = templateFile.makeCopy(tEmpId + '_' + tsStr, transportFolder);
+            var copiedSS = SpreadsheetApp.openById(copiedFile.getId());
+            var sheetT = copiedSS.getSheets()[0];
+            sheetT.getRange(2, 4).setValue(todayDateString());
+            sheetT.getRange(3, 4).setValue(tEmpName || tEmpId);
+            var totalT = 0;
+            var tripRowsT = [];
+            for (var ti = 0; ti < trips.length; ti++) {
+              var tr = trips[ti];
+              var amt = parseFloat(tr.amount) || 0;
+              totalT += amt;
+              tripRowsT.push([tr.y || '', tr.m || '', tr.d || '', tr.from || '', tr.to || '', tr.method || '', tr.roundTrip || '', amt, tr.note || '']);
+            }
+            sheetT.getRange(TRANSPORT_TRIP_START_ROW, 1, tripRowsT.length, 9).setValues(tripRowsT);
+
+            var requestId = 'tr_' + Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+            var nowIsoT = nowT.toISOString();
+            var recordT = {
+              requestId: requestId, empId: tEmpId, empName: tEmpName, appliedAt: nowIsoT,
+              status: 'pending', decidedAt: '', rejectReason: '',
+              trips: trips, total: totalT, sheetFileId: copiedFile.getId(), sheetUrl: copiedFile.getUrl()
+            };
+            var ledgerDocC = getOrCreateTransportLedgerDoc(transportFolder);
+            appendLine(ledgerDocC, serializeTransportLedgerLine(recordT));
+
+            var newsDocT = getOrCreateMasterDoc('ニュース');
+            var newsIdT = new Date().getTime();
+            var newsPayloadT = encodeTransportPayload({ requestId: requestId, empId: tEmpId, empName: tEmpName, total: totalT, trips: trips, appliedAt: nowIsoT });
+            appendLine(newsDocT, [newsIdT, 'admin', 'critical', '交通費申請', '', '', TRANSPORT_REQUEST_MARKER + newsPayloadT].join(':'));
+
+            try {
+              var mailBodyT = (tEmpName || tEmpId) + '（' + tEmpId + '）さんから交通費申請が届きました。\n件数：' + trips.length + '件\n合計金額：' + totalT + '円\n\nアプリより内容を確認し、承認・却下を行ってください。\n※本メールは給与台帳より自動送信されています。';
+              MailApp.sendEmail(getTransportEmail(), '給与台帳：交通費申請', mailBodyT);
+            } catch (mailErrT) { /* メール送信失敗は申請自体の成功を妨げない */ }
+
+            logSystemEvent('transport_request', tEmpId + ':' + tEmpName + ' が交通費申請（' + trips.length + '件・' + totalT + '円）');
+            out = { success: true, requestId: requestId, sheetUrl: copiedFile.getUrl() };
+          }
+        }
+      }
+    } else if (action === 'getTransportRequests') {
+      var transportFolderG = findTransportFolder();
+      if (!transportFolderG) {
+        out = { success: true, requests: [] };
+      } else {
+        var ledgerDocG = getOrCreateTransportLedgerDoc(transportFolderG);
+        var linesG = ledgerDocG.getBody().getText().split('\n').filter(function (l) { return l.trim(); });
+        var empFilterG = (e.parameter.empId || '').trim();
+        var requestsG = [];
+        for (var gi = 0; gi < linesG.length; gi++) {
+          var recG = parseTransportLedgerLine(linesG[gi].trim());
+          if (!recG) continue;
+          if (empFilterG && recG.empId !== empFilterG) continue;
+          requestsG.push(recG);
+        }
+        requestsG.sort(function (a, b) { return (b.appliedAt || '').localeCompare(a.appliedAt || ''); });
+        out = { success: true, requests: requestsG };
+      }
+    } else if (action === 'resolveTransportRequest') {
+      var transportFolderR = findTransportFolder();
+      if (!transportFolderR) {
+        out = { error: '「交通費申請」フォルダが見つかりません' };
+      } else {
+        var requestIdR2 = (e.parameter.requestId || '').trim();
+        var decisionR2 = e.parameter.decision === 'reject' ? 'reject' : 'approve';
+        var reasonR2 = (e.parameter.reason || '').trim();
+        if (decisionR2 === 'reject' && !reasonR2) {
+          out = { error: '却下の理由を入力してください' };
+        } else {
+          var ledgerDocR2 = getOrCreateTransportLedgerDoc(transportFolderR);
+          var bodyR2 = ledgerDocR2.getBody();
+          var linesR2 = bodyR2.getText().split('\n');
+          var targetIdxR2 = -1, targetRecR2 = null;
+          for (var ri2 = 0; ri2 < linesR2.length; ri2++) {
+            var rowR2 = linesR2[ri2].trim();
+            if (!rowR2) continue;
+            var recR2 = parseTransportLedgerLine(rowR2);
+            if (recR2 && recR2.requestId === requestIdR2) { targetIdxR2 = ri2; targetRecR2 = recR2; break; }
+          }
+          if (targetIdxR2 === -1) {
+            out = { error: '対象の申請が見つかりませんでした' };
+          } else if (targetRecR2.status !== 'pending') {
+            out = { error: 'この申請は既に処理済みです' };
+          } else {
+            targetRecR2.status = decisionR2 === 'approve' ? 'approved' : 'rejected';
+            targetRecR2.decidedAt = new Date().toISOString();
+            targetRecR2.rejectReason = decisionR2 === 'reject' ? reasonR2 : '';
+            linesR2[targetIdxR2] = serializeTransportLedgerLine(targetRecR2);
+            bodyR2.editAsText().setText(linesR2.join('\n'));
+            ledgerDocR2.saveAndClose();
+            out = { success: true, empId: targetRecR2.empId, empName: targetRecR2.empName, total: targetRecR2.total };
+          }
         }
       }
     } else if (action === 'debugMatch') {
