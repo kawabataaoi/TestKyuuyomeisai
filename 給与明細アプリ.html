@@ -4578,9 +4578,8 @@ function renderMonthDocs(container, docsForMonth, ym, baseLabel, forceNumber){
     return;
   }
   const sorted = docsForMonth.slice().sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
-  const plainYm = `${ym.y}-${String(ym.mo).padStart(2,'0')}`;
-  ensureDocPayKeys(sorted, plainYm);
   sorted.forEach((doc, i)=>{
+    const plainYm = `${ym.y}-${String(ym.mo).padStart(2,'0')}`;
     const payKey = docPayKeys[doc.id] || plainYm;
     renderLedgerRow(container, doc, ym, numberedLabel(baseLabel, i, sorted.length, forceNumber), payKey);
   });
@@ -4588,7 +4587,13 @@ function renderMonthDocs(container, docsForMonth, ym, baseLabel, forceNumber){
 function isLocalOnlyDoc(d){ return !(d.source === 'drive' || d.source === 'localfolder'); }
 // Drive同期済みの明細と、まだローカルにしかない明細を別枠で表示する。
 // ローカル分は「その他明細L①」のように、常に番号つきの専用ラベルにする。
+// payKeyの割り当ては、表示上は別枠に分けていても「その月の全書類」を対象に
+// 一度だけ行う（Drive分とローカル分を別々に処理すると、両方が独立に同じ
+// プレーンキーを奪い合って実績が上書き・消失する不具合があったため）。
 function renderMonthDocsSplit(container, docsForMonth, ym, driveLabel, localLabel){
+  const plainYm = `${ym.y}-${String(ym.mo).padStart(2,'0')}`;
+  const sortedAll = docsForMonth.slice().sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
+  ensureDocPayKeys(sortedAll, plainYm);
   const driveGroup = docsForMonth.filter(d=>!isLocalOnlyDoc(d));
   const localGroup = docsForMonth.filter(isLocalOnlyDoc);
   renderMonthDocs(container, driveGroup, ym, driveLabel);
