@@ -695,10 +695,13 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <!-- 交通費タブ -->
   <section class="view" id="view-transport">
     <div class="card is-hidden" id="card-transport-admin-summary">
-      <div class="row">
+      <div class="row mb-2">
         <span class="section-title mb-0" id="transport-admin-count-text">0件申請あり</span>
+        <button class="btn ghost small collapsible-toggle">開く</button>
       </div>
-      <div id="transport-admin-requests" class="mt-8"></div>
+      <div class="collapsible-body is-hidden">
+        <div id="transport-admin-requests" class="mt-8"></div>
+      </div>
     </div>
     <div class="card">
       <div class="section-title">交通費を申請</div>
@@ -2262,7 +2265,7 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   document.getElementById('btn-new-user-toggle').textContent = showing ? '追加' : '閉じる';
 });
 
-['card-admin-system','card-pay-rules'].forEach(cardId=>{
+['card-admin-system','card-pay-rules','card-transport-admin-summary'].forEach(cardId=>{
   const card = document.getElementById(cardId);
   if(!card) return;
   const toggleBtn = card.querySelector('.collapsible-toggle');
@@ -2633,9 +2636,9 @@ async function loadMyTransportRequests(){
       return;
     }
     container.innerHTML = myTransportRequests.map((r,i)=>`
-      <div class="log-item" style="cursor:pointer;" data-my-transport-idx="${i}">
-        <span>${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
-        <span class="${transportStatusTagClass(r.status)}">${transportStatusLabel(r.status)}</span>
+      <div class="log-item" style="cursor:pointer;display:flex;align-items:center;gap:8px;" data-my-transport-idx="${i}">
+        <span style="flex:1;min-width:0;">${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
+        <span class="${transportStatusTagClass(r.status)}" style="flex-shrink:0;">${transportStatusLabel(r.status)}</span>
       </div>
     `).join('');
     container.querySelectorAll('[data-my-transport-idx]').forEach(elx=>{
@@ -2662,9 +2665,9 @@ async function refreshTransportRequestsAdmin(){
   document.getElementById('transport-admin-count-text').textContent = `${pending.length}件申請あり`;
   const listEl = document.getElementById('transport-admin-requests');
   listEl.innerHTML = transportAdminRequests.map((r,i)=>`
-    <div class="log-item" style="cursor:pointer;" data-admin-transport-idx="${i}">
-      <span>${r.empId}:${r.empName}　${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
-      <span class="${transportStatusTagClass(r.status)}">${transportStatusLabel(r.status)}</span>
+    <div class="log-item" style="cursor:pointer;display:flex;align-items:center;gap:8px;" data-admin-transport-idx="${i}">
+      <span style="flex:1;min-width:0;">${r.empId}:${r.empName}　${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
+      <span class="${transportStatusTagClass(r.status)}" style="flex-shrink:0;">${transportStatusLabel(r.status)}</span>
     </div>
   `).join('') || '<div class="empty">申請はまだありません。</div>';
   listEl.querySelectorAll('[data-admin-transport-idx]').forEach(elx=>{
