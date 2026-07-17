@@ -1453,6 +1453,42 @@ function doGet(e) {
           }
         }
       }
+    } else if (action === 'reviseTransportRequest') {
+      // 保守画面から、判定済み（あるいは未処理）の交通費申請を後から修正するための操作。理由は常に必須。
+      var transportFolderV = findTransportFolder();
+      if (!transportFolderV) {
+        out = { error: '「交通費申請」フォルダが見つかりません' };
+      } else {
+        var requestIdV = (e.parameter.requestId || '').trim();
+        var decisionV = e.parameter.decision === 'reject' ? 'reject' : 'approve';
+        var reasonV = (e.parameter.reason || '').trim();
+        if (!reasonV) {
+          out = { error: '修正の理由を入力してください' };
+        } else {
+          var ledgerDocV = getOrCreateTransportLedgerDoc(transportFolderV);
+          var bodyV = ledgerDocV.getBody();
+          var linesV = bodyV.getText().split('\n');
+          var targetIdxV = -1, targetRecV = null;
+          for (var vi = 0; vi < linesV.length; vi++) {
+            var rowV = linesV[vi].trim();
+            if (!rowV) continue;
+            var recV = parseTransportLedgerLine(rowV);
+            if (recV && recV.requestId === requestIdV) { targetIdxV = vi; targetRecV = recV; break; }
+          }
+          if (targetIdxV === -1) {
+            out = { error: '対象の申請が見つかりませんでした' };
+          } else {
+            targetRecV.status = decisionV === 'approve' ? 'approved' : 'rejected';
+            targetRecV.decidedAt = new Date().toISOString();
+            targetRecV.rejectReason = reasonV;
+            linesV[targetIdxV] = serializeTransportLedgerLine(targetRecV);
+            bodyV.editAsText().setText(linesV.join('\n'));
+            ledgerDocV.saveAndClose();
+            logSystemEvent('transport_request_revise', targetRecV.empId + ':' + targetRecV.empName + ' の交通費申請（' + requestIdV + '）の判定を' + (decisionV === 'approve' ? '許諾' : '不許可') + 'に修正（理由：' + reasonV + '）');
+            out = { success: true, empId: targetRecV.empId, empName: targetRecV.empName, total: targetRecV.total, status: targetRecV.status };
+          }
+        }
+      }
     } else if (action === 'debugMatch') {
       var listFileM = findMasterListFile();
       if (!listFileM) {

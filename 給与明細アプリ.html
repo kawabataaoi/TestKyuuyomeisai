@@ -973,6 +973,18 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <p class="muted mt-6" id="admin-delete-action-status"></p>
       </div>
     </div>
+    <div class="card" id="card-admin-transport-revise">
+      <div class="section-title">交通費申請の修正（管理者用）</div>
+      <p class="muted mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
+      <label class="field mt-0">開始日（申請日）</label>
+      <input type="date" id="admin-transport-revise-from">
+      <label class="field">終了日（申請日）</label>
+      <input type="date" id="admin-transport-revise-to">
+      <p class="muted fs-12 mt-4">両方空欄で全件検索します。</p>
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
+      <p class="muted mt-6" id="admin-transport-revise-status"></p>
+      <div id="admin-transport-revise-results" class="mt-8"></div>
+    </div>
   </section>
 
 </main>
@@ -1052,8 +1064,8 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       </div>
       <p class="muted mt-8 is-hidden" id="transport-detail-reject-reason"></p>
       <div class="news-detail-actions is-hidden" id="transport-detail-actions">
-        <button class="btn ghost" id="transport-detail-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">却下</button>
         <button class="btn" id="transport-detail-approve">承認</button>
+        <button class="btn ghost" id="transport-detail-reject" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">却下</button>
       </div>
     </div>
   </div>
@@ -2661,21 +2673,88 @@ async function refreshTransportRequestsAdmin(){
   const badge = document.getElementById('tab-transport-badge');
   if(badge) badge.classList.toggle('is-hidden', pending.length===0);
   const summaryCard = document.getElementById('card-transport-admin-summary');
-  summaryCard.classList.toggle('is-hidden', transportAdminRequests.length===0);
+  summaryCard.classList.toggle('is-hidden', pending.length===0);
   document.getElementById('transport-admin-count-text').textContent = `${pending.length}件申請あり`;
   const listEl = document.getElementById('transport-admin-requests');
-  listEl.innerHTML = transportAdminRequests.map((r,i)=>`
+  listEl.innerHTML = pending.map((r,i)=>`
     <div class="log-item" style="cursor:pointer;display:flex;align-items:center;gap:8px;" data-admin-transport-idx="${i}">
       <span style="flex:1;min-width:0;">${r.empId}:${r.empName}　${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
       <span class="${transportStatusTagClass(r.status)}" style="flex-shrink:0;">${transportStatusLabel(r.status)}</span>
     </div>
-  `).join('') || '<div class="empty">申請はまだありません。</div>';
+  `).join('') || '<div class="empty">申請中の案件はありません。</div>';
   listEl.querySelectorAll('[data-admin-transport-idx]').forEach(elx=>{
     elx.addEventListener('click', ()=>{
-      const r = transportAdminRequests[parseInt(elx.dataset.adminTransportIdx, 10)];
+      const r = pending[parseInt(elx.dataset.adminTransportIdx, 10)];
       openTransportDetailModal(r, { canResolve: true });
     });
   });
+}
+
+function transportReviseRowHtml(r, i){
+  return `
+    <div class="card" style="background:var(--surface-2);margin-bottom:8px;">
+      <div class="row" style="align-items:center;">
+        <span style="font-size:12px;">${r.empId}:${r.empName}　${new Date(r.appliedAt).toLocaleDateString('ja-JP')}（${r.trips.length}件・¥${r.total.toLocaleString('en-US')}）</span>
+        <span class="${transportStatusTagClass(r.status)}" style="flex-shrink:0;">${transportStatusLabel(r.status)}</span>
+      </div>
+      ${r.status==='rejected' && r.rejectReason ? `<p class="muted fs-12 mt-4">理由：${r.rejectReason}</p>` : ''}
+      <div class="row mt-6" style="gap:8px;">
+        <button class="btn ghost small flex-1" data-revise-approve="${i}">承認に修正</button>
+        <button class="btn ghost small flex-1" data-revise-reject="${i}" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">却下に修正</button>
+      </div>
+    </div>
+  `;
+}
+let transportReviseResults = [];
+document.getElementById('btn-admin-transport-revise-search').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-transport-revise-status');
+  const fromVal = document.getElementById('admin-transport-revise-from').value;
+  const toVal = document.getElementById('admin-transport-revise-to').value;
+  const resultsEl = document.getElementById('admin-transport-revise-results');
+  status.textContent = '検索しています…';
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportRequests`);
+    let list = (data && data.requests) || [];
+    if(fromVal){
+      const fromTime = new Date(fromVal + 'T00:00:00').getTime();
+      list = list.filter(r=> new Date(r.appliedAt).getTime() >= fromTime);
+    }
+    if(toVal){
+      const toTime = new Date(toVal + 'T23:59:59').getTime();
+      list = list.filter(r=> new Date(r.appliedAt).getTime() <= toTime);
+    }
+    transportReviseResults = list;
+    status.textContent = `${list.length}件見つかりました。`;
+    resultsEl.innerHTML = list.length ? list.map((r,i)=>transportReviseRowHtml(r,i)).join('') : '<div class="empty">該当する申請はありません。</div>';
+    resultsEl.querySelectorAll('[data-revise-approve]').forEach(btn=>{
+      btn.addEventListener('click', ()=> doReviseTransportRequest(parseInt(btn.dataset.reviseApprove, 10), 'approve'));
+    });
+    resultsEl.querySelectorAll('[data-revise-reject]').forEach(btn=>{
+      btn.addEventListener('click', ()=> doReviseTransportRequest(parseInt(btn.dataset.reviseReject, 10), 'reject'));
+    });
+  }catch(e){
+    status.textContent = '検索に失敗しました：' + e.message;
+  }
+});
+async function doReviseTransportRequest(idx, decision){
+  const r = transportReviseResults[idx];
+  if(!r) return;
+  const decisionLabel = decision === 'approve' ? '承認' : '却下';
+  const reason = await showReasonModal(`修正の理由を入力してください（${r.empName}さん・¥${r.total.toLocaleString('en-US')}を${decisionLabel}に修正）。`);
+  if(reason === null) return;
+  const status = document.getElementById('admin-transport-revise-status');
+  status.textContent = '修正しています…';
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=reviseTransportRequest&requestId=${encodeURIComponent(r.requestId)}&decision=${decision}&reason=${encodeURIComponent(reason)}`);
+    if(data.error){ status.textContent = data.error; return; }
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    logEvent('transport_request_revise', `${empLabel} が ${r.empId}:${r.empName} の交通費申請（${r.requestId}）の判定を${decisionLabel}に修正（理由：${reason}）`);
+    status.textContent = '修正しました。';
+    document.getElementById('btn-admin-transport-revise-search').click();
+    refreshTransportRequestsAdmin();
+  }catch(e){
+    status.textContent = '修正に失敗しました：' + e.message;
+  }
 }
 
 let currentTransportDetail = null;
@@ -4353,6 +4432,42 @@ function doGet(e) {
             bodyR2.editAsText().setText(linesR2.join('\n'));
             ledgerDocR2.saveAndClose();
             out = { success: true, empId: targetRecR2.empId, empName: targetRecR2.empName, total: targetRecR2.total };
+          }
+        }
+      }
+    } else if (action === 'reviseTransportRequest') {
+      // 保守画面から、判定済み（あるいは未処理）の交通費申請を後から修正するための操作。理由は常に必須。
+      var transportFolderV = findTransportFolder();
+      if (!transportFolderV) {
+        out = { error: '「交通費申請」フォルダが見つかりません' };
+      } else {
+        var requestIdV = (e.parameter.requestId || '').trim();
+        var decisionV = e.parameter.decision === 'reject' ? 'reject' : 'approve';
+        var reasonV = (e.parameter.reason || '').trim();
+        if (!reasonV) {
+          out = { error: '修正の理由を入力してください' };
+        } else {
+          var ledgerDocV = getOrCreateTransportLedgerDoc(transportFolderV);
+          var bodyV = ledgerDocV.getBody();
+          var linesV = bodyV.getText().split('\n');
+          var targetIdxV = -1, targetRecV = null;
+          for (var vi = 0; vi < linesV.length; vi++) {
+            var rowV = linesV[vi].trim();
+            if (!rowV) continue;
+            var recV = parseTransportLedgerLine(rowV);
+            if (recV && recV.requestId === requestIdV) { targetIdxV = vi; targetRecV = recV; break; }
+          }
+          if (targetIdxV === -1) {
+            out = { error: '対象の申請が見つかりませんでした' };
+          } else {
+            targetRecV.status = decisionV === 'approve' ? 'approved' : 'rejected';
+            targetRecV.decidedAt = new Date().toISOString();
+            targetRecV.rejectReason = reasonV;
+            linesV[targetIdxV] = serializeTransportLedgerLine(targetRecV);
+            bodyV.editAsText().setText(linesV.join('\n'));
+            ledgerDocV.saveAndClose();
+            logSystemEvent('transport_request_revise', targetRecV.empId + ':' + targetRecV.empName + ' の交通費申請（' + requestIdV + '）の判定を' + (decisionV === 'approve' ? '許諾' : '不許可') + 'に修正（理由：' + reasonV + '）');
+            out = { success: true, empId: targetRecV.empId, empName: targetRecV.empName, total: targetRecV.total, status: targetRecV.status };
           }
         }
       }
