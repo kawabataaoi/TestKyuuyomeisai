@@ -927,6 +927,18 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="text" id="admin-search-id" placeholder="例：000 または やまだ">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
       <p class="muted mt-6" id="admin-search-status"></p>
+      <div class="divider-16"></div>
+      <div class="section-title fs-13">交通費申請の修正</div>
+      <p class="muted fs-12 mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
+      <label class="field mt-0">開始日（申請日）</label>
+      <input type="date" id="admin-transport-revise-from">
+      <label class="field">終了日（申請日）</label>
+      <input type="date" id="admin-transport-revise-to">
+      <p class="muted fs-12 mt-4">両方空欄で全件検索します。</p>
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
+      <p class="muted mt-6" id="admin-transport-revise-status"></p>
+      <div id="admin-transport-revise-results" class="mt-8"></div>
+      <div class="divider-16"></div>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
       <div id="admin-user-panel" style="display:none;margin-top:14px;">
         <div class="divider-mb-14"></div>
@@ -972,18 +984,6 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <button class="btn ghost small" id="btn-admin-restore-user" style="width:100%;display:none;">削除を取り消す</button>
         <p class="muted mt-6" id="admin-delete-action-status"></p>
       </div>
-    </div>
-    <div class="card" id="card-admin-transport-revise">
-      <div class="section-title">交通費申請の修正（管理者用）</div>
-      <p class="muted mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
-      <label class="field mt-0">開始日（申請日）</label>
-      <input type="date" id="admin-transport-revise-from">
-      <label class="field">終了日（申請日）</label>
-      <input type="date" id="admin-transport-revise-to">
-      <p class="muted fs-12 mt-4">両方空欄で全件検索します。</p>
-      <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
-      <p class="muted mt-6" id="admin-transport-revise-status"></p>
-      <div id="admin-transport-revise-results" class="mt-8"></div>
     </div>
   </section>
 
