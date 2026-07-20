@@ -4768,6 +4768,8 @@ function readSettingsForm(){
   };
 }
 document.getElementById('btn-save-settings').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btn-save-settings');
+  setButtonLoading(btn, '保存しています…');
   Object.assign(settings, readSettingsForm());
   saveJSON('settings', settings);
   checkAndApplyScheduledGrant();
@@ -4781,6 +4783,13 @@ document.getElementById('btn-save-settings').addEventListener('click', async ()=
   }else{
     document.querySelector('nav.tabbar button[data-view=meisai]').click();
   }
+  clearButtonLoading(btn);
+  btn.textContent = '保存しました';
+  btn.disabled = true;
+  setTimeout(()=>{
+    btn.textContent = '設定を保存';
+    btn.disabled = false;
+  }, 3000);
 });
 function parseYearMonth(name){
   let m = name.match(/(\d{4})[-_年](\d{1,2})月?/);
