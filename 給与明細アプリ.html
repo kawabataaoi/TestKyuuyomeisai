@@ -1366,7 +1366,7 @@ function openNewsDetail(n){
     editIcon.classList.add('is-hidden');
     keepUnreadBtn.classList.remove('is-hidden');
     markReadBtn.classList.toggle('is-hidden', alreadyRead);
-    deleteBtn.classList.add('is-hidden');
+    deleteBtn.classList.toggle('is-hidden', !(currentIsAdmin && alreadyRead));
   }else if(currentTransportRequest){
     const req = currentTransportRequest;
     const alreadyResolved = /^\[処理済み\]/.test(n.title||'');
@@ -1378,7 +1378,7 @@ function openNewsDetail(n){
     editIcon.classList.add('is-hidden');
     keepUnreadBtn.classList.remove('is-hidden');
     markReadBtn.classList.toggle('is-hidden', alreadyRead);
-    deleteBtn.classList.add('is-hidden');
+    deleteBtn.classList.toggle('is-hidden', !(currentIsAdmin && alreadyRead));
   }else{
     const editedNote = n.editedAt ? formatEditedTime(n.editedAt) : '';
     document.getElementById('news-detail-message').textContent = (n.message || '') + (editedNote ? `\n${editedNote}` : '');
@@ -1937,15 +1937,24 @@ document.getElementById('news-detail-edit-save').addEventListener('click', async
 });
 document.getElementById('news-detail-delete').addEventListener('click', async ()=>{
   if(!currentDetailNews) return;
-  const ok = await showConfirmModal(`「${currentDetailNews.title || '（無題）'}」を削除しますか？${currentDetailNews.priority==='critical' ? '（全員に関わる重要ニュースのため、削除後1年間は管理者が復元できます）' : ''}`);
-  if(!ok) return;
+  const isCriticalDelete = currentDetailNews.priority === 'critical';
+  let deleteReason = '';
+  if(isCriticalDelete){
+    const reason = await showReasonModal('これは特別なニュースです。削除には以下の記述が必須です。（削除後1年間は管理者が復元できます）');
+    if(reason === null) return;
+    deleteReason = reason;
+  }else{
+    const ok = await showConfirmModal(`「${currentDetailNews.title || '（無題）'}」を削除しますか？`);
+    if(!ok) return;
+  }
   const deleteBtn = document.getElementById('news-detail-delete');
   setButtonLoading(deleteBtn, '削除中…');
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=deleteNews&id=${encodeURIComponent(currentDetailNews.id)}`);
     if(data.error){ await showAlertModal(data.error); return; }
     const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
-    logEvent('news_delete', `${empLabel} がニュース「${currentDetailNews.title || '（無題）'}」を削除しました（id:${currentDetailNews.id}）`);
+    const reasonSuffix = deleteReason ? `、理由：${deleteReason}` : '';
+    logEvent('news_delete', `${empLabel} がニュース「${currentDetailNews.title || '（無題）'}」を削除しました（id:${currentDetailNews.id}${reasonSuffix}）`);
     document.getElementById('news-detail-modal').classList.add('hidden');
     await fetchAndRenderNews();
     refreshOpenNewsModalList();
