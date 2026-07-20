@@ -927,6 +927,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="text" id="admin-search-id" placeholder="例：000 または やまだ">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
       <p class="muted mt-6" id="admin-search-status"></p>
+      <div id="admin-transport-revise-section" class="is-hidden">
       <div class="divider-16"></div>
       <div class="section-title fs-13">交通費申請の修正</div>
       <p class="muted fs-12 mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
@@ -938,6 +939,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
       <p class="muted mt-6" id="admin-transport-revise-status"></p>
       <div id="admin-transport-revise-results" class="mt-8"></div>
+      </div>
       <div class="divider-16"></div>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
       <div id="admin-user-panel" style="display:none;margin-top:14px;">
@@ -2360,6 +2362,7 @@ document.getElementById('btn-admin-search').addEventListener('click', async ()=>
   status.textContent = '検索しています…';
   document.getElementById('admin-user-panel').style.display = 'none';
   document.getElementById('admin-user-multi').style.display = 'none';
+  document.getElementById('admin-transport-revise-section').classList.remove('is-hidden');
   try{
     const url = `${COMPANY_SCRIPT_URL}?action=adminFindUsersByQuery&query=${encodeURIComponent(query)}`;
     const data = await jsonpRequest(url);
@@ -2397,6 +2400,11 @@ document.getElementById('btn-admin-reset').addEventListener('click', ()=>{
   document.getElementById('admin-search-status').textContent = '';
   document.getElementById('admin-user-multi').style.display = 'none';
   document.getElementById('admin-user-panel').style.display = 'none';
+  document.getElementById('admin-transport-revise-section').classList.add('is-hidden');
+  document.getElementById('admin-transport-revise-from').value = '';
+  document.getElementById('admin-transport-revise-to').value = '';
+  document.getElementById('admin-transport-revise-status').textContent = '';
+  document.getElementById('admin-transport-revise-results').innerHTML = '';
   adminFoundUserId = null;
   adminFoundByYear = {};
   setUserSearchActive(false);
