@@ -70,6 +70,7 @@ button{font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;}
 .contact-cat-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .btn.small{width:auto;padding:8px 14px;font-size:13px;}
 .btn.ghost{background:var(--surface-2);color:var(--accent);border:1px solid var(--accent-soft);font-weight:700;}
+.card:focus-within .btn.ghost,.login-card:focus-within .btn.ghost{background:var(--surface);}
 .summary-table{width:100%;border-collapse:collapse;}
 .summary-table tr{border-bottom:1px solid var(--border);}
 .summary-table tr:last-child{border-bottom:none;}
@@ -1660,6 +1661,22 @@ async function checkAppVersionUpdate(){
     // バージョン確認の失敗はアプリの利用を妨げないよう無視する
   }
 }
+
+function normalizeFullWidthDigits(str){
+  return str.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+['login-id','new-user-id','admin-search-id'].forEach(inputId=>{
+  const el = document.getElementById(inputId);
+  if(!el) return;
+  el.addEventListener('input', ()=>{
+    const converted = normalizeFullWidthDigits(el.value);
+    if(converted !== el.value){
+      const pos = el.selectionStart;
+      el.value = converted;
+      if(pos !== null) el.setSelectionRange(pos, pos);
+    }
+  });
+});
 
 document.getElementById('btn-employee-login').addEventListener('click', ()=>{
   const id = document.getElementById('login-id').value.trim();
