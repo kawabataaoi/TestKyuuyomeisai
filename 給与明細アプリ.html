@@ -37,7 +37,7 @@ body{min-height:100vh;display:flex;justify-content:center;}
 .login-gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
 .login-gate.hidden{display:none;}
 .login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;transition:background .15s ease,border-color .15s ease;}
-.login-card:focus-within{background:var(--accent-soft);border-color:var(--accent);}
+.login-card:focus-within{background:#E3F4FB;border-color:#9BD8EF;}
 .login-card h1{font-size:20px;font-weight:700;margin:0 0 6px;text-align:center;}
 .login-card p.sub{font-size:12px;color:var(--text-2);text-align:center;margin:0 0 24px;}
 header.top{padding:24px 20px 16px;background:var(--accent);color:#fff;border-radius:0 0 18px 18px;}
@@ -49,7 +49,7 @@ main{flex:1;padding:16px 16px 96px;overflow-y:auto;}
 .view.active{display:block;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;transition:background .15s ease,border-color .15s ease;}
 .card.searching{background:#E3F4FB;border-color:#9BD8EF;}
-.card:focus-within{background:var(--accent-soft);border-color:var(--accent);}
+.card:not(.no-focus-highlight):focus-within{background:#E3F4FB;border-color:#9BD8EF;}
 .section-title{font-size:13px;font-weight:700;margin:0 0 12px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;}
 .muted{color:var(--text-2);font-size:12px;}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
@@ -574,7 +574,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <tr><td class="label" id="sum-ot-label">今月の残業時間</td><td class="val"><span id="sum-ot">未入力</span><div id="sum-ot-prev" class="ot-prev-note"></div></td></tr>
       </table>
     </div>
-    <div class="card">
+    <div class="card no-focus-highlight">
       <div class="row mb-2">
         <div class="section-title mb-0">直近3か月の明細</div>
         <div class="row-wrap-6">
