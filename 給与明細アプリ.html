@@ -2085,11 +2085,14 @@ document.getElementById('news-detail-leave-reject').addEventListener('click', as
 });
 function deletedNewsRowHtml(n){
   const editedTag = n.editedAt ? '<span class="admin-only-tag">編集済み</span>' : '';
-  const criticalTag = n.priority === 'critical' ? '<span class="admin-only-tag" style="background:#FBDCDC;color:var(--danger);">重要（1年復元可）</span>' : '';
-  return `<div class="log-item" data-restore-id="${n.id}" style="display:flex;align-items:center;gap:8px;">
+  const isCriticalDeleted = n.priority === 'critical';
+  const criticalTag = isCriticalDeleted ? '<span class="admin-only-tag" style="background:#FBDCDC;color:var(--danger);">重要（1年復元可）</span>' : '';
+  const purgeBtn = isCriticalDeleted ? '' : `<button class="btn ghost small" data-purge-btn="${n.id}" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger);">完全削除</button>`;
+  return `<div class="log-item" data-restore-id="${n.id}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${newsPriorityIcon(n)} ${n.title || '（無題）'}</span>
     ${criticalTag}${editedTag}
     <button class="btn ghost small" data-restore-btn="${n.id}">復元</button>
+    ${purgeBtn}
   </div>`;
 }
 document.getElementById('btn-show-deleted-news').addEventListener('click', async ()=>{
@@ -2115,6 +2118,22 @@ document.getElementById('btn-show-deleted-news').addEventListener('click', async
           fetchAndRenderNews();
         }catch(e){
           await showAlertModal('復元に失敗しました：' + e.message);
+        }
+      });
+    });
+    bodyEl.querySelectorAll('[data-purge-btn]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.purgeBtn;
+        const ok = await showConfirmModal('このお知らせを完全に削除しますか？この操作は元に戻せません。');
+        if(!ok) return;
+        try{
+          const pdata = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=deleteNews&id=${encodeURIComponent(id)}`);
+          if(pdata.error){ await showAlertModal(pdata.error); return; }
+          const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+          logEvent('news_purge', `${empLabel} がニュース（id:${id}）を完全削除しました`);
+          document.getElementById('btn-show-deleted-news').click();
+        }catch(e){
+          await showAlertModal('完全削除に失敗しました：' + e.message);
         }
       });
     });
