@@ -2040,6 +2040,7 @@ async function markLeaveRequestNewsHandled(){
   try{
     await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=editNews&id=${encodeURIComponent(currentDetailNews.id)}&scope=${encodeURIComponent(currentDetailNews.scope||'admin')}&priority=${encodeURIComponent(currentDetailNews.priority||'critical')}&title=${encodeURIComponent('[処理済み] '+(currentDetailNews.title||''))}&message=${encodeURIComponent(currentDetailNews.message||'')}`);
   }catch(e){ /* 失敗しても致命的ではないため無視 */ }
+  markNewsRead([currentDetailNews.id]);
 }
 document.getElementById('news-detail-leave-approve').addEventListener('click', async ()=>{
   if(!currentLeaveRequest || !currentDetailNews) return;
@@ -2906,6 +2907,7 @@ async function markTransportRequestNewsHandled(requestId){
     });
     if(match){
       await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=editNews&id=${encodeURIComponent(match.id)}&scope=${encodeURIComponent(match.scope||'admin')}&priority=${encodeURIComponent(match.priority||'critical')}&title=${encodeURIComponent('[処理済み] '+(match.title||''))}&message=${encodeURIComponent(match.message||'')}`);
+      markNewsRead([match.id]);
     }
   }catch(e){ /* 失敗しても致命的ではないため無視 */ }
 }
