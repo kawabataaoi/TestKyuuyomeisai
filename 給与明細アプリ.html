@@ -572,6 +572,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <tr><td class="label">次回賞与</td><td class="val" id="sum-bonus">-</td></tr>
         <tr><td class="label">有給残日数</td><td class="val"><span id="sum-leave">0.0日</span><div id="sum-leave-expire" style="font-size:10px;font-weight:400;color:var(--danger);display:none;"></div></td></tr>
         <tr><td class="label">次回有給付与</td><td class="val" id="sum-grant">-</td></tr>
+        <tr><td class="label">今月/来月の有給奨励日</td><td class="val" id="sum-leave-encourage-days" style="font-size:13px;">なし</td></tr>
         <tr><td class="label" id="sum-ot-label">今月の残業時間</td><td class="val"><span id="sum-ot">未入力</span><div id="sum-ot-prev" class="ot-prev-note"></div></td></tr>
       </table>
     </div>
@@ -992,7 +993,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     </div>
     <div class="card" id="card-admin-special-periods">
       <div class="row mb-2">
-        <div class="section-title mb-0">特別休暇・有給消化奨励期間（管理者用）</div>
+        <div class="section-title mb-0">特別休暇・有給関連の設定（管理者用）</div>
         <button class="btn ghost small collapsible-toggle">開く</button>
       </div>
       <div class="collapsible-body is-hidden">
@@ -1018,6 +1019,14 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="text" id="admin-encourage-label" placeholder="例：有給消化奨励期間">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-encourage-add">追加</button>
       <p class="muted mt-6" id="admin-encourage-status"></p>
+      <div class="divider-16"></div>
+      <div class="section-title fs-13">有給奨励日</div>
+      <p class="muted fs-12 mt-0">特定の日を有給奨励日として設定できます。今月・来月分がサマリー画面に表示されます。</p>
+      <div id="admin-leave-encourage-days-list" class="mb-2"><div class="empty">登録されていません。</div></div>
+      <label class="field mt-0">日付</label>
+      <input type="date" id="admin-encourage-day">
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-encourage-day-add">追加</button>
+      <p class="muted mt-6" id="admin-encourage-day-status"></p>
       </div>
     </div>
   </section>
@@ -1686,6 +1695,9 @@ function applyCompanySettings(cs, paydayOverrides){
     }
     if(cs['有給消化奨励期間JSON']!==undefined){
       try{ settings.leaveEncouragePeriods = JSON.parse(cs['有給消化奨励期間JSON']||'[]'); }catch(e){ settings.leaveEncouragePeriods = []; }
+    }
+    if(cs['有給奨励日JSON']!==undefined){
+      try{ settings.leaveEncourageDays = JSON.parse(cs['有給奨励日JSON']||'[]'); }catch(e){ settings.leaveEncourageDays = []; }
     }
   }
   settings.paydayOverrides = paydayOverrides || {};
@@ -3032,6 +3044,19 @@ function renderAdminSpecialPeriodLists(){
       btn.addEventListener('click', ()=> deleteSpecialPeriod('leaveEncouragePeriods', '有給消化奨励期間JSON', btn.dataset.delEncourage, 'admin-encourage-status'));
     });
   }
+  const encourageDaysList = document.getElementById('admin-leave-encourage-days-list');
+  if(encourageDaysList){
+    const days = (settings.leaveEncourageDays||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+    encourageDaysList.innerHTML = days.length ? days.map(d=>`
+      <div class="log-item">
+        <span>${formatDateWithWeekday(d.date)}</span>
+        <button class="x-btn" style="font-size:16px;" data-del-encourage-day="${d.id}">×</button>
+      </div>
+    `).join('') : '<div class="empty">登録されていません。</div>';
+    encourageDaysList.querySelectorAll('[data-del-encourage-day]').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteSpecialPeriod('leaveEncourageDays', '有給奨励日JSON', btn.dataset.delEncourageDay, 'admin-encourage-day-status'));
+    });
+  }
 }
 async function saveSpecialPeriodsToServer(settingsKey, jsonKey, statusElId){
   const status = document.getElementById(statusElId);
@@ -3061,6 +3086,7 @@ async function deleteSpecialPeriod(settingsKey, jsonKey, id, statusElId){
   logEvent('admin_change', `${empLabel} が特別期間を削除しました（${jsonKey}）`);
   renderAdminSpecialPeriodLists();
   renderSpecialPeriodBadges();
+  renderLeaveEncourageDaysSummary();
 }
 document.getElementById('btn-admin-holiday-add').addEventListener('click', async ()=>{
   const status = document.getElementById('admin-holiday-status');
@@ -3104,6 +3130,23 @@ document.getElementById('btn-admin-encourage-add').addEventListener('click', asy
   document.getElementById('admin-encourage-label').value = '';
   renderAdminSpecialPeriodLists();
   renderSpecialPeriodBadges();
+});
+document.getElementById('btn-admin-encourage-day-add').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-encourage-day-status');
+  const date = document.getElementById('admin-encourage-day').value;
+  if(!date){ status.textContent = '日付を入力してください。'; return; }
+  if(!settings.leaveEncourageDays) settings.leaveEncourageDays = [];
+  if(settings.leaveEncourageDays.some(d=>d.date === date)){ status.textContent = 'この日付はすでに登録されています。'; return; }
+  const id = 'led_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  settings.leaveEncourageDays.push({id, date});
+  const saved = await saveSpecialPeriodsToServer('leaveEncourageDays', '有給奨励日JSON', 'admin-encourage-day-status');
+  if(!saved){ settings.leaveEncourageDays.pop(); renderAdminSpecialPeriodLists(); return; }
+  saveJSON('settings', settings);
+  const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+  logEvent('admin_change', `${empLabel} が有給奨励日を追加しました（${date}）`);
+  document.getElementById('admin-encourage-day').value = '';
+  renderAdminSpecialPeriodLists();
+  renderLeaveEncourageDaysSummary();
 });
 
 document.getElementById('btn-save-master-folder').addEventListener('click', async ()=>{
@@ -6662,6 +6705,25 @@ function renderSummary(){
     }
   }
   renderSpecialPeriodBadges();
+  renderLeaveEncourageDaysSummary();
+}
+const WEEKDAY_JA = ['日','月','火','水','木','金','土'];
+function formatDateWithWeekday(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const wd = WEEKDAY_JA[new Date(y, m-1, d).getDay()];
+  return `${m}/${d}（${wd}）`;
+}
+function renderLeaveEncourageDaysSummary(){
+  const el = document.getElementById('sum-leave-encourage-days');
+  if(!el) return;
+  const today = new Date();
+  const curYm = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const nextD = new Date(today.getFullYear(), today.getMonth()+1, 1);
+  const nextYm = `${nextD.getFullYear()}-${String(nextD.getMonth()+1).padStart(2,'0')}`;
+  const days = (settings.leaveEncourageDays||[])
+    .filter(d=> d.date && (d.date.slice(0,7)===curYm || d.date.slice(0,7)===nextYm))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  el.textContent = days.length ? days.map(d=>formatDateWithWeekday(d.date)).join('・') : 'なし';
 }
 function formatPeriodRange(startIso, endIso){
   const s = startIso.split('-').map(Number);
