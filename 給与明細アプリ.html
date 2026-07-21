@@ -565,6 +565,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <section class="view active" id="view-meisai">
     <div class="card">
       <div class="section-title">サマリー</div>
+      <div id="special-period-badges" class="is-hidden" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
       <table class="summary-table">
         <tr><td class="label">次回給料日</td><td class="val" id="sum-payday">-</td></tr>
         <tr><td class="label">次回締め日</td><td class="val" id="sum-closeday">-</td></tr>
@@ -988,6 +989,31 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <button class="btn ghost small" id="btn-admin-restore-user" style="width:100%;display:none;">削除を取り消す</button>
         <p class="muted mt-6" id="admin-delete-action-status"></p>
       </div>
+    </div>
+    <div class="card" id="card-admin-special-periods">
+      <div class="section-title">特別休暇・有給消化奨励期間（管理者用）</div>
+      <p class="muted mt-0">お盆・年末年始・ゴールデンウィークなどの特別休暇や、有給消化を促す期間を設定できます。期間中・期間前はサマリー画面に表示されます。</p>
+      <div class="section-title fs-13">特別休暇</div>
+      <div id="admin-special-holidays-list" class="mb-2"><div class="empty">登録されていません。</div></div>
+      <label class="field mt-0">開始日</label>
+      <input type="date" id="admin-holiday-start">
+      <label class="field">終了日</label>
+      <input type="date" id="admin-holiday-end">
+      <label class="field">名称</label>
+      <input type="text" id="admin-holiday-label" placeholder="例：お盆休み">
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-holiday-add">追加</button>
+      <p class="muted mt-6" id="admin-holiday-status"></p>
+      <div class="divider-16"></div>
+      <div class="section-title fs-13">有給消化奨励期間</div>
+      <div id="admin-leave-encourage-list" class="mb-2"><div class="empty">登録されていません。</div></div>
+      <label class="field mt-0">開始日</label>
+      <input type="date" id="admin-encourage-start">
+      <label class="field">終了日</label>
+      <input type="date" id="admin-encourage-end">
+      <label class="field">名称（任意）</label>
+      <input type="text" id="admin-encourage-label" placeholder="例：有給消化奨励期間">
+      <button class="btn ghost small mt-6 w-full" id="btn-admin-encourage-add">追加</button>
+      <p class="muted mt-6" id="admin-encourage-status"></p>
     </div>
   </section>
 
@@ -1553,6 +1579,7 @@ function applyAdminVisibilitySafe(){
   const logsCard = document.getElementById('card-admin-logs');
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
+  const specialPeriodsCard = document.getElementById('card-admin-special-periods');
   const maintTab = document.getElementById('tab-maintenance');
   if(driveCard) driveCard.style.display = 'none';
   if(payCard) payCard.style.display = 'none';
@@ -1560,6 +1587,7 @@ function applyAdminVisibilitySafe(){
   if(logsCard) logsCard.style.display = 'none';
   if(sysCard) sysCard.style.display = 'none';
   if(usersCard) usersCard.style.display = 'none';
+  if(specialPeriodsCard) specialPeriodsCard.style.display = 'none';
   if(maintTab) maintTab.style.display = 'none';
 }
 
@@ -1585,14 +1613,16 @@ function applyAdminVisibility(isAdmin){
   const logsCard = document.getElementById('card-admin-logs');
   const sysCard = document.getElementById('card-admin-system');
   const usersCard = document.getElementById('card-admin-users');
+  const specialPeriodsCard = document.getElementById('card-admin-special-periods');
   const maintTab = document.getElementById('tab-maintenance');
   if(payCard) payCard.style.display = isAdmin ? 'block' : 'none';
   if(newsCard) newsCard.style.display = isAdmin ? 'block' : 'none';
   if(logsCard) logsCard.style.display = isAdmin ? 'block' : 'none';
   if(sysCard) sysCard.style.display = isAdmin ? 'block' : 'none';
   if(usersCard) usersCard.style.display = isAdmin ? 'block' : 'none';
+  if(specialPeriodsCard) specialPeriodsCard.style.display = isAdmin ? 'block' : 'none';
   if(maintTab) maintTab.style.display = isAdmin ? 'flex' : 'none';
-  if(isAdmin){ loadInquiryContactForAdmin(); loadTransportContactForAdmin(); loadRetentionDaysForAdmin(); refreshTransportRequestsAdmin(); }
+  if(isAdmin){ loadInquiryContactForAdmin(); loadTransportContactForAdmin(); loadRetentionDaysForAdmin(); refreshTransportRequestsAdmin(); renderAdminSpecialPeriodLists(); }
 }
 
 async function doEmployeeLogin(id, password){
@@ -1646,6 +1676,12 @@ function applyCompanySettings(cs, paydayOverrides){
       if(/^\d{8}$/.test(gd)) settings.companyGrantDate = `${gd.slice(0,4)}-${gd.slice(4,6)}-${gd.slice(6,8)}`;
     }
     if(cs['付与数']!==undefined) settings.companyGrantDays = parseFloat(cs['付与数']);
+    if(cs['特別休暇JSON']!==undefined){
+      try{ settings.specialHolidays = JSON.parse(cs['特別休暇JSON']||'[]'); }catch(e){ settings.specialHolidays = []; }
+    }
+    if(cs['有給消化奨励期間JSON']!==undefined){
+      try{ settings.leaveEncouragePeriods = JSON.parse(cs['有給消化奨励期間JSON']||'[]'); }catch(e){ settings.leaveEncouragePeriods = []; }
+    }
   }
   settings.paydayOverrides = paydayOverrides || {};
 }
@@ -2943,6 +2979,107 @@ document.getElementById('btn-save-payday-override').addEventListener('click', as
   }catch(e){
     status.textContent = '保存に失敗しました：' + e.message;
   }
+});
+
+function renderAdminSpecialPeriodLists(){
+  const holidaysList = document.getElementById('admin-special-holidays-list');
+  if(holidaysList){
+    const holidays = (settings.specialHolidays||[]).slice().sort((a,b)=>a.start.localeCompare(b.start));
+    holidaysList.innerHTML = holidays.length ? holidays.map(p=>`
+      <div class="log-item">
+        <span>${formatPeriodRange(p.start,p.end)}　${p.label||'特別休暇'}</span>
+        <button class="x-btn" style="font-size:16px;" data-del-holiday="${p.id}">×</button>
+      </div>
+    `).join('') : '<div class="empty">登録されていません。</div>';
+    holidaysList.querySelectorAll('[data-del-holiday]').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteSpecialPeriod('specialHolidays', '特別休暇JSON', btn.dataset.delHoliday, 'admin-holiday-status'));
+    });
+  }
+  const encourageList = document.getElementById('admin-leave-encourage-list');
+  if(encourageList){
+    const encourages = (settings.leaveEncouragePeriods||[]).slice().sort((a,b)=>a.start.localeCompare(b.start));
+    encourageList.innerHTML = encourages.length ? encourages.map(p=>`
+      <div class="log-item">
+        <span>${formatPeriodRange(p.start,p.end)}　${p.label||'有給消化奨励期間'}</span>
+        <button class="x-btn" style="font-size:16px;" data-del-encourage="${p.id}">×</button>
+      </div>
+    `).join('') : '<div class="empty">登録されていません。</div>';
+    encourageList.querySelectorAll('[data-del-encourage]').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteSpecialPeriod('leaveEncouragePeriods', '有給消化奨励期間JSON', btn.dataset.delEncourage, 'admin-encourage-status'));
+    });
+  }
+}
+async function saveSpecialPeriodsToServer(settingsKey, jsonKey, statusElId){
+  const status = document.getElementById(statusElId);
+  status.textContent = '保存しています…';
+  try{
+    const updates = {};
+    updates[jsonKey] = JSON.stringify(settings[settingsKey]||[]);
+    const url = `${COMPANY_SCRIPT_URL}?action=updateCompanySettings&updates=${encodeURIComponent(JSON.stringify(updates))}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ status.textContent = data.error; return false; }
+    status.textContent = '保存しました。';
+    return true;
+  }catch(e){
+    status.textContent = '保存に失敗しました：' + e.message;
+    return false;
+  }
+}
+async function deleteSpecialPeriod(settingsKey, jsonKey, id, statusElId){
+  const ok = await showConfirmModal('この期間を削除しますか？');
+  if(!ok) return;
+  const before = settings[settingsKey]||[];
+  settings[settingsKey] = before.filter(p=>p.id !== id);
+  const saved = await saveSpecialPeriodsToServer(settingsKey, jsonKey, statusElId);
+  if(!saved){ settings[settingsKey] = before; renderAdminSpecialPeriodLists(); return; }
+  saveJSON('settings', settings);
+  const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+  logEvent('admin_change', `${empLabel} が特別期間を削除しました（${jsonKey}）`);
+  renderAdminSpecialPeriodLists();
+  renderSpecialPeriodBadges();
+}
+document.getElementById('btn-admin-holiday-add').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-holiday-status');
+  const start = document.getElementById('admin-holiday-start').value;
+  const end = document.getElementById('admin-holiday-end').value;
+  const label = document.getElementById('admin-holiday-label').value.trim();
+  if(!start || !end){ status.textContent = '開始日と終了日を入力してください。'; return; }
+  if(!label){ status.textContent = '名称を入力してください。'; return; }
+  if(end < start){ status.textContent = '終了日は開始日以降にしてください。'; return; }
+  const id = 'sp_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  if(!settings.specialHolidays) settings.specialHolidays = [];
+  settings.specialHolidays.push({id, start, end, label});
+  const saved = await saveSpecialPeriodsToServer('specialHolidays', '特別休暇JSON', 'admin-holiday-status');
+  if(!saved){ settings.specialHolidays.pop(); renderAdminSpecialPeriodLists(); return; }
+  saveJSON('settings', settings);
+  const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+  logEvent('admin_change', `${empLabel} が特別休暇を追加しました（${label}：${start}〜${end}）`);
+  document.getElementById('admin-holiday-start').value = '';
+  document.getElementById('admin-holiday-end').value = '';
+  document.getElementById('admin-holiday-label').value = '';
+  renderAdminSpecialPeriodLists();
+  renderSpecialPeriodBadges();
+});
+document.getElementById('btn-admin-encourage-add').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-encourage-status');
+  const start = document.getElementById('admin-encourage-start').value;
+  const end = document.getElementById('admin-encourage-end').value;
+  const label = document.getElementById('admin-encourage-label').value.trim();
+  if(!start || !end){ status.textContent = '開始日と終了日を入力してください。'; return; }
+  if(end < start){ status.textContent = '終了日は開始日以降にしてください。'; return; }
+  const id = 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  if(!settings.leaveEncouragePeriods) settings.leaveEncouragePeriods = [];
+  settings.leaveEncouragePeriods.push({id, start, end, label});
+  const saved = await saveSpecialPeriodsToServer('leaveEncouragePeriods', '有給消化奨励期間JSON', 'admin-encourage-status');
+  if(!saved){ settings.leaveEncouragePeriods.pop(); renderAdminSpecialPeriodLists(); return; }
+  saveJSON('settings', settings);
+  const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+  logEvent('admin_change', `${empLabel} が有給消化奨励期間を追加しました（${label||'有給消化奨励期間'}：${start}〜${end}）`);
+  document.getElementById('admin-encourage-start').value = '';
+  document.getElementById('admin-encourage-end').value = '';
+  document.getElementById('admin-encourage-label').value = '';
+  renderAdminSpecialPeriodLists();
+  renderSpecialPeriodBadges();
 });
 
 document.getElementById('btn-save-master-folder').addEventListener('click', async ()=>{
@@ -6500,6 +6637,28 @@ function renderSummary(){
       otEl.classList.add('ot-blue');
     }
   }
+  renderSpecialPeriodBadges();
+}
+function formatPeriodRange(startIso, endIso){
+  const s = startIso.split('-').map(Number);
+  const e = endIso.split('-').map(Number);
+  return `${s[1]}/${s[2]}〜${e[1]}/${e[2]}`;
+}
+function renderSpecialPeriodBadges(){
+  const container = document.getElementById('special-period-badges');
+  if(!container) return;
+  const todayIso = isoDate(new Date());
+  const holidays = (settings.specialHolidays||[]).filter(p=>p.end >= todayIso).sort((a,b)=>a.start.localeCompare(b.start));
+  const encourages = (settings.leaveEncouragePeriods||[]).filter(p=>p.end >= todayIso).sort((a,b)=>a.start.localeCompare(b.start));
+  const badges = [];
+  holidays.forEach(p=>{
+    badges.push(`<span class="tag warn">${formatPeriodRange(p.start,p.end)}　${p.label||'特別休暇'}</span>`);
+  });
+  encourages.forEach(p=>{
+    badges.push(`<span class="tag ok">${formatPeriodRange(p.start,p.end)}　${p.label||'有給消化奨励期間'}</span>`);
+  });
+  container.innerHTML = badges.join('');
+  container.classList.toggle('is-hidden', badges.length===0);
 }
 
 (async ()=>{
