@@ -1167,6 +1167,25 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="pdf-replace-confirm-modal">
+  <div class="modal-sheet modal-sheet-80vh">
+    <header>
+      <h3>同名のPDFがあります</h3>
+      <button class="x-btn" id="pdf-replace-close-x">×</button>
+    </header>
+    <div class="modal-body">
+      <p class="muted mt-0">以下の明細を確認してください。差し替えますか？</p>
+      <div class="frame">
+        <div class="pdf-frame" id="pdf-replace-preview" style="max-height:50vh;overflow:auto;">
+          <p class="loading-text">読み込み中…</p>
+        </div>
+      </div>
+      <button class="btn mt-10 w-full" id="pdf-replace-confirm-btn">差し替える</button>
+      <button class="btn ghost mt-6 w-full" id="pdf-replace-cancel-btn">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-sheet">
     <header>
@@ -3731,6 +3750,19 @@ function doGet(e) {
       var file = DriveApp.getFileById(e.parameter.id);
       var blob = file.getBlob();
       out = {name: file.getName(), mimeType: blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes())};
+    } else if (action === 'deleteFile') {
+      // 明細PDFの差し替え時、既存ファイルをゴミ箱に移動するために使用
+      var delFileId = (e.parameter.id || '').trim();
+      if (!delFileId) {
+        out = { error: 'ファイルIDを指定してください' };
+      } else {
+        try {
+          DriveApp.getFileById(delFileId).setTrashed(true);
+          out = { success: true };
+        } catch (delFileErr) {
+          out = { error: 'ファイルの削除に失敗しました：' + delFileErr.message };
+        }
+      }
     } else if (action === 'readSettings') {
       var folder2 = DriveApp.getFolderById(e.parameter.folder);
       var f2 = getSettingsDocFile(folder2);
@@ -5161,14 +5193,79 @@ function findUniquePdfFilename(dateStr, suffix){
   }
   return `${dateStr}${suffix}${Date.now()}.pdf`;
 }
-function buildPdfRenamedFilename(company, category, y, mo, day){
-  if(!y || !mo) return '';
+function buildPdfDateSuffix(company, category, y, mo, day){
+  if(!y || !mo) return null;
   const dayNum = day ? parseInt(day, 10) : 1;
   const dateStr = `${y}${String(mo).padStart(2,'0')}${String(dayNum).padStart(2,'0')}`;
   let suffix = '';
   if(company === 'other') suffix += '_その他';
   if(category === 'bonus') suffix += '_賞与';
-  return findUniquePdfFilename(dateStr, suffix);
+  return { dateStr, suffix };
+}
+function buildPdfBaseFilename(company, category, y, mo, day){
+  const parts = buildPdfDateSuffix(company, category, y, mo, day);
+  return parts ? `${parts.dateStr}${parts.suffix}.pdf` : '';
+}
+function buildPdfPreviewFilename(company, category, y, mo, day){
+  const parts = buildPdfDateSuffix(company, category, y, mo, day);
+  if(!parts) return '';
+  if(company === 'other') return findUniquePdfFilename(parts.dateStr, parts.suffix);
+  return `${parts.dateStr}${parts.suffix}.pdf`;
+}
+function findExistingDocByName(name){
+  return documents.find(d=>d.name===name) || (driveDocs||[]).find(d=>d.name===name) || null;
+}
+function confirmPdfReplace(existingDoc){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('pdf-replace-confirm-modal');
+    const previewEl = document.getElementById('pdf-replace-preview');
+    const confirmBtn = document.getElementById('pdf-replace-confirm-btn');
+    const cancelBtn = document.getElementById('pdf-replace-cancel-btn');
+    const closeBtn = document.getElementById('pdf-replace-close-x');
+    previewEl.innerHTML = '<p class="loading-text">読み込み中…</p>';
+    overlay.classList.remove('hidden');
+    (async ()=>{
+      try{
+        const bytes = existingDoc._bytes || await fetchFileBytes(existingDoc);
+        existingDoc._bytes = bytes;
+        const mime = existingDoc._mimeType || 'application/pdf';
+        if(mime.includes('image')){
+          const blob = new Blob([bytes.slice(0)], {type: mime});
+          const url = URL.createObjectURL(blob);
+          previewEl.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = url; img.style.width = '100%'; img.style.display = 'block'; img.style.borderRadius = '6px';
+          previewEl.appendChild(img);
+        }else{
+          await renderPdfIntoViewer(bytes, previewEl);
+        }
+      }catch(e){
+        previewEl.innerHTML = `<p class="loading-text">表示に失敗しました：${e.message}</p>`;
+      }
+    })();
+    function cleanup(result){
+      overlay.classList.add('hidden');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onConfirm(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+  });
+}
+async function removeExistingDocForReplace(doc){
+  if(doc.source === 'drive'){
+    try{ await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=deleteFile&id=${encodeURIComponent(doc.id)}`); }catch(e){ /* 削除失敗時も差し替え処理自体は続行する */ }
+    driveDocs = driveDocs.filter(d=>d.id!==doc.id);
+  }else{
+    documents = documents.filter(d=>d.id!==doc.id);
+    saveJSON('documents', documents);
+    try{ await idbDelete(doc.id); }catch(e){}
+  }
 }
 function openPdfRenameModal(file){
   return new Promise(resolve=>{
@@ -5194,7 +5291,7 @@ function openPdfRenameModal(file){
     dayEl.value = '';
 
     function updatePreview(){
-      previewEl.textContent = buildPdfRenamedFilename(companyEl.value, categoryEl.value, yearEl.value, monthEl.value, dayEl.value) || '（年・月を入力してください）';
+      previewEl.textContent = buildPdfPreviewFilename(companyEl.value, categoryEl.value, yearEl.value, monthEl.value, dayEl.value) || '（年・月を入力してください）';
     }
     updatePreview();
     [companyEl, categoryEl, yearEl, monthEl, dayEl].forEach(el=>el.addEventListener('input', updatePreview));
@@ -5216,8 +5313,20 @@ function openPdfRenameModal(file){
         return;
       }
       const day = dayEl.value ? parseInt(dayEl.value, 10) : null;
-      const name = buildPdfRenamedFilename(companyEl.value, categoryEl.value, y, mo, day);
-      cleanup({ name, y, mo, type: categoryEl.value });
+      const company = companyEl.value, category = categoryEl.value;
+      if(company === 'other'){
+        const parts = buildPdfDateSuffix(company, category, y, mo, day);
+        const name = findUniquePdfFilename(parts.dateStr, parts.suffix);
+        cleanup({ name, y, mo, type: category });
+        return;
+      }
+      const baseName = buildPdfBaseFilename(company, category, y, mo, day);
+      const existing = findExistingDocByName(baseName);
+      if(existing){
+        cleanup({ pendingReplace: true, existing, name: baseName, y, mo, type: category });
+        return;
+      }
+      cleanup({ name: baseName, y, mo, type: category });
     }
     function onCancel(){ cleanup(null); }
     confirmBtn.addEventListener('click', onConfirm);
@@ -5232,6 +5341,11 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
   for(const file of files){
     const choice = await openPdfRenameModal(file);
     if(!choice) continue;
+    if(choice.pendingReplace){
+      const replace = await confirmPdfReplace(choice.existing);
+      if(!replace) continue;
+      await removeExistingDocForReplace(choice.existing);
+    }
     const displayName = choice.name;
     const ym = { y: choice.y, mo: choice.mo };
     const type = choice.type;

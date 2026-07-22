@@ -477,6 +477,19 @@ function doGet(e) {
       var file = DriveApp.getFileById(e.parameter.id);
       var blob = file.getBlob();
       out = {name: file.getName(), mimeType: blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes())};
+    } else if (action === 'deleteFile') {
+      // 明細PDFの差し替え時、既存ファイルをゴミ箱に移動するために使用
+      var delFileId = (e.parameter.id || '').trim();
+      if (!delFileId) {
+        out = { error: 'ファイルIDを指定してください' };
+      } else {
+        try {
+          DriveApp.getFileById(delFileId).setTrashed(true);
+          out = { success: true };
+        } catch (delFileErr) {
+          out = { error: 'ファイルの削除に失敗しました：' + delFileErr.message };
+        }
+      }
     } else if (action === 'readSettings') {
       var folder2 = DriveApp.getFolderById(e.parameter.folder);
       var f2 = getSettingsDocFile(folder2);
