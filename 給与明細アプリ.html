@@ -1136,6 +1136,37 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="pdf-rename-modal">
+  <div class="modal-sheet">
+    <header>
+      <h3>明細PDFの登録</h3>
+      <button class="x-btn" id="pdf-rename-close-x">×</button>
+    </header>
+    <div class="modal-body">
+      <p class="muted mt-0">元のファイル名：<span id="pdf-rename-original-name"></span></p>
+      <label class="field mt-0">分類</label>
+      <select id="pdf-rename-company">
+        <option value="dsbz">DSBZ会社</option>
+        <option value="other">その他</option>
+      </select>
+      <label class="field">種別</label>
+      <select id="pdf-rename-category">
+        <option value="salary">明細</option>
+        <option value="bonus">賞与</option>
+      </select>
+      <label class="field">年</label>
+      <input type="number" id="pdf-rename-year">
+      <label class="field">月</label>
+      <input type="number" id="pdf-rename-month" min="1" max="12">
+      <label class="field">日（不明な場合は空欄でOK）</label>
+      <input type="number" id="pdf-rename-day" min="1" max="31" placeholder="不明の場合は空欄">
+      <p class="muted mt-8">登録後のファイル名：<span class="mono" id="pdf-rename-preview"></span></p>
+      <button class="btn mt-10 w-full" id="pdf-rename-confirm">この内容で登録する</button>
+      <button class="btn ghost mt-6 w-full" id="pdf-rename-cancel">この明細を追加しない</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-sheet">
     <header>
@@ -5118,18 +5149,92 @@ async function uploadFileToDrive(file, filename, onProgress){
   return finishData;
 }
 
+const PDF_RENAME_CIRCLED_NUMS = ['','①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+function findUniquePdfFilename(dateStr, suffix){
+  const existingNames = new Set([
+    ...documents.map(d=>d.name),
+    ...(driveDocs||[]).map(d=>d.name)
+  ]);
+  for(let i=0; i<PDF_RENAME_CIRCLED_NUMS.length; i++){
+    const candidate = `${dateStr}${suffix}${PDF_RENAME_CIRCLED_NUMS[i]}.pdf`;
+    if(!existingNames.has(candidate)) return candidate;
+  }
+  return `${dateStr}${suffix}${Date.now()}.pdf`;
+}
+function buildPdfRenamedFilename(company, category, y, mo, day){
+  if(!y || !mo) return '';
+  const dayNum = day ? parseInt(day, 10) : 1;
+  const dateStr = `${y}${String(mo).padStart(2,'0')}${String(dayNum).padStart(2,'0')}`;
+  let suffix = '';
+  if(company === 'other') suffix += '_その他';
+  if(category === 'bonus') suffix += '_賞与';
+  return findUniquePdfFilename(dateStr, suffix);
+}
+function openPdfRenameModal(file){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('pdf-rename-modal');
+    const nameEl = document.getElementById('pdf-rename-original-name');
+    const companyEl = document.getElementById('pdf-rename-company');
+    const categoryEl = document.getElementById('pdf-rename-category');
+    const yearEl = document.getElementById('pdf-rename-year');
+    const monthEl = document.getElementById('pdf-rename-month');
+    const dayEl = document.getElementById('pdf-rename-day');
+    const previewEl = document.getElementById('pdf-rename-preview');
+    const confirmBtn = document.getElementById('pdf-rename-confirm');
+    const cancelBtn = document.getElementById('pdf-rename-cancel');
+    const closeBtn = document.getElementById('pdf-rename-close-x');
+
+    nameEl.textContent = file.name;
+    companyEl.value = 'dsbz';
+    categoryEl.value = file.name.includes('賞与') ? 'bonus' : 'salary';
+    const guessed = parseYearMonth(file.name);
+    const now = new Date();
+    yearEl.value = guessed ? guessed.y : now.getFullYear();
+    monthEl.value = guessed ? guessed.mo : now.getMonth()+1;
+    dayEl.value = '';
+
+    function updatePreview(){
+      previewEl.textContent = buildPdfRenamedFilename(companyEl.value, categoryEl.value, yearEl.value, monthEl.value, dayEl.value) || '（年・月を入力してください）';
+    }
+    updatePreview();
+    [companyEl, categoryEl, yearEl, monthEl, dayEl].forEach(el=>el.addEventListener('input', updatePreview));
+
+    overlay.classList.remove('hidden');
+    function cleanup(result){
+      overlay.classList.add('hidden');
+      [companyEl, categoryEl, yearEl, monthEl, dayEl].forEach(el=>el.removeEventListener('input', updatePreview));
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    async function onConfirm(){
+      const y = parseInt(yearEl.value, 10);
+      const mo = parseInt(monthEl.value, 10);
+      if(!y || !mo || mo < 1 || mo > 12){
+        await showAlertModal('年・月を正しく入力してください。');
+        return;
+      }
+      const day = dayEl.value ? parseInt(dayEl.value, 10) : null;
+      const name = buildPdfRenamedFilename(companyEl.value, categoryEl.value, y, mo, day);
+      cleanup({ name, y, mo, type: categoryEl.value });
+    }
+    function onCancel(){ cleanup(null); }
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+  });
+}
+
 document.getElementById('file-input').addEventListener('change', async (e)=>{
   const files = [...e.target.files];
   const status = document.getElementById('meisai-status');
   for(const file of files){
-    let ym = parseYearMonth(file.name);
-    let displayName = file.name;
-    if(!ym){
-      const now = new Date();
-      ym = {y: now.getFullYear(), mo: now.getMonth()+1};
-      displayName = `${ym.y}年${ym.mo}月度_その他明細.pdf`;
-    }
-    const type = file.name.includes('賞与') ? 'bonus' : 'salary';
+    const choice = await openPdfRenameModal(file);
+    if(!choice) continue;
+    const displayName = choice.name;
+    const ym = { y: choice.y, mo: choice.mo };
+    const type = choice.type;
     const id = genId();
     try{
       await idbPut(id, file);
