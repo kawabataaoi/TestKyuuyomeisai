@@ -1785,14 +1785,19 @@ function normalizeFullWidthDigits(str){
 ['login-id','new-user-id','admin-search-id'].forEach(inputId=>{
   const el = document.getElementById(inputId);
   if(!el) return;
-  el.addEventListener('input', ()=>{
+  const normalize = () => {
     const converted = normalizeFullWidthDigits(el.value);
     if(converted !== el.value){
       const pos = el.selectionStart;
       el.value = converted;
       if(pos !== null) el.setSelectionRange(pos, pos);
     }
+  };
+  el.addEventListener('input', (ev)=>{
+    if(ev.isComposing) return;
+    normalize();
   });
+  el.addEventListener('compositionend', normalize);
 });
 
 document.getElementById('btn-employee-login').addEventListener('click', ()=>{
