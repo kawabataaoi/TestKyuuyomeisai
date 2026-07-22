@@ -727,6 +727,11 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
 
   <!-- 設定タブ -->
   <section class="view" id="view-settings">
+    <div class="card is-hidden" id="card-install-app">
+      <div class="section-title">アプリとしてインストール</div>
+      <p class="muted mt-0">ホーム画面に追加すると、アプリのようにすぐ開けるようになります。</p>
+      <button class="btn mt-6 w-full" id="btn-install-app">アプリをインストール</button>
+    </div>
     <div class="card">
       <div class="section-title">アカウント</div>
       <label class="field mt-0">パスワードの変更</label>
@@ -6993,6 +6998,32 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+let deferredInstallPrompt = null;
+function isRunningAsInstalledApp(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+if(!isRunningAsInstalledApp()){
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById('card-install-app').classList.remove('is-hidden');
+  });
+}
+window.addEventListener('appinstalled', ()=>{
+  deferredInstallPrompt = null;
+  document.getElementById('card-install-app').classList.add('is-hidden');
+});
+document.getElementById('btn-install-app').addEventListener('click', async ()=>{
+  if(!deferredInstallPrompt) return;
+  const btn = document.getElementById('btn-install-app');
+  btn.disabled = true;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('card-install-app').classList.add('is-hidden');
+  btn.disabled = false;
+});
 
 document.querySelectorAll('.modal-overlay').forEach(overlay=>{
   overlay.addEventListener('click', (e)=>{
