@@ -732,6 +732,16 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <p class="muted mt-0">ホーム画面に追加すると、アプリのようにすぐ開けるようになります。</p>
       <button class="btn mt-6 w-full" id="btn-install-app">アプリをインストール</button>
     </div>
+    <div class="card is-hidden" id="card-ios-install-guide">
+      <div class="section-title">アプリとしてインストール</div>
+      <p class="muted mt-0">iPhone・iPadでは、Safariの共有メニューからホーム画面に追加できます。</p>
+      <ol class="fs-13" style="padding-left:20px;margin:8px 0 0;color:var(--text);">
+        <li>画面下（または上）の共有アイコン<span class="mono">□↑</span>をタップ</li>
+        <li>メニューから「ホーム画面に追加」をタップ</li>
+        <li>右上の「追加」をタップ</li>
+      </ol>
+      <p class="muted mt-8">※ Safari以外のアプリ（Chromeなど）で開いている場合は、一度Safariで開き直してください。</p>
+    </div>
     <div class="card">
       <div class="section-title">アカウント</div>
       <label class="field mt-0">パスワードの変更</label>
@@ -7023,6 +7033,16 @@ document.getElementById('btn-install-app').addEventListener('click', async ()=>{
   deferredInstallPrompt = null;
   document.getElementById('card-install-app').classList.add('is-hidden');
   btn.disabled = false;
+});
+
+function isIOSDevice(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+if(isIOSDevice() && !isRunningAsInstalledApp()){
+  document.getElementById('card-ios-install-guide').classList.remove('is-hidden');
+}
+window.addEventListener('appinstalled', ()=>{
+  document.getElementById('card-ios-install-guide').classList.add('is-hidden');
 });
 
 document.querySelectorAll('.modal-overlay').forEach(overlay=>{
