@@ -353,17 +353,23 @@ function appendRowAsText(sheet, values) {
   var row = sheet.getLastRow() + 1;
   var range = sheet.getRange(row, 1, 1, values.length);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValues([values]);
+  range.setHorizontalAlignment('left');
 }
 function setCellAsText(sheet, row, col, value) {
   var range = sheet.getRange(row, col);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValue(value);
+  range.setHorizontalAlignment('left');
 }
 function setRangeAsText(sheet, row, col, numRows, numCols, values) {
   var range = sheet.getRange(row, col, numRows, numCols);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValues(values);
+  range.setHorizontalAlignment('left');
 }
 
 function getSheetData(ss, sheetName) {
@@ -390,6 +396,39 @@ function hashPasswordSha256(pw) {
     return h.length === 1 ? '0' + h : h;
   }).join('');
   return 'sha256:' + hex;
+}
+
+// 社員一覧シートを社員IDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
+function sortEmployeeSheetById(ss) {
+  var sheet = ss.getSheetByName('社員一覧');
+  var data = getSheetData(ss, '社員一覧');
+  if (data.rows.length < 2) return;
+  data.rows.sort(function(a, b) {
+    var idA = parseInt(String(a[1]).trim(), 10);
+    var idB = parseInt(String(b[1]).trim(), 10);
+    if (isNaN(idA) && isNaN(idB)) return String(a[1]).trim().localeCompare(String(b[1]).trim());
+    if (isNaN(idA)) return 1;
+    if (isNaN(idB)) return -1;
+    return idA - idB;
+  });
+  setRangeAsText(sheet, 2, 1, data.rows.length, data.header.length, data.rows);
+}
+
+// 社員一覧シートに既存登録されていない社員ID候補を、指定の番号より大きい範囲から昇順で最大5件返す
+function findAvailableEmployeeIds(ss, afterId) {
+  var data = getSheetData(ss, '社員一覧');
+  var used = {};
+  for (var i = 0; i < data.rows.length; i++) {
+    used[String(data.rows[i][1]).trim()] = true;
+  }
+  var candidates = [];
+  var n = afterId + 1;
+  while (candidates.length < 5 && n <= 999) {
+    var candId = ('000' + n).slice(-3);
+    if (!used[candId]) candidates.push(candId);
+    n++;
+  }
+  return candidates;
 }
 
 // 社員一覧シートから該当行を検索（1行目はヘッダー）
@@ -981,9 +1020,19 @@ function doGet(e) {
 
           appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, hashPasswordSha256(newPwC), newEmpFolderC.getId(), newSeiC + newMeiC]);
           appendRowAsText(ssC.getSheetByName('ユーザー情報'), [newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
+          sortEmployeeSheetById(ssC);
 
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
         }
+      }
+    } else if (action === 'adminAvailableIds') {
+      var ssAvail = openMasterSpreadsheet();
+      if (!ssAvail) {
+        out = { error: '「管理情報」スプレッドシートが見つかりません' };
+      } else {
+        var afterIdAvail = parseInt(e.parameter.afterId || '0', 10);
+        if (isNaN(afterIdAvail) || afterIdAvail < 0) afterIdAvail = 0;
+        out = { success: true, ids: findAvailableEmployeeIds(ssAvail, afterIdAvail) };
       }
     } else if (action === 'adminSearchUser') {
       var ssS = openMasterSpreadsheet();

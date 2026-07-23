@@ -908,7 +908,18 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       </div>
       <div id="new-user-form" style="display:none;margin-top:10px;">
         <label class="field mt-0">社員ID</label>
-        <input type="text" id="new-user-id" placeholder="例：000">
+        <div class="row" style="gap:8px;align-items:center;">
+          <input type="text" id="new-user-id" placeholder="例：000" style="flex:1;">
+          <button type="button" class="btn ghost small" id="btn-show-available-ids" style="flex-shrink:0;">使用可能番号一覧</button>
+        </div>
+        <div id="available-ids-panel" class="is-hidden" style="margin-top:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+          <div class="row" style="gap:8px;align-items:center;justify-content:center;">
+            <button type="button" class="btn ghost small" id="btn-available-ids-prev" style="flex-shrink:0;">＜</button>
+            <div id="available-ids-list" class="row" style="gap:6px;flex-wrap:wrap;justify-content:center;flex:1;"></div>
+            <button type="button" class="btn ghost small" id="btn-available-ids-next" style="flex-shrink:0;">＞</button>
+          </div>
+          <p class="muted fs-11 mt-6" style="text-align:center;">番号をクリックすると社員ID欄に入力されます</p>
+        </div>
         <label class="field">パスワード</label>
         <input type="text" id="new-user-password" placeholder="英字と数字を組み合わせて8文字以上">
         <label class="field">権限</label>
@@ -2461,6 +2472,63 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   });
 });
 
+let availableIdsPages = [];
+let availableIdsPageIndex = -1;
+function renderAvailableIdsPage(){
+  const list = document.getElementById('available-ids-list');
+  const page = availableIdsPages[availableIdsPageIndex] || [];
+  list.innerHTML = '';
+  page.forEach(id=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn ghost small';
+    btn.textContent = id;
+    btn.addEventListener('click', ()=>{
+      document.getElementById('new-user-id').value = id;
+      document.getElementById('available-ids-panel').classList.add('is-hidden');
+    });
+    list.appendChild(btn);
+  });
+  document.getElementById('btn-available-ids-prev').disabled = (availableIdsPageIndex <= 0);
+}
+async function fetchAvailableIdsPage(afterId){
+  const url = `${COMPANY_SCRIPT_URL}?action=adminAvailableIds&afterId=${encodeURIComponent(afterId)}`;
+  const data = await jsonpRequest(url);
+  return (data && data.success) ? data.ids : [];
+}
+document.getElementById('btn-show-available-ids').addEventListener('click', async ()=>{
+  const panel = document.getElementById('available-ids-panel');
+  const nowHidden = panel.classList.toggle('is-hidden');
+  if(nowHidden) return;
+  if(availableIdsPages.length === 0){
+    const currentVal = parseInt(document.getElementById('new-user-id').value.trim(), 10);
+    const startAfter = isNaN(currentVal) ? 0 : Math.max(0, currentVal - 1);
+    const ids = await fetchAvailableIdsPage(startAfter);
+    availableIdsPages = [ids];
+    availableIdsPageIndex = 0;
+    renderAvailableIdsPage();
+  }
+});
+document.getElementById('btn-available-ids-next').addEventListener('click', async ()=>{
+  if(availableIdsPageIndex < availableIdsPages.length - 1){
+    availableIdsPageIndex++;
+    renderAvailableIdsPage();
+    return;
+  }
+  const currentPage = availableIdsPages[availableIdsPageIndex] || [];
+  const lastId = currentPage.length ? parseInt(currentPage[currentPage.length - 1], 10) : 0;
+  const ids = await fetchAvailableIdsPage(lastId);
+  if(ids.length === 0) return;
+  availableIdsPages.push(ids);
+  availableIdsPageIndex++;
+  renderAvailableIdsPage();
+});
+document.getElementById('btn-available-ids-prev').addEventListener('click', ()=>{
+  if(availableIdsPageIndex <= 0) return;
+  availableIdsPageIndex--;
+  renderAvailableIdsPage();
+});
+
 document.getElementById('btn-create-user').addEventListener('click', async ()=>{
   const status = document.getElementById('create-user-status');
   const newId = document.getElementById('new-user-id').value.trim();
@@ -2507,6 +2575,9 @@ document.getElementById('btn-confirm-create-user').addEventListener('click', asy
     if(data.error){ status.textContent = data.error; return; }
     status.textContent = `社員ID「${data.id}」を作成しました。`;
     document.getElementById('create-user-status').textContent = `社員ID「${data.id}」を作成しました。`;
+    availableIdsPages = [];
+    availableIdsPageIndex = -1;
+    document.getElementById('available-ids-panel').classList.add('is-hidden');
     document.getElementById('new-user-id').value = '';
     document.getElementById('new-user-password').value = '';
     document.getElementById('new-user-sei').value = '';
@@ -3646,17 +3717,23 @@ function appendRowAsText(sheet, values) {
   var row = sheet.getLastRow() + 1;
   var range = sheet.getRange(row, 1, 1, values.length);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValues([values]);
+  range.setHorizontalAlignment('left');
 }
 function setCellAsText(sheet, row, col, value) {
   var range = sheet.getRange(row, col);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValue(value);
+  range.setHorizontalAlignment('left');
 }
 function setRangeAsText(sheet, row, col, numRows, numCols, values) {
   var range = sheet.getRange(row, col, numRows, numCols);
   range.setNumberFormat('@');
+  SpreadsheetApp.flush();
   range.setValues(values);
+  range.setHorizontalAlignment('left');
 }
 
 function getSheetData(ss, sheetName) {
@@ -3683,6 +3760,39 @@ function hashPasswordSha256(pw) {
     return h.length === 1 ? '0' + h : h;
   }).join('');
   return 'sha256:' + hex;
+}
+
+// 社員一覧シートを社員IDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
+function sortEmployeeSheetById(ss) {
+  var sheet = ss.getSheetByName('社員一覧');
+  var data = getSheetData(ss, '社員一覧');
+  if (data.rows.length < 2) return;
+  data.rows.sort(function(a, b) {
+    var idA = parseInt(String(a[1]).trim(), 10);
+    var idB = parseInt(String(b[1]).trim(), 10);
+    if (isNaN(idA) && isNaN(idB)) return String(a[1]).trim().localeCompare(String(b[1]).trim());
+    if (isNaN(idA)) return 1;
+    if (isNaN(idB)) return -1;
+    return idA - idB;
+  });
+  setRangeAsText(sheet, 2, 1, data.rows.length, data.header.length, data.rows);
+}
+
+// 社員一覧シートに既存登録されていない社員ID候補を、指定の番号より大きい範囲から昇順で最大5件返す
+function findAvailableEmployeeIds(ss, afterId) {
+  var data = getSheetData(ss, '社員一覧');
+  var used = {};
+  for (var i = 0; i < data.rows.length; i++) {
+    used[String(data.rows[i][1]).trim()] = true;
+  }
+  var candidates = [];
+  var n = afterId + 1;
+  while (candidates.length < 5 && n <= 999) {
+    var candId = ('000' + n).slice(-3);
+    if (!used[candId]) candidates.push(candId);
+    n++;
+  }
+  return candidates;
 }
 
 // 社員一覧シートから該当行を検索（1行目はヘッダー）
@@ -4274,9 +4384,19 @@ function doGet(e) {
 
           appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, hashPasswordSha256(newPwC), newEmpFolderC.getId(), newSeiC + newMeiC]);
           appendRowAsText(ssC.getSheetByName('ユーザー情報'), [newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
+          sortEmployeeSheetById(ssC);
 
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
         }
+      }
+    } else if (action === 'adminAvailableIds') {
+      var ssAvail = openMasterSpreadsheet();
+      if (!ssAvail) {
+        out = { error: '「管理情報」スプレッドシートが見つかりません' };
+      } else {
+        var afterIdAvail = parseInt(e.parameter.afterId || '0', 10);
+        if (isNaN(afterIdAvail) || afterIdAvail < 0) afterIdAvail = 0;
+        out = { success: true, ids: findAvailableEmployeeIds(ssAvail, afterIdAvail) };
       }
     } else if (action === 'adminSearchUser') {
       var ssS = openMasterSpreadsheet();
