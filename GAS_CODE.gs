@@ -897,6 +897,29 @@ function doGet(e) {
         newsDocX.saveAndClose();
         out = { success: true };
       }
+    } else if (action === 'bulkDeleteNews') {
+      var newsDocBD = getOrCreateMasterDoc('ニュース');
+      var bodyBD = newsDocBD.getBody();
+      var linesBD = bodyBD.getText().split('\n');
+      var idsBD = (e.parameter.ids || '').split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+      var idsSetBD = {};
+      idsBD.forEach(function (id) { idsSetBD[id] = true; });
+      var newLinesBD = [];
+      var deletedCountBD = 0;
+      for (var bi = 0; bi < linesBD.length; bi++) {
+        var rowBD = linesBD[bi].trim();
+        if (!rowBD) continue;
+        var idBD = rowBD.split(':')[0];
+        if (idsSetBD[idBD]) {
+          // 一括削除は復元不可の完全削除
+          deletedCountBD++;
+          continue;
+        }
+        newLinesBD.push(rowBD);
+      }
+      bodyBD.editAsText().setText(newLinesBD.join('\n'));
+      newsDocBD.saveAndClose();
+      out = { success: true, deletedCount: deletedCountBD };
     } else if (action === 'logEvent') {
       var logDoc = getOrCreateMasterDoc('操作ログ');
       var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\n/g, ' ');

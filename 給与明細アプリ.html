@@ -126,6 +126,12 @@ nav.tabbar button svg{width:20px;height:20px;}
 .modal-sheet .frame{background:#2b2c2a;}
 .modal-sheet iframe{width:100%;height:60vh;border:none;display:block;}
 .x-btn{background:var(--danger);border:none;font-size:18px;color:#fff;line-height:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.modal-icon-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
+.modal-icon-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.modal-sheet header.news-modal-bulk-mode{background:#DCF5C4;}
+.filter-chip{font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;}
+.filter-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.news-bulk-checkbox{width:16px;height:16px;flex-shrink:0;cursor:pointer;}
 .formula{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:10px 12px;border-radius:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;line-height:1.7;white-space:pre-line;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
@@ -369,10 +375,33 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
 
 <div class="modal-overlay hidden" id="news-modal">
   <div class="modal-sheet modal-sheet-80vh">
-    <header>
+    <header id="news-modal-header">
       <h3 id="news-modal-title">新着のお知らせ</h3>
-      <button class="x-btn" id="news-modal-close">×</button>
+      <div class="row-noshrink-8" style="align-items:center;">
+        <button class="modal-icon-btn is-hidden" id="btn-news-filter-toggle" type="button" title="絞り込み">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg>
+        </button>
+        <button class="modal-icon-btn is-hidden" id="btn-news-bulk-toggle" type="button" title="複数選択削除">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="6" rx="1"/><path d="M5 7l1 1 2-2"/><rect x="3" y="14" width="6" height="6" rx="1"/><line x1="12" y1="7" x2="21" y2="7"/><line x1="12" y1="17" x2="21" y2="17"/></svg>
+        </button>
+        <button class="x-btn" id="news-modal-close">×</button>
+      </div>
     </header>
+    <div id="news-filter-panel" class="is-hidden" style="padding:10px 18px;border-bottom:1px solid var(--border);">
+      <div class="row" style="gap:8px;">
+        <input type="date" id="news-filter-date-from" style="flex:1;">
+        <input type="date" id="news-filter-date-to" style="flex:1;">
+      </div>
+      <div class="row-wrap-6 mt-6">
+        <button type="button" class="filter-chip active" data-priority="normal">💧お知らせ</button>
+        <button type="button" class="filter-chip active" data-priority="maintenance">🟡本アナウンス</button>
+        <button type="button" class="filter-chip active" data-priority="critical">🔴重要</button>
+      </div>
+    </div>
+    <div id="news-bulk-bar" class="is-hidden" style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <span class="muted fs-12" id="news-bulk-count">0件選択中</span>
+      <button type="button" class="btn small" style="width:auto;background:var(--danger);" id="btn-news-bulk-execute">選択したものを削除</button>
+    </div>
     <div class="modal-body" id="news-modal-body"></div>
   </div>
 </div>
@@ -767,7 +796,7 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <div class="card">
       <div class="row mb-2">
         <div class="section-title mb-0">お知らせ履歴</div>
-        <button class="link-btn" id="btn-news-show-all" style="display:none;">すべて見る</button>
+        <button class="link-btn" id="btn-news-show-all" style="display:none;width:auto;flex-shrink:0;padding:0;">すべて見る</button>
       </div>
       <div id="news-log-list"><div class="empty">お知らせはまだありません。</div></div>
     </div>
@@ -1565,7 +1594,9 @@ function newsListRowHtml(n){
   const readTag = isReadNews(n) ? '<span class="tag ok" style="font-size:10px;flex-shrink:0;">閲覧済み</span>' : '<span class="tag warn" style="font-size:10px;flex-shrink:0;">未読</span>';
   const shortDate = formatNewsTime(n.id).split(' ')[0];
   const adminTag = n.scope === 'admin' ? '<span class="admin-only-tag">管理者専用</span>' : '';
+  const checkbox = newsBulkMode ? `<input type="checkbox" class="news-bulk-checkbox" data-id="${n.id}" ${newsBulkSelectedIds.has(n.id)?'checked':''}>` : '';
   return `<div class="log-item news-row ${newsPriorityClass(n)}" data-id="${n.id}" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+    ${checkbox}
     <span style="flex-shrink:0;">${newsPriorityIcon(n)}</span>
     <span class="mono" style="font-size:11px;color:var(--text-3);flex-shrink:0;">${shortDate}</span>
     ${adminTag}
@@ -1575,11 +1606,50 @@ function newsListRowHtml(n){
 }
 function wireNewsRowClicks(container, list){
   container.querySelectorAll('.news-row').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    el.addEventListener('click', (ev)=>{
+      if(newsBulkMode){
+        const cb = el.querySelector('.news-bulk-checkbox');
+        if(ev.target !== cb) cb.checked = !cb.checked;
+        if(cb.checked) newsBulkSelectedIds.add(el.dataset.id);
+        else newsBulkSelectedIds.delete(el.dataset.id);
+        updateNewsBulkCount();
+        return;
+      }
       const n = list.find(x=>x.id === el.dataset.id);
       if(n) openNewsDetail(n);
     });
   });
+}
+
+let newsBulkMode = false;
+let newsBulkSelectedIds = new Set();
+let newsFilterPriorities = new Set(['normal','maintenance','critical']);
+function applyNewsFilters(list){
+  const fromVal = document.getElementById('news-filter-date-from').value;
+  const toVal = document.getElementById('news-filter-date-to').value;
+  return list.filter(n=>{
+    if(!newsFilterPriorities.has(n.priority || 'normal')) return false;
+    const t = parseInt(n.id, 10);
+    if(fromVal && t < new Date(fromVal+'T00:00:00').getTime()) return false;
+    if(toVal && t > new Date(toVal+'T23:59:59').getTime()) return false;
+    return true;
+  });
+}
+function updateNewsBulkCount(){
+  document.getElementById('news-bulk-count').textContent = `${newsBulkSelectedIds.size}件選択中`;
+}
+function resetNewsFilterAndBulkState(){
+  newsBulkMode = false;
+  newsBulkSelectedIds = new Set();
+  newsFilterPriorities = new Set(['normal','maintenance','critical']);
+  document.getElementById('news-filter-date-from').value = '';
+  document.getElementById('news-filter-date-to').value = '';
+  document.querySelectorAll('#news-filter-panel .filter-chip').forEach(c=>c.classList.add('active'));
+  document.getElementById('news-filter-panel').classList.add('is-hidden');
+  document.getElementById('news-bulk-bar').classList.add('is-hidden');
+  document.getElementById('btn-news-bulk-toggle').classList.remove('active');
+  document.getElementById('news-modal-header').classList.remove('news-modal-bulk-mode');
+  updateNewsBulkCount();
 }
 
 function renderNewsBanner(newsList){
@@ -1616,16 +1686,20 @@ async function fetchAndRenderNews(){
 let newsModalOnlyUnread = null;
 function renderNewsModalList(onlyUnread){
   const relevant = relevantNews(lastFetchedNews).slice().reverse();
-  const list = onlyUnread ? relevant.filter(n=>!isReadNews(n)) : relevant;
+  let list = onlyUnread ? relevant.filter(n=>!isReadNews(n)) : relevant;
+  if(!onlyUnread) list = applyNewsFilters(list);
   const bodyEl = document.getElementById('news-modal-body');
   bodyEl.innerHTML = list.length ? list.map(newsListRowHtml).join('') : '<div class="empty">該当するお知らせはありません。</div>';
   wireNewsRowClicks(bodyEl, list);
 }
 async function refreshNewsThenShowModal(onlyUnread){
   newsModalOnlyUnread = onlyUnread;
+  resetNewsFilterAndBulkState();
   document.getElementById('news-modal-title').textContent = onlyUnread ? '新着のお知らせ' : 'お知らせ履歴（すべて）';
   document.getElementById('news-modal-body').innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><p class="muted" style="margin-top:10px;">読み込んでいます…</p></div>';
   document.getElementById('news-modal').classList.remove('hidden');
+  document.getElementById('btn-news-filter-toggle').classList.toggle('is-hidden', onlyUnread);
+  document.getElementById('btn-news-bulk-toggle').classList.toggle('is-hidden', onlyUnread || !currentIsAdmin);
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getNews`);
     if(data && data.news) lastFetchedNews = data.news;
@@ -1646,6 +1720,63 @@ document.getElementById('news-banner').addEventListener('click', ()=>refreshNews
 document.getElementById('btn-news-show-all').addEventListener('click', ()=>refreshNewsThenShowModal(false));
 document.getElementById('news-modal-close').addEventListener('click', ()=>{
   document.getElementById('news-modal').classList.add('hidden');
+  resetNewsFilterAndBulkState();
+});
+document.getElementById('btn-news-filter-toggle').addEventListener('click', ()=>{
+  document.getElementById('news-filter-panel').classList.toggle('is-hidden');
+});
+document.querySelectorAll('#news-filter-panel .filter-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const p = chip.dataset.priority;
+    if(newsFilterPriorities.has(p)){
+      if(newsFilterPriorities.size === 1) return; // 最低1つは選択状態を維持
+      newsFilterPriorities.delete(p);
+      chip.classList.remove('active');
+    }else{
+      newsFilterPriorities.add(p);
+      chip.classList.add('active');
+    }
+    if(newsModalOnlyUnread !== null) renderNewsModalList(newsModalOnlyUnread);
+  });
+});
+['news-filter-date-from','news-filter-date-to'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{
+    if(newsModalOnlyUnread !== null) renderNewsModalList(newsModalOnlyUnread);
+  });
+});
+document.getElementById('btn-news-bulk-toggle').addEventListener('click', ()=>{
+  newsBulkMode = !newsBulkMode;
+  newsBulkSelectedIds = new Set();
+  updateNewsBulkCount();
+  document.getElementById('btn-news-bulk-toggle').classList.toggle('active', newsBulkMode);
+  document.getElementById('news-bulk-bar').classList.toggle('is-hidden', !newsBulkMode);
+  document.getElementById('news-modal-header').classList.toggle('news-modal-bulk-mode', newsBulkMode);
+  if(newsModalOnlyUnread !== null) renderNewsModalList(newsModalOnlyUnread);
+});
+document.getElementById('btn-news-bulk-execute').addEventListener('click', async ()=>{
+  if(newsBulkSelectedIds.size === 0) return;
+  const relevant = relevantNews(lastFetchedNews);
+  const selected = relevant.filter(n=>newsBulkSelectedIds.has(n.id));
+  const countNormal = selected.filter(n=>(n.priority||'normal')==='normal').length;
+  const countMaintenance = selected.filter(n=>n.priority==='maintenance').length;
+  const countCritical = selected.filter(n=>n.priority==='critical').length;
+  const total = selected.length;
+  const msg = `本アナウンス${countMaintenance}件、お知らせ${countNormal}件。重要${countCritical}件、計${total}件削除。（※復旧不可です）削除しますか？`;
+  if(!(await showConfirmModal(msg))) return;
+  try{
+    const ids = Array.from(newsBulkSelectedIds).join(',');
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=bulkDeleteNews&ids=${encodeURIComponent(ids)}`);
+    if(data.error){ await showAlertModal(data.error); return; }
+    logEvent('admin_change', `お知らせを一括削除（${total}件）`);
+    newsBulkMode = false;
+    newsBulkSelectedIds = new Set();
+    document.getElementById('btn-news-bulk-toggle').classList.remove('active');
+    document.getElementById('news-bulk-bar').classList.add('is-hidden');
+    document.getElementById('news-modal-header').classList.remove('news-modal-bulk-mode');
+    await refreshNewsThenShowModal(false);
+  }catch(e){
+    await showAlertModal('削除に失敗しました：' + e.message);
+  }
 });
 document.getElementById('news-detail-keep-unread').addEventListener('click', ()=>{
   if(currentDetailNews) markNewsUnread([currentDetailNews.id]);
@@ -4359,6 +4490,29 @@ function doGet(e) {
         newsDocX.saveAndClose();
         out = { success: true };
       }
+    } else if (action === 'bulkDeleteNews') {
+      var newsDocBD = getOrCreateMasterDoc('ニュース');
+      var bodyBD = newsDocBD.getBody();
+      var linesBD = bodyBD.getText().split('\\n');
+      var idsBD = (e.parameter.ids || '').split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+      var idsSetBD = {};
+      idsBD.forEach(function (id) { idsSetBD[id] = true; });
+      var newLinesBD = [];
+      var deletedCountBD = 0;
+      for (var bi = 0; bi < linesBD.length; bi++) {
+        var rowBD = linesBD[bi].trim();
+        if (!rowBD) continue;
+        var idBD = rowBD.split(':')[0];
+        if (idsSetBD[idBD]) {
+          // 一括削除は復元不可の完全削除
+          deletedCountBD++;
+          continue;
+        }
+        newLinesBD.push(rowBD);
+      }
+      bodyBD.editAsText().setText(newLinesBD.join('\\n'));
+      newsDocBD.saveAndClose();
+      out = { success: true, deletedCount: deletedCountBD };
     } else if (action === 'logEvent') {
       var logDoc = getOrCreateMasterDoc('操作ログ');
       var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\\n/g, ' ');
