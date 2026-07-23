@@ -2386,6 +2386,21 @@ function loadUserDetailIntoForm(detail){
   }
 }
 
+document.getElementById('admin-user-panel').addEventListener('keydown', (ev)=>{
+  if(ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
+  const target = ev.target;
+  if(!target || target.tagName !== 'INPUT' || target.type !== 'text') return;
+  const fields = Array.from(document.getElementById('admin-user-panel').querySelectorAll('input[type="text"]'));
+  const idx = fields.indexOf(target);
+  if(idx === -1) return;
+  const nextField = fields[ev.key === 'ArrowDown' ? idx + 1 : idx - 1];
+  if(!nextField) return;
+  ev.preventDefault();
+  nextField.focus();
+  const len = nextField.value.length;
+  nextField.setSelectionRange(len, len);
+});
+
 document.getElementById('btn-admin-delete-user').addEventListener('click', ()=>{
   if(!adminFoundUserId) return;
   document.getElementById('delete-user-target').textContent = document.getElementById('admin-user-name-display').textContent;
