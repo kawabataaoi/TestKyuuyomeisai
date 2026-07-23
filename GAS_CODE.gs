@@ -501,6 +501,8 @@ function buildUserDetailsSS(ss, targetId) {
     userInfo.deleteReason = rec['削除理由'] || '';
   }
   var byYear = {};
+  var individualGrantDate = '';
+  var individualGrantDays = '';
   try {
     var targetFolder = DriveApp.getFolderById(empRow.folderId);
     var settingsDocFile = getSettingsDocFile(targetFolder);
@@ -508,12 +510,20 @@ function buildUserDetailsSS(ss, targetId) {
       var settingsText = DocumentApp.openById(settingsDocFile.getId()).getBody().getText();
       var sLines = settingsText.split('\n');
       for (var yi = 0; yi < sLines.length; yi++) {
-        var yMatch = sLines[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+        var lineTrim = sLines[yi].trim();
+        var yMatch = lineTrim.match(/^(\d{4})有給残:([\d.]+)$/);
         if (yMatch) byYear[yMatch[1]] = yMatch[2];
+        if (lineTrim.indexOf('有給次回付与:') === 0) {
+          var gd = lineTrim.slice('有給次回付与:'.length).trim();
+          if (/^\d{8}$/.test(gd)) individualGrantDate = gd.slice(0,4) + '-' + gd.slice(4,6) + '-' + gd.slice(6,8);
+        }
+        if (lineTrim.indexOf('付与数:') === 0) {
+          individualGrantDays = lineTrim.slice('付与数:'.length).trim();
+        }
       }
     }
   } catch (errS) { /* フォルダが見つからない等は無視してbyYearは空のまま返す */ }
-  return { id: targetId, folderId: empRow.folderId, userInfo: userInfo, byYear: byYear };
+  return { id: targetId, folderId: empRow.folderId, userInfo: userInfo, byYear: byYear, individualGrantDate: individualGrantDate, individualGrantDays: individualGrantDays };
 }
 
 function doGet(e) {
@@ -1051,7 +1061,7 @@ function doGet(e) {
         if (!detailsS) {
           out = { error: '該当する社員IDが見つかりませんでした' };
         } else {
-          out = { success: true, id: detailsS.id, folderId: detailsS.folderId, userInfo: detailsS.userInfo, byYear: detailsS.byYear };
+          out = { success: true, id: detailsS.id, folderId: detailsS.folderId, userInfo: detailsS.userInfo, byYear: detailsS.byYear, individualGrantDate: detailsS.individualGrantDate, individualGrantDays: detailsS.individualGrantDays };
         }
       }
     } else if (action === 'adminUpdateUserInfo') {
