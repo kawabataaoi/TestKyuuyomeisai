@@ -961,20 +961,6 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="text" id="admin-search-id" placeholder="例：000 または やまだ">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-search">検索</button>
       <p class="muted mt-6" id="admin-search-status"></p>
-      <div id="admin-transport-revise-section" class="is-hidden">
-      <div class="divider-16"></div>
-      <div class="section-title fs-13">交通費申請の修正</div>
-      <p class="muted fs-12 mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
-      <label class="field mt-0">開始日（申請日）</label>
-      <input type="date" id="admin-transport-revise-from">
-      <label class="field">終了日（申請日）</label>
-      <input type="date" id="admin-transport-revise-to">
-      <p class="muted fs-12 mt-4">両方空欄で全件検索します。</p>
-      <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
-      <p class="muted mt-6" id="admin-transport-revise-status"></p>
-      <div id="admin-transport-revise-results" class="mt-8"></div>
-      </div>
-      <div class="divider-16"></div>
       <div id="admin-user-multi" style="display:none;margin-top:10px;"></div>
       <div id="admin-user-panel" style="display:none;margin-top:14px;">
         <div class="divider-mb-14"></div>
@@ -984,6 +970,10 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <input type="text" id="admin-user-sei">
         <label class="field">名前</label>
         <input type="text" id="admin-user-mei">
+        <label class="field">みょうじ（ひらがな）</label>
+        <input type="text" id="admin-user-sei-kana" placeholder="例：やまだ">
+        <label class="field">なまえ（ひらがな）</label>
+        <input type="text" id="admin-user-mei-kana" placeholder="例：たろう">
         <label class="field">生年月日</label>
         <input type="date" id="admin-user-dob">
         <label class="field">権限</label>
@@ -1015,6 +1005,19 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
         <input type="number" id="admin-grant-days-new" step="0.5" placeholder="10">
         <button class="btn ghost small mt-6 w-full" id="btn-admin-save-grant-date">このユーザーの付与日を保存</button>
         <p class="muted mt-6" id="admin-grant-date-status"></p>
+        <div id="admin-transport-revise-section" class="is-hidden">
+        <div class="divider-16"></div>
+        <div class="section-title fs-13">交通費申請の修正</div>
+        <p class="muted fs-12 mt-0">過去の交通費申請を申請日で絞り込んで検索し、許可・不許可の判定をあとから修正できます。修正には理由の入力が必須です。</p>
+        <label class="field mt-0">開始日（申請日）</label>
+        <input type="date" id="admin-transport-revise-from">
+        <label class="field">終了日（申請日）</label>
+        <input type="date" id="admin-transport-revise-to">
+        <p class="muted fs-12 mt-4">両方空欄で全件検索します。</p>
+        <button class="btn ghost small mt-6 w-full" id="btn-admin-transport-revise-search">検索</button>
+        <p class="muted mt-6" id="admin-transport-revise-status"></p>
+        <div id="admin-transport-revise-results" class="mt-8"></div>
+        </div>
         <div class="divider-16"></div>
         <button class="btn ghost small" id="btn-admin-delete-user" style="width:100%;color:#c0392b;">このユーザーを削除する</button>
         <button class="btn ghost small" id="btn-admin-restore-user" style="width:100%;display:none;">削除を取り消す</button>
@@ -2351,12 +2354,15 @@ function loadUserDetailIntoForm(detail){
   adminFoundByYear = detail.byYear || {};
   document.getElementById('admin-user-sei').value = detail.userInfo.sei || '';
   document.getElementById('admin-user-mei').value = detail.userInfo.mei || '';
+  document.getElementById('admin-user-sei-kana').value = detail.userInfo.seiKana || '';
+  document.getElementById('admin-user-mei-kana').value = detail.userInfo.meiKana || '';
   document.getElementById('admin-user-dob').value = (detail.userInfo.dob||'').replace(/\//g,'-');
   document.getElementById('admin-user-role').value = detail.userInfo.role === '1' ? '1' : '0';
   document.getElementById('admin-user-executive').checked = !!detail.userInfo.isExecutive;
   renderAdminLeaveYears();
   document.getElementById('admin-user-multi').style.display = 'none';
   document.getElementById('admin-user-panel').style.display = 'block';
+  document.getElementById('admin-transport-revise-section').classList.remove('is-hidden');
   setUserSearchActive(true);
 
   const nameEl = document.getElementById('admin-user-name-display');
@@ -2668,7 +2674,7 @@ document.getElementById('btn-admin-search').addEventListener('click', async ()=>
   status.textContent = '検索しています…';
   document.getElementById('admin-user-panel').style.display = 'none';
   document.getElementById('admin-user-multi').style.display = 'none';
-  document.getElementById('admin-transport-revise-section').classList.remove('is-hidden');
+  document.getElementById('admin-transport-revise-section').classList.add('is-hidden');
   try{
     const url = `${COMPANY_SCRIPT_URL}?action=adminFindUsersByQuery&query=${encodeURIComponent(query)}`;
     const data = await jsonpRequest(url);
@@ -2721,13 +2727,15 @@ document.getElementById('btn-admin-save-userinfo').addEventListener('click', asy
   if(!adminFoundUserId){ status.textContent = '先に検索してください。'; return; }
   const sei = document.getElementById('admin-user-sei').value.trim();
   const mei = document.getElementById('admin-user-mei').value.trim();
+  const seiKana = document.getElementById('admin-user-sei-kana').value.trim();
+  const meiKana = document.getElementById('admin-user-mei-kana').value.trim();
   const dobRaw = document.getElementById('admin-user-dob').value;
   const dob = dobRaw ? dobRaw.replace(/-/g,'/') : '';
   const role = document.getElementById('admin-user-role').value;
   const isExecutive = document.getElementById('admin-user-executive').checked ? '1' : '0';
   status.textContent = '保存しています…';
   try{
-    const url = `${COMPANY_SCRIPT_URL}?action=adminUpdateUserInfo&targetId=${encodeURIComponent(adminFoundUserId)}&sei=${encodeURIComponent(sei)}&mei=${encodeURIComponent(mei)}&dob=${encodeURIComponent(dob)}&role=${encodeURIComponent(role)}&isExecutive=${encodeURIComponent(isExecutive)}`;
+    const url = `${COMPANY_SCRIPT_URL}?action=adminUpdateUserInfo&targetId=${encodeURIComponent(adminFoundUserId)}&sei=${encodeURIComponent(sei)}&mei=${encodeURIComponent(mei)}&seiKana=${encodeURIComponent(seiKana)}&meiKana=${encodeURIComponent(meiKana)}&dob=${encodeURIComponent(dob)}&role=${encodeURIComponent(role)}&isExecutive=${encodeURIComponent(isExecutive)}`;
     const data = await jsonpRequest(url);
     if(data.error){ status.textContent = data.error; return; }
     status.textContent = '保存しました。';
@@ -3914,12 +3922,14 @@ function readPaydayOverridesSS(ss) {
 function buildUserDetailsSS(ss, targetId) {
   var empRow = findEmployeeRowSS(ss, targetId);
   if (!empRow) return null;
-  var userInfo = { sei: '', mei: '', dob: '', role: empRow.role, isExecutive: false, deleted: false, deletedDate: '', scheduledDate: '', deleteReason: '' };
+  var userInfo = { sei: '', mei: '', seiKana: '', meiKana: '', dob: '', role: empRow.role, isExecutive: false, deleted: false, deletedDate: '', scheduledDate: '', deleteReason: '' };
   var userRow = findUserInfoRowSS(ss, targetId);
   if (userRow) {
     var rec = userRow.record;
     userInfo.sei = rec['苗字'] || '';
     userInfo.mei = rec['名前'] || '';
+    userInfo.seiKana = rec['みょうじ'] || '';
+    userInfo.meiKana = rec['なまえ'] || '';
     userInfo.dob = rec['生年月日'] ? String(rec['生年月日']) : '';
     userInfo.isExecutive = String(rec['役員フラグ']) === '1';
     userInfo.deleted = String(rec['削除フラグ']) === '1';
@@ -4494,13 +4504,15 @@ function doGet(e) {
         } else {
           ssI.getSheetByName('社員一覧').getRange(empRowI.rowIndex, 1).setValue(newRole);
           var userRowI = findUserInfoRowSS(ssI, targetIdI);
-          var valsI = [targetIdI, e.parameter.sei || '', e.parameter.mei || '', '', '', e.parameter.dob || '', newRole, e.parameter.isExecutive || '0', '', '', '', '', ''];
+          var valsI = [targetIdI, e.parameter.sei || '', e.parameter.mei || '', e.parameter.seiKana || '', e.parameter.meiKana || '', e.parameter.dob || '', newRole, e.parameter.isExecutive || '0', '', '', '', '', ''];
           if (userRowI) {
             var hIdxI = {};
             getSheetData(ssI, 'ユーザー情報').header.forEach(function (h, i) { hIdxI[String(h).trim()] = i + 1; });
             var sheetUserI = ssI.getSheetByName('ユーザー情報');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['苗字']).setValue(e.parameter.sei || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['名前']).setValue(e.parameter.mei || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['みょうじ']).setValue(e.parameter.seiKana || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['なまえ']).setValue(e.parameter.meiKana || '');
             setCellAsText(sheetUserI, userRowI.rowIndex, hIdxI['生年月日'], e.parameter.dob || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['管理者権限']).setValue(newRole);
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['役員フラグ']).setValue(e.parameter.isExecutive || '0');

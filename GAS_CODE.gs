@@ -485,12 +485,14 @@ function readPaydayOverridesSS(ss) {
 function buildUserDetailsSS(ss, targetId) {
   var empRow = findEmployeeRowSS(ss, targetId);
   if (!empRow) return null;
-  var userInfo = { sei: '', mei: '', dob: '', role: empRow.role, isExecutive: false, deleted: false, deletedDate: '', scheduledDate: '', deleteReason: '' };
+  var userInfo = { sei: '', mei: '', seiKana: '', meiKana: '', dob: '', role: empRow.role, isExecutive: false, deleted: false, deletedDate: '', scheduledDate: '', deleteReason: '' };
   var userRow = findUserInfoRowSS(ss, targetId);
   if (userRow) {
     var rec = userRow.record;
     userInfo.sei = rec['苗字'] || '';
     userInfo.mei = rec['名前'] || '';
+    userInfo.seiKana = rec['みょうじ'] || '';
+    userInfo.meiKana = rec['なまえ'] || '';
     userInfo.dob = rec['生年月日'] ? String(rec['生年月日']) : '';
     userInfo.isExecutive = String(rec['役員フラグ']) === '1';
     userInfo.deleted = String(rec['削除フラグ']) === '1';
@@ -1065,13 +1067,15 @@ function doGet(e) {
         } else {
           ssI.getSheetByName('社員一覧').getRange(empRowI.rowIndex, 1).setValue(newRole);
           var userRowI = findUserInfoRowSS(ssI, targetIdI);
-          var valsI = [targetIdI, e.parameter.sei || '', e.parameter.mei || '', '', '', e.parameter.dob || '', newRole, e.parameter.isExecutive || '0', '', '', '', '', ''];
+          var valsI = [targetIdI, e.parameter.sei || '', e.parameter.mei || '', e.parameter.seiKana || '', e.parameter.meiKana || '', e.parameter.dob || '', newRole, e.parameter.isExecutive || '0', '', '', '', '', ''];
           if (userRowI) {
             var hIdxI = {};
             getSheetData(ssI, 'ユーザー情報').header.forEach(function (h, i) { hIdxI[String(h).trim()] = i + 1; });
             var sheetUserI = ssI.getSheetByName('ユーザー情報');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['苗字']).setValue(e.parameter.sei || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['名前']).setValue(e.parameter.mei || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['みょうじ']).setValue(e.parameter.seiKana || '');
+            sheetUserI.getRange(userRowI.rowIndex, hIdxI['なまえ']).setValue(e.parameter.meiKana || '');
             setCellAsText(sheetUserI, userRowI.rowIndex, hIdxI['生年月日'], e.parameter.dob || '');
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['管理者権限']).setValue(newRole);
             sheetUserI.getRange(userRowI.rowIndex, hIdxI['役員フラグ']).setValue(e.parameter.isExecutive || '0');
