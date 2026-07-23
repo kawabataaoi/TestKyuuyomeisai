@@ -3322,7 +3322,7 @@ function todayDateString() {
 }
 function logSystemEvent(eventType, detail) {
   var logDoc = getOrCreateMasterDoc('操作ログ');
-  var logLine = new Date().toISOString() + ':system:system:' + eventType + ':' + detail.replace(/\n/g, ' ');
+  var logLine = new Date().toISOString() + ':system:system:' + eventType + ':' + detail.replace(/\\n/g, ' ');
   appendLine(logDoc, logLine);
 }
 var BOOTSTRAP_DOC_ID = '15GaNuDtOCUW311AS-dKXSbu7x2-mVGHblkIe25KlY4I'; // GASのURLを書いた、公開閲覧可能なドキュメントのID
@@ -3460,7 +3460,7 @@ function digitsOnly(s) {
 }
 
 function parseUserRecords(text) {
-  var lines = text.split('\n');
+  var lines = text.split('\\n');
   var records = [];
   var cur = null;
   for (var i = 0; i < lines.length; i++) {
@@ -3499,11 +3499,11 @@ function serializeUserRecords(records) {
     if (r['削除理由'] !== undefined) lines.push('削除理由:' + r['削除理由']);
     if (r['告知済み'] !== undefined) lines.push('告知済み:' + r['告知済み']);
   });
-  return lines.join('\n');
+  return lines.join('\\n');
 }
 
 function findMainListRow(mainText, targetId) {
-  var rows = mainText.split('\n');
+  var rows = mainText.split('\\n');
   for (var i = 0; i < rows.length; i++) {
     var row = rows[i].trim();
     if (!row) continue;
@@ -3542,7 +3542,7 @@ var COMPANY_SETTING_KEYS = ['有給次回付与', '付与数', '給料日', '締
 function parseCompanySettingsFromText(text) {
   var result = {};
   var inPaydaySection = false;
-  var lines = text.split('\n');
+  var lines = text.split('\\n');
   for (var i = 0; i < lines.length; i++) {
     var row = lines[i].trim();
     if (row === '給料日特例') { inPaydaySection = true; continue; }
@@ -3560,7 +3560,7 @@ function parseCompanySettingsFromText(text) {
 }
 
 function parsePaydayOverrides(text) {
-  var lines = text.split('\n');
+  var lines = text.split('\\n');
   var overrides = {};
   var inSection = false;
   for (var i = 0; i < lines.length; i++) {
@@ -3603,9 +3603,9 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
     var settingsDocS = getSettingsDocFile(targetFolderS);
     if (settingsDocS) {
       var settingsTextS = DocumentApp.openById(settingsDocS.getId()).getBody().getText();
-      var sLinesS = settingsTextS.split('\n');
+      var sLinesS = settingsTextS.split('\\n');
       for (var yi = 0; yi < sLinesS.length; yi++) {
-        var yMatch = sLinesS[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+        var yMatch = sLinesS[yi].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
         if (yMatch) byYearS[yMatch[1]] = yMatch[2];
       }
     }
@@ -3672,6 +3672,17 @@ function rowToObject(header, row) {
   var obj = {};
   for (var i = 0; i < header.length; i++) obj[String(header[i]).trim()] = row[i];
   return obj;
+}
+
+// パスワードをSHA-256でハッシュ化し、"sha256:"プレフィックス付きの16進文字列にする
+function hashPasswordSha256(pw) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, pw, Utilities.Charset.UTF_8);
+  var hex = digest.map(function(b) {
+    var v = (b < 0) ? b + 256 : b;
+    var h = v.toString(16);
+    return h.length === 1 ? '0' + h : h;
+  }).join('');
+  return 'sha256:' + hex;
 }
 
 // 社員一覧シートから該当行を検索（1行目はヘッダー）
@@ -3742,9 +3753,9 @@ function buildUserDetailsSS(ss, targetId) {
     var settingsDocFile = getSettingsDocFile(targetFolder);
     if (settingsDocFile) {
       var settingsText = DocumentApp.openById(settingsDocFile.getId()).getBody().getText();
-      var sLines = settingsText.split('\n');
+      var sLines = settingsText.split('\\n');
       for (var yi = 0; yi < sLines.length; yi++) {
-        var yMatch = sLines[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+        var yMatch = sLines[yi].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
         if (yMatch) byYear[yMatch[1]] = yMatch[2];
       }
     }
@@ -3867,7 +3878,7 @@ function doGet(e) {
       var lrDate = e.parameter.date || '';
       var lrReason = e.parameter.reason || '（未入力）';
       var lrSubject = '給与台帳：有給申請';
-      var lrBody = lrEmpName + 'さんから有給申請が届きました。' + lrDate + '。理由：' + lrReason + 'のため。内容を確認し、アプリより、有給許可を行ってください。\n※本メールは給与台帳より自動送信されています。';
+      var lrBody = lrEmpName + 'さんから有給申請が届きました。' + lrDate + '。理由：' + lrReason + 'のため。内容を確認し、アプリより、有給許可を行ってください。\\n※本メールは給与台帳より自動送信されています。';
       MailApp.sendEmail(getInquiryEmail(), lrSubject, lrBody);
       out = {success: true};
     } else if (action === 'uploadChunkStart') {
@@ -3884,7 +3895,7 @@ function doGet(e) {
       out = { success: true };
     } else if (action === 'uploadChunkFinish') {
       var finishDoc = DocumentApp.openById(e.parameter.tempDocId);
-      var fullText = finishDoc.getBody().getText().replace(/\n/g, '').replace(/\s/g, '');
+      var fullText = finishDoc.getBody().getText().replace(/\\n/g, '').replace(/\\s/g, '');
       var targetFolder = DriveApp.getFolderById(e.parameter.folder);
       var fileName = e.parameter.filename || 'アップロードファイル';
       var mimeType = e.parameter.mimeType || 'application/pdf';
@@ -3999,7 +4010,7 @@ function doGet(e) {
         var newPw = (e.parameter.newPassword || '').trim().replace(/:/g, '');
         var empRowR = findEmployeeRowSS(ssR, targetId);
         if (empRowR) {
-          ssR.getSheetByName('社員一覧').getRange(empRowR.rowIndex, 3).setValue(newPw);
+          ssR.getSheetByName('社員一覧').getRange(empRowR.rowIndex, 3).setValue(hashPasswordSha256(newPw));
           out = { success: true };
         } else {
           out = { error: '該当するユーザーIDが見つかりませんでした' };
@@ -4011,8 +4022,8 @@ function doGet(e) {
       var scopeParamP = e.parameter.scope || 'all';
       var scope = (scopeParamP === 'admin' || scopeParamP.indexOf('emp:') === 0) ? scopeParamP : 'all';
       var priorityP = e.parameter.priority || 'normal';
-      var titleP = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
-      var msg = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
+      var titleP = (e.parameter.title || '').replace(/\\n/g, ' ').replace(/:/g, '：');
+      var msg = (e.parameter.message || '').replace(/\\n/g, ' ').replace(/:/g, '：');
       appendLine(newsDocP, [newsId, scope, priorityP, titleP, '', '', msg].join(':'));
       out = { success: true };
     } else if (action === 'checkAppVersion') {
@@ -4053,7 +4064,7 @@ function doGet(e) {
       }
     } else if (action === 'getNews') {
       var newsDocG = getOrCreateMasterDoc('ニュース');
-      var newsLines = newsDocG.getBody().getText().split('\n');
+      var newsLines = newsDocG.getBody().getText().split('\\n');
       var newsList = [];
       var includeDeletedG = e.parameter.includeDeleted === '1';
       for (var ni = 0; ni < newsLines.length; ni++) {
@@ -4081,7 +4092,7 @@ function doGet(e) {
     } else if (action === 'editNews' || action === 'deleteNews' || action === 'restoreNews') {
       var newsDocX = getOrCreateMasterDoc('ニュース');
       var bodyX = newsDocX.getBody();
-      var linesX = bodyX.getText().split('\n');
+      var linesX = bodyX.getText().split('\\n');
       var idX = (e.parameter.id || '').trim();
       var foundX = false;
       for (var xi = 0; xi < linesX.length; xi++) {
@@ -4098,8 +4109,8 @@ function doGet(e) {
         var msgX = isNewFormatX ? partsX.slice(6).join(':') : (partsX.length >= 5 ? partsX.slice(4).join(':') : '');
         if (action === 'editNews') {
           priorityX = e.parameter.priority || priorityX;
-          titleX = (e.parameter.title || '').replace(/\n/g, ' ').replace(/:/g, '：');
-          msgX = (e.parameter.message || '').replace(/\n/g, ' ').replace(/:/g, '：');
+          titleX = (e.parameter.title || '').replace(/\\n/g, ' ').replace(/:/g, '：');
+          msgX = (e.parameter.message || '').replace(/\\n/g, ' ').replace(/:/g, '：');
           editedAtX = String(new Date().getTime());
         } else if (action === 'deleteNews') {
           if (priorityX !== 'critical') {
@@ -4119,18 +4130,18 @@ function doGet(e) {
       if (!foundX) {
         out = { error: '対象のニュースが見つかりませんでした' };
       } else {
-        bodyX.editAsText().setText(linesX.join('\n'));
+        bodyX.editAsText().setText(linesX.join('\\n'));
         newsDocX.saveAndClose();
         out = { success: true };
       }
     } else if (action === 'logEvent') {
       var logDoc = getOrCreateMasterDoc('操作ログ');
-      var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\n/g, ' ');
+      var logLine = new Date().toISOString() + ':' + (e.parameter.empId || '') + ':' + (e.parameter.empName || '') + ':' + (e.parameter.eventType || '') + ':' + (e.parameter.detail || '').replace(/\\n/g, ' ');
       appendLine(logDoc, logLine);
       out = { success: true };
     } else if (action === 'getLogs') {
       var logDocG = getOrCreateMasterDoc('操作ログ');
-      var logLines = logDocG.getBody().getText().split('\n').filter(function(l){ return l.trim(); });
+      var logLines = logDocG.getBody().getText().split('\\n').filter(function(l){ return l.trim(); });
       var recent = logLines.slice(Math.max(0, logLines.length - 200));
       out = { success: true, logs: recent };
     } else if (action === 'adminFindUsersByQuery') {
@@ -4257,11 +4268,11 @@ function doGet(e) {
             curYearC + '有給残:0',
             '',
             '有給使用履歴'
-          ].join('\n');
+          ].join('\\n');
           newSettingsDocC.getBody().editAsText().setText(initialTextC);
           newSettingsDocC.saveAndClose();
 
-          appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, newPwC, newEmpFolderC.getId(), newSeiC + newMeiC]);
+          appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, hashPasswordSha256(newPwC), newEmpFolderC.getId(), newSeiC + newMeiC]);
           appendRowAsText(ssC.getSheetByName('ユーザー情報'), [newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
 
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
@@ -4333,11 +4344,11 @@ function doGet(e) {
             DriveApp.getRootFolder().removeFile(newFileL);
           }
           var bodyL = settingsDocL.getBody();
-          var linesL = bodyL.getText().split('\n');
+          var linesL = bodyL.getText().split('\\n');
           var foundL = false;
           for (var li = 0; li < linesL.length; li++) {
             if (linesL[li].trim() === '' ) continue;
-            var lm = linesL[li].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+            var lm = linesL[li].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
             if (lm && lm[1] === yearL) {
               linesL[li] = yearL + '有給残:' + newValueL;
               foundL = true;
@@ -4347,7 +4358,7 @@ function doGet(e) {
           if (!foundL) {
             linesL.push(yearL + '有給残:' + newValueL);
           }
-          bodyL.editAsText().setText(linesL.join('\n'));
+          bodyL.editAsText().setText(linesL.join('\\n'));
           settingsDocL.saveAndClose();
           out = { success: true };
         }
@@ -4364,7 +4375,7 @@ function doGet(e) {
         } else {
           var newDateGD = (e.parameter.newDate || '').trim();
           var newDaysGD = (e.parameter.newDays || '').trim();
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateGD)) {
+          if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(newDateGD)) {
             out = { error: '日付の形式が正しくありません' };
           } else {
             var targetFolderGD = DriveApp.getFolderById(rowGD.folderId);
@@ -4379,7 +4390,7 @@ function doGet(e) {
               DriveApp.getRootFolder().removeFile(newFileGD);
             }
             var bodyGD = settingsDocGD.getBody();
-            var linesGD = bodyGD.getText().split('\n');
+            var linesGD = bodyGD.getText().split('\\n');
             var dateLineGD = '有給次回付与:' + newDateGD.replace(/-/g, '');
             var foundDateGD = false;
             for (var gi = 0; gi < linesGD.length; gi++) {
@@ -4402,7 +4413,7 @@ function doGet(e) {
               }
               if (!foundDaysGD) linesGD.push(daysLineGD);
             }
-            bodyGD.editAsText().setText(linesGD.join('\n'));
+            bodyGD.editAsText().setText(linesGD.join('\\n'));
             settingsDocGD.saveAndClose();
             out = { success: true };
           }
@@ -4421,7 +4432,7 @@ function doGet(e) {
           var requestIdR = (e.parameter.requestId || '').trim();
           var typeR = e.parameter.type === 'delete' ? 'delete' : 'use';
           var decisionR = e.parameter.decision === 'approve' ? 'approve' : 'reject';
-          var reasonR = (e.parameter.reason || '').replace(/\n/g, ' ');
+          var reasonR = (e.parameter.reason || '').replace(/\\n/g, ' ');
           var targetFolderR = DriveApp.getFolderById(rowR.folderId);
           var settingsDocFileR = getSettingsDocFile(targetFolderR);
           if (!settingsDocFileR) {
@@ -4429,10 +4440,10 @@ function doGet(e) {
           } else {
             var settingsDocR = DocumentApp.openById(settingsDocFileR.getId());
             var bodyR = settingsDocR.getBody();
-            var linesR = bodyR.getText().split('\n');
+            var linesR = bodyR.getText().split('\\n');
             var byYearR = {};
             for (var yi = 0; yi < linesR.length; yi++) {
-              var ym = linesR[yi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+              var ym = linesR[yi].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
               if (ym) byYearR[ym[1]] = parseFloat(ym[2]);
             }
             var usageStartR = -1, usageEndR = linesR.length;
@@ -4454,7 +4465,7 @@ function doGet(e) {
               if (targetLineIdx === -1) {
                 out = { error: '対象の申請が見つかりませんでした（既に処理済みの可能性があります）' };
               } else {
-                var lineM = linesR[targetLineIdx].trim().match(/^(\d{8}):(-?\d+(?:\.\d+)?):([^@]*)(?:@(.*))?$/);
+                var lineM = linesR[targetLineIdx].trim().match(/^(\\d{8}):(-?\\d+(?:\\.\\d+)?):([^@]*)(?:@(.*))?$/);
                 if (!lineM) {
                   out = { error: '申請データの形式が正しくありません' };
                 } else {
@@ -4498,12 +4509,12 @@ function doGet(e) {
                     }
                   }
                   for (var wi = 0; wi < linesR.length; wi++) {
-                    var wm = linesR[wi].trim().match(/^(\d{4})有給残:([\d.]+)$/);
+                    var wm = linesR[wi].trim().match(/^(\\d{4})有給残:([\\d.]+)$/);
                     if (wm && byYearR.hasOwnProperty(wm[1])) {
                       linesR[wi] = wm[1] + '有給残:' + byYearR[wm[1]];
                     }
                   }
-                  bodyR.editAsText().setText(linesR.join('\n'));
+                  bodyR.editAsText().setText(linesR.join('\\n'));
                   settingsDocR.saveAndClose();
                   out = { success: true };
                 }
@@ -4590,7 +4601,7 @@ function doGet(e) {
           // 社員一覧（区分:社員ID:パスワード:フォルダID:氏名）を抽出。
           // 区分は必ず0か1のため、これを手がかりに設定値や特例行と区別する。
           var empRowsOld = [];
-          var rowsOld = mainTextOld.split('\n');
+          var rowsOld = mainTextOld.split('\\n');
           for (var roi = 0; roi < rowsOld.length; roi++) {
             var rowOld = rowsOld[roi].trim();
             if (!rowOld) continue;
@@ -4696,7 +4707,7 @@ function doGet(e) {
             appendLine(newsDocT, [newsIdT, 'admin', 'critical', '交通費申請', '', '', TRANSPORT_REQUEST_MARKER + newsPayloadT].join(':'));
 
             try {
-              var mailBodyT = (tEmpName || tEmpId) + '（' + tEmpId + '）さんから交通費申請が届きました。\n件数：' + trips.length + '件\n合計金額：' + totalT + '円\n\nアプリより内容を確認し、承認・却下を行ってください。\n※本メールは給与台帳より自動送信されています。';
+              var mailBodyT = (tEmpName || tEmpId) + '（' + tEmpId + '）さんから交通費申請が届きました。\\n件数：' + trips.length + '件\\n合計金額：' + totalT + '円\\n\\nアプリより内容を確認し、承認・却下を行ってください。\\n※本メールは給与台帳より自動送信されています。';
               MailApp.sendEmail(getTransportEmail(), '給与台帳：交通費申請', mailBodyT);
             } catch (mailErrT) { /* メール送信失敗は申請自体の成功を妨げない */ }
 
@@ -4711,7 +4722,7 @@ function doGet(e) {
         out = { success: true, requests: [] };
       } else {
         var ledgerDocG = getOrCreateTransportLedgerDoc(transportFolderG);
-        var linesG = ledgerDocG.getBody().getText().split('\n').filter(function (l) { return l.trim(); });
+        var linesG = ledgerDocG.getBody().getText().split('\\n').filter(function (l) { return l.trim(); });
         var empFilterG = (e.parameter.empId || '').trim();
         var requestsG = [];
         for (var gi = 0; gi < linesG.length; gi++) {
@@ -4736,7 +4747,7 @@ function doGet(e) {
         } else {
           var ledgerDocR2 = getOrCreateTransportLedgerDoc(transportFolderR);
           var bodyR2 = ledgerDocR2.getBody();
-          var linesR2 = bodyR2.getText().split('\n');
+          var linesR2 = bodyR2.getText().split('\\n');
           var targetIdxR2 = -1, targetRecR2 = null;
           for (var ri2 = 0; ri2 < linesR2.length; ri2++) {
             var rowR2 = linesR2[ri2].trim();
@@ -4753,7 +4764,7 @@ function doGet(e) {
             targetRecR2.decidedAt = new Date().toISOString();
             targetRecR2.rejectReason = decisionR2 === 'reject' ? reasonR2 : '';
             linesR2[targetIdxR2] = serializeTransportLedgerLine(targetRecR2);
-            bodyR2.editAsText().setText(linesR2.join('\n'));
+            bodyR2.editAsText().setText(linesR2.join('\\n'));
             ledgerDocR2.saveAndClose();
             out = { success: true, empId: targetRecR2.empId, empName: targetRecR2.empName, total: targetRecR2.total };
           }
@@ -4773,7 +4784,7 @@ function doGet(e) {
         } else {
           var ledgerDocV = getOrCreateTransportLedgerDoc(transportFolderV);
           var bodyV = ledgerDocV.getBody();
-          var linesV = bodyV.getText().split('\n');
+          var linesV = bodyV.getText().split('\\n');
           var targetIdxV = -1, targetRecV = null;
           for (var vi = 0; vi < linesV.length; vi++) {
             var rowV = linesV[vi].trim();
@@ -4788,7 +4799,7 @@ function doGet(e) {
             targetRecV.decidedAt = new Date().toISOString();
             targetRecV.rejectReason = reasonV;
             linesV[targetIdxV] = serializeTransportLedgerLine(targetRecV);
-            bodyV.editAsText().setText(linesV.join('\n'));
+            bodyV.editAsText().setText(linesV.join('\\n'));
             ledgerDocV.saveAndClose();
             logSystemEvent('transport_request_revise', targetRecV.empId + ':' + targetRecV.empName + ' の交通費申請（' + requestIdV + '）の判定を' + (decisionV === 'approve' ? '許諾' : '不許可') + 'に修正（理由：' + reasonV + '）');
             out = { success: true, empId: targetRecV.empId, empName: targetRecV.empName, total: targetRecV.total, status: targetRecV.status };
@@ -4804,7 +4815,7 @@ function doGet(e) {
         var textM = docM.getTabs()[0].asDocumentTab().getBody().getText();
         var inputIdM = (e.parameter.id || '').trim();
         var inputPwM = (e.parameter.password || '').trim();
-        var rowsM = textM.split('\n');
+        var rowsM = textM.split('\\n');
         var debugRows = [];
         var matchedRow = null;
         for (var mi3 = 0; mi3 < rowsM.length; mi3++) {
@@ -4844,7 +4855,19 @@ function doGet(e) {
         var inputIdSS = (e.parameter.id || '').trim();
         var inputPwSS = (e.parameter.password || '').trim();
         var empRowSS = findEmployeeRowSS(loginSS, inputIdSS);
-        if (!empRowSS || empRowSS.password !== inputPwSS) {
+        var pwOkSS = false;
+        if (empRowSS) {
+          if (empRowSS.password.indexOf('sha256:') === 0) {
+            pwOkSS = (empRowSS.password === hashPasswordSha256(inputPwSS));
+          } else {
+            // 旧形式（平文）：一致すればログインを許可し、この場でハッシュ形式に自動移行する
+            pwOkSS = (empRowSS.password === inputPwSS);
+            if (pwOkSS) {
+              loginSS.getSheetByName('社員一覧').getRange(empRowSS.rowIndex, 3).setValue(hashPasswordSha256(inputPwSS));
+            }
+          }
+        }
+        if (!empRowSS || !pwOkSS) {
           out = { error: 'IDまたはパスワードが違います' };
         } else {
           var nameSS = empRowSS.name || inputIdSS;
@@ -4884,7 +4907,7 @@ function doGet(e) {
         var inputPw = (e.parameter.password || '').trim();
         var found = null;
         var companySettings = parseCompanySettingsFromText(listText);
-        var rows = listText.split('\n');
+        var rows = listText.split('\\n');
         for (var i = 0; i < rows.length; i++) {
           var row = rows[i].trim();
           if (!row) continue;

@@ -381,6 +381,17 @@ function rowToObject(header, row) {
   return obj;
 }
 
+// パスワードをSHA-256でハッシュ化し、"sha256:"プレフィックス付きの16進文字列にする
+function hashPasswordSha256(pw) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, pw, Utilities.Charset.UTF_8);
+  var hex = digest.map(function(b) {
+    var v = (b < 0) ? b + 256 : b;
+    var h = v.toString(16);
+    return h.length === 1 ? '0' + h : h;
+  }).join('');
+  return 'sha256:' + hex;
+}
+
 // 社員一覧シートから該当行を検索（1行目はヘッダー）
 function findEmployeeRowSS(ss, targetId) {
   var data = getSheetData(ss, '社員一覧');
@@ -706,7 +717,7 @@ function doGet(e) {
         var newPw = (e.parameter.newPassword || '').trim().replace(/:/g, '');
         var empRowR = findEmployeeRowSS(ssR, targetId);
         if (empRowR) {
-          ssR.getSheetByName('社員一覧').getRange(empRowR.rowIndex, 3).setValue(newPw);
+          ssR.getSheetByName('社員一覧').getRange(empRowR.rowIndex, 3).setValue(hashPasswordSha256(newPw));
           out = { success: true };
         } else {
           out = { error: '該当するユーザーIDが見つかりませんでした' };
@@ -968,7 +979,7 @@ function doGet(e) {
           newSettingsDocC.getBody().editAsText().setText(initialTextC);
           newSettingsDocC.saveAndClose();
 
-          appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, newPwC, newEmpFolderC.getId(), newSeiC + newMeiC]);
+          appendRowAsText(ssC.getSheetByName('社員一覧'), [newRoleC, newIdC, hashPasswordSha256(newPwC), newEmpFolderC.getId(), newSeiC + newMeiC]);
           appendRowAsText(ssC.getSheetByName('ユーザー情報'), [newIdC, newSeiC, newMeiC, newSeiKanaC, newMeiKanaC, newDobC, newRoleC, newIsExecutiveC, '', '', '', '', '']);
 
           out = { success: true, id: newIdC, folderId: newEmpFolderC.getId() };
@@ -1551,7 +1562,19 @@ function doGet(e) {
         var inputIdSS = (e.parameter.id || '').trim();
         var inputPwSS = (e.parameter.password || '').trim();
         var empRowSS = findEmployeeRowSS(loginSS, inputIdSS);
-        if (!empRowSS || empRowSS.password !== inputPwSS) {
+        var pwOkSS = false;
+        if (empRowSS) {
+          if (empRowSS.password.indexOf('sha256:') === 0) {
+            pwOkSS = (empRowSS.password === hashPasswordSha256(inputPwSS));
+          } else {
+            // 旧形式（平文）：一致すればログインを許可し、この場でハッシュ形式に自動移行する
+            pwOkSS = (empRowSS.password === inputPwSS);
+            if (pwOkSS) {
+              loginSS.getSheetByName('社員一覧').getRange(empRowSS.rowIndex, 3).setValue(hashPasswordSha256(inputPwSS));
+            }
+          }
+        }
+        if (!empRowSS || !pwOkSS) {
           out = { error: 'IDまたはパスワードが違います' };
         } else {
           var nameSS = empRowSS.name || inputIdSS;
