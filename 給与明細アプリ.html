@@ -2512,7 +2512,13 @@ function setAvailableIdsButtonsState(){
   }else{
     setButtonBusy(prevBtn, false);
     setButtonBusy(nextBtn, false);
-    prevBtn.classList.toggle('is-hidden', availableIdsPageIndex <= 0);
+    const shouldHidePrev = (availableIdsPageIndex <= 0);
+    // 非表示にする前に、そのボタン自身にフォーカスが残っていれば移しておく
+    // （フォーカス中の要素を隠すとフォーカスが外れ、親カードの青いハイライトが消えてしまうため）
+    if(shouldHidePrev && document.activeElement === prevBtn){
+      nextBtn.focus();
+    }
+    prevBtn.classList.toggle('is-hidden', shouldHidePrev);
   }
 }
 function renderAvailableIdsPage(){
