@@ -1761,7 +1761,7 @@ document.getElementById('btn-news-bulk-execute').addEventListener('click', async
   const countMaintenance = selected.filter(n=>n.priority==='maintenance').length;
   const countCritical = selected.filter(n=>n.priority==='critical').length;
   const total = selected.length;
-  const msg = `本アナウンス${countMaintenance}件、お知らせ${countNormal}件。重要${countCritical}件、計${total}件削除。（※復旧不可です）削除しますか？`;
+  const msg = `本アナウンス${countMaintenance}件\nお知らせ${countNormal}件\n重要${countCritical}件\n計${total}件削除。\n（※復旧不可です）削除しますか？`;
   if(!(await showConfirmModal(msg))) return;
   try{
     const ids = Array.from(newsBulkSelectedIds).join(',');
