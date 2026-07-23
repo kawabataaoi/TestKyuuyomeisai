@@ -2708,6 +2708,9 @@ document.getElementById('btn-admin-search').addEventListener('click', async ()=>
     setUserSearchActive(false);
   }
 });
+document.getElementById('admin-search-id').addEventListener('keydown', (ev)=>{
+  if(ev.key === 'Enter'){ ev.preventDefault(); document.getElementById('btn-admin-search').click(); }
+});
 
 document.getElementById('btn-admin-reset').addEventListener('click', ()=>{
   document.getElementById('admin-search-id').value = '';
