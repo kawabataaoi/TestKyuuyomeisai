@@ -94,6 +94,10 @@ button{font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;}
 .ledger-row:hover .dot{background:#fff;}
 .ledger-row:hover .tag.ok{background:rgba(255,255,255,0.25);color:#fff;}
 .ledger-row:hover .tag.warn{background:rgba(255,255,255,0.25);color:#fff;}
+.ledger-row.missing:hover{background:transparent;color:inherit;}
+.ledger-row.missing:hover .info .f{color:var(--text-3);}
+.ledger-row.missing:hover .info .m{color:var(--danger);}
+.ledger-row.missing:hover .dot{background:var(--danger);}
 .tag{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
 .tag.ok{background:var(--accent-soft);color:var(--accent);}
 .tag.missing{background:var(--danger-soft);color:var(--danger);}
