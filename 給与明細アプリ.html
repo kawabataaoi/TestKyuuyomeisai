@@ -3032,12 +3032,13 @@ function transportReviseRowHtml(r, i){
 let transportReviseResults = [];
 document.getElementById('btn-admin-transport-revise-search').addEventListener('click', async ()=>{
   const status = document.getElementById('admin-transport-revise-status');
+  if(!adminFoundUserId){ status.textContent = '先に検索してください。'; return; }
   const fromVal = document.getElementById('admin-transport-revise-from').value;
   const toVal = document.getElementById('admin-transport-revise-to').value;
   const resultsEl = document.getElementById('admin-transport-revise-results');
   status.textContent = '検索しています…';
   try{
-    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportRequests`);
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getTransportRequests&empId=${encodeURIComponent(adminFoundUserId)}`);
     let list = (data && data.requests) || [];
     if(fromVal){
       const fromTime = new Date(fromVal + 'T00:00:00').getTime();
