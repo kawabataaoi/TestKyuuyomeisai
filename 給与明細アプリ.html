@@ -126,7 +126,7 @@ nav.tabbar button svg{width:20px;height:20px;}
 .modal-sheet .frame{background:#2b2c2a;}
 .modal-sheet iframe{width:100%;height:60vh;border:none;display:block;}
 .x-btn{background:var(--danger);border:none;font-size:18px;color:#fff;line-height:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.modal-icon-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
+.modal-icon-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
 .modal-icon-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 .modal-sheet header.news-modal-bulk-mode{background:#DCF5C4;}
 .filter-chip{font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;}
@@ -377,12 +377,12 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <div class="modal-sheet modal-sheet-80vh">
     <header id="news-modal-header">
       <h3 id="news-modal-title">新着のお知らせ</h3>
-      <div class="row-noshrink-8" style="align-items:center;">
+      <div class="row-noshrink-8" style="align-items:center;gap:14px;">
         <button class="modal-icon-btn is-hidden" id="btn-news-filter-toggle" type="button" title="絞り込み">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg>
         </button>
         <button class="modal-icon-btn is-hidden" id="btn-news-bulk-toggle" type="button" title="複数選択削除">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="6" rx="1"/><path d="M5 7l1 1 2-2"/><rect x="3" y="14" width="6" height="6" rx="1"/><line x1="12" y1="7" x2="21" y2="7"/><line x1="12" y1="17" x2="21" y2="17"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="6" rx="1"/><path d="M5 7l1 1 2-2"/><rect x="3" y="14" width="6" height="6" rx="1"/><line x1="12" y1="7" x2="21" y2="7"/><line x1="12" y1="17" x2="21" y2="17"/></svg>
         </button>
         <button class="x-btn" id="news-modal-close">×</button>
       </div>
@@ -1646,6 +1646,7 @@ function resetNewsFilterAndBulkState(){
   document.getElementById('news-filter-date-to').value = '';
   document.querySelectorAll('#news-filter-panel .filter-chip').forEach(c=>c.classList.add('active'));
   document.getElementById('news-filter-panel').classList.add('is-hidden');
+  document.getElementById('btn-news-filter-toggle').classList.remove('active');
   document.getElementById('news-bulk-bar').classList.add('is-hidden');
   document.getElementById('btn-news-bulk-toggle').classList.remove('active');
   document.getElementById('news-modal-header').classList.remove('news-modal-bulk-mode');
@@ -1723,7 +1724,8 @@ document.getElementById('news-modal-close').addEventListener('click', ()=>{
   resetNewsFilterAndBulkState();
 });
 document.getElementById('btn-news-filter-toggle').addEventListener('click', ()=>{
-  document.getElementById('news-filter-panel').classList.toggle('is-hidden');
+  const nowHidden = document.getElementById('news-filter-panel').classList.toggle('is-hidden');
+  document.getElementById('btn-news-filter-toggle').classList.toggle('active', !nowHidden);
 });
 document.querySelectorAll('#news-filter-panel .filter-chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
