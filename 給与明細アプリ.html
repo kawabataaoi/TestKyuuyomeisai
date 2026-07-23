@@ -1298,10 +1298,12 @@ function showConfirmModal(message){
 function setButtonBusy(btn, busy){
   if(!btn) return;
   if(busy){
-    btn.disabled = true;
+    // disabled属性を使うとフォーカスが外れてしまい、親カードのフォーカスハイライトがちらつくため、
+    // pointer-events:noneでのクリック抑止のみ行い、ネイティブのdisabledは使わない
+    btn.setAttribute('aria-disabled', 'true');
     btn.classList.add('is-busy');
   }else{
-    btn.disabled = false;
+    btn.removeAttribute('aria-disabled');
     btn.classList.remove('is-busy');
   }
 }
@@ -2510,7 +2512,7 @@ function setAvailableIdsButtonsState(){
   }else{
     setButtonBusy(prevBtn, false);
     setButtonBusy(nextBtn, false);
-    prevBtn.disabled = (availableIdsPageIndex <= 0);
+    prevBtn.classList.toggle('is-hidden', availableIdsPageIndex <= 0);
   }
 }
 function renderAvailableIdsPage(){
