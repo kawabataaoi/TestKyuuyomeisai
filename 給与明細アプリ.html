@@ -70,6 +70,10 @@ button{font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;}
 .btn.small{width:auto;padding:8px 14px;font-size:13px;}
 .btn.ghost{background:var(--surface-2);color:var(--accent);border:1px solid var(--accent-soft);font-weight:700;}
 .card:focus-within .btn.ghost{background:var(--surface);}
+.btn.is-busy{position:relative;color:transparent !important;pointer-events:none;opacity:.85;}
+.btn.is-busy::after{content:'';position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;animation:btn-spin .7s linear infinite;}
+.btn.ghost.is-busy::after,.btn.outline.is-busy::after{border:2px solid var(--accent-soft);border-top-color:var(--accent);}
+@keyframes btn-spin{to{transform:rotate(360deg);}}
 .summary-table{width:100%;border-collapse:collapse;}
 .summary-table tr{border-bottom:1px solid var(--border);}
 .summary-table tr:last-child{border-bottom:none;}
@@ -1290,6 +1294,24 @@ function showConfirmModal(message){
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
   });
+}
+function setButtonBusy(btn, busy){
+  if(!btn) return;
+  if(busy){
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+  }else{
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+  }
+}
+async function withButtonBusy(btn, fn){
+  setButtonBusy(btn, true);
+  try{
+    return await fn();
+  }finally{
+    setButtonBusy(btn, false);
+  }
 }
 function showAlertModal(message){
   return new Promise(resolve=>{
@@ -2555,7 +2577,7 @@ document.getElementById('create-user-modal-close').addEventListener('click', ()=
   document.getElementById('create-user-modal').classList.add('hidden');
 });
 
-document.getElementById('btn-confirm-create-user').addEventListener('click', async ()=>{
+document.getElementById('btn-confirm-create-user').addEventListener('click', async (ev)=>{
   const status = document.getElementById('create-user-modal-status');
   const newId = document.getElementById('new-user-id').value.trim();
   const newPw = document.getElementById('new-user-password').value.trim();
@@ -2569,6 +2591,7 @@ document.getElementById('btn-confirm-create-user').addEventListener('click', asy
   const baseSalary = document.getElementById('new-user-base-salary').value || '0';
   const isExecutive = document.getElementById('new-user-executive').checked ? '1' : '0';
   status.textContent = '作成しています…（フォルダとドキュメントの作成のため少し時間がかかります）';
+  await withButtonBusy(ev.currentTarget, async ()=>{
   try{
     const url = `${COMPANY_SCRIPT_URL}?action=adminCreateUser&newId=${encodeURIComponent(newId)}&newPassword=${encodeURIComponent(newPw)}&role=${encodeURIComponent(role)}&sei=${encodeURIComponent(sei)}&mei=${encodeURIComponent(mei)}&seiKana=${encodeURIComponent(seiKana)}&meiKana=${encodeURIComponent(meiKana)}&dob=${encodeURIComponent(dob)}&baseSalary=${encodeURIComponent(baseSalary)}&isExecutive=${encodeURIComponent(isExecutive)}`;
     const data = await jsonpRequest(url);
@@ -2594,6 +2617,7 @@ document.getElementById('btn-confirm-create-user').addEventListener('click', asy
   }catch(e){
     status.textContent = '作成に失敗しました：' + e.message;
   }
+  });
 });
 
 document.getElementById('btn-admin-search').addEventListener('click', async ()=>{
@@ -3762,20 +3786,25 @@ function hashPasswordSha256(pw) {
   return 'sha256:' + hex;
 }
 
-// 社員一覧シートを社員IDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
-function sortEmployeeSheetById(ss) {
-  var sheet = ss.getSheetByName('社員一覧');
-  var data = getSheetData(ss, '社員一覧');
+// 指定シートを、指定列（0始まり）のIDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
+function sortSheetByIdColumn(ss, sheetName, idColIndex) {
+  var sheet = ss.getSheetByName(sheetName);
+  var data = getSheetData(ss, sheetName);
   if (data.rows.length < 2) return;
   data.rows.sort(function(a, b) {
-    var idA = parseInt(String(a[1]).trim(), 10);
-    var idB = parseInt(String(b[1]).trim(), 10);
-    if (isNaN(idA) && isNaN(idB)) return String(a[1]).trim().localeCompare(String(b[1]).trim());
+    var idA = parseInt(String(a[idColIndex]).trim(), 10);
+    var idB = parseInt(String(b[idColIndex]).trim(), 10);
+    if (isNaN(idA) && isNaN(idB)) return String(a[idColIndex]).trim().localeCompare(String(b[idColIndex]).trim());
     if (isNaN(idA)) return 1;
     if (isNaN(idB)) return -1;
     return idA - idB;
   });
   setRangeAsText(sheet, 2, 1, data.rows.length, data.header.length, data.rows);
+}
+// 社員一覧・ユーザー情報の両シートを社員ID順に並べ替える
+function sortEmployeeSheetById(ss) {
+  sortSheetByIdColumn(ss, '社員一覧', 1);
+  sortSheetByIdColumn(ss, 'ユーザー情報', 0);
 }
 
 // 社員一覧シートに既存登録されていない社員ID候補を、指定の番号より大きい範囲から昇順で最大5件返す
@@ -5501,13 +5530,14 @@ function openPdfRenameModal(file){
 document.getElementById('file-input').addEventListener('change', async (e)=>{
   const files = [...e.target.files];
   const status = document.getElementById('meisai-status');
+  const addFileBtn = document.getElementById('btn-add-file');
   for(const file of files){
     const choice = await openPdfRenameModal(file);
     if(!choice) continue;
     if(choice.pendingReplace){
       const replace = await confirmPdfReplace(choice.existing);
       if(!replace) continue;
-      await removeExistingDocForReplace(choice.existing);
+      await withButtonBusy(addFileBtn, ()=>removeExistingDocForReplace(choice.existing));
     }
     const displayName = choice.name;
     const ym = { y: choice.y, mo: choice.mo };
@@ -5524,9 +5554,9 @@ document.getElementById('file-input').addEventListener('change', async (e)=>{
     }
     try{
       status.textContent = `${displayName} をDriveにアップロードしています…`;
-      await uploadFileToDrive(file, displayName, (done, total)=>{
+      await withButtonBusy(addFileBtn, ()=>uploadFileToDrive(file, displayName, (done, total)=>{
         status.textContent = `${displayName} をDriveにアップロードしています…（${done}/${total}）`;
-      });
+      }));
       status.textContent = `${displayName} をDriveにアップロードしました。`;
       documents = documents.filter(d=>d.id!==id);
       saveJSON('documents', documents);
@@ -6265,7 +6295,7 @@ async function refreshDriveDocs(){
     status.textContent = 'Driveへの通信に失敗しました：' + e.message;
   }
 }
-document.getElementById('btn-refresh-drive').addEventListener('click', refreshDriveDocs);
+document.getElementById('btn-refresh-drive').addEventListener('click', (ev)=>withButtonBusy(ev.currentTarget, refreshDriveDocs));
 
 function loadScript(src){
   return new Promise((resolve, reject)=>{

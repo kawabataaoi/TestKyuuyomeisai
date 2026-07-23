@@ -398,20 +398,25 @@ function hashPasswordSha256(pw) {
   return 'sha256:' + hex;
 }
 
-// 社員一覧シートを社員IDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
-function sortEmployeeSheetById(ss) {
-  var sheet = ss.getSheetByName('社員一覧');
-  var data = getSheetData(ss, '社員一覧');
+// 指定シートを、指定列（0始まり）のIDの昇順（数値として比較、数値化できない場合は文字列比較）に並べ替える
+function sortSheetByIdColumn(ss, sheetName, idColIndex) {
+  var sheet = ss.getSheetByName(sheetName);
+  var data = getSheetData(ss, sheetName);
   if (data.rows.length < 2) return;
   data.rows.sort(function(a, b) {
-    var idA = parseInt(String(a[1]).trim(), 10);
-    var idB = parseInt(String(b[1]).trim(), 10);
-    if (isNaN(idA) && isNaN(idB)) return String(a[1]).trim().localeCompare(String(b[1]).trim());
+    var idA = parseInt(String(a[idColIndex]).trim(), 10);
+    var idB = parseInt(String(b[idColIndex]).trim(), 10);
+    if (isNaN(idA) && isNaN(idB)) return String(a[idColIndex]).trim().localeCompare(String(b[idColIndex]).trim());
     if (isNaN(idA)) return 1;
     if (isNaN(idB)) return -1;
     return idA - idB;
   });
   setRangeAsText(sheet, 2, 1, data.rows.length, data.header.length, data.rows);
+}
+// 社員一覧・ユーザー情報の両シートを社員ID順に並べ替える
+function sortEmployeeSheetById(ss) {
+  sortSheetByIdColumn(ss, '社員一覧', 1);
+  sortSheetByIdColumn(ss, 'ユーザー情報', 0);
 }
 
 // 社員一覧シートに既存登録されていない社員ID候補を、指定の番号より大きい範囲から昇順で最大5件返す
