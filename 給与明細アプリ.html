@@ -1927,7 +1927,9 @@ function renderLeaveTypeApplyDocs(documents){
   `).join('');
   container.innerHTML = `
     <div class="leave-type-apply-doc-checklist">${checklistHtml}</div>
-    <div class="method-row mt-8">
+    <div class="divider-16"></div>
+    <label class="field mt-0">受け渡し方法</label>
+    <div class="method-row">
       <label><input type="checkbox" class="docs-method-mail"> 郵送</label>
       <label><input type="checkbox" class="docs-method-hand" checked> 手渡し</label>
     </div>
