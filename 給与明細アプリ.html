@@ -148,11 +148,13 @@ nav.tabbar button svg{width:20px;height:20px;}
 .leave-type-doc-row select{flex:1;}
 .leave-type-doc-row input{flex:1;}
 .leave-type-doc-row .x-btn{font-size:16px;}
-.leave-type-apply-doc-item{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
-.leave-type-apply-doc-item .doc-name{font-weight:700;font-size:13px;margin-bottom:6px;}
-.leave-type-apply-doc-item label{display:flex;align-items:center;gap:6px;font-size:12px;}
-.leave-type-apply-doc-item label input{width:auto;}
-.leave-type-apply-doc-item .method-row{display:flex;gap:16px;}
+.leave-type-apply-doc-checklist{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
+.leave-type-apply-doc-checkbox{display:flex;align-items:center;gap:6px;font-size:12px;}
+.leave-type-apply-doc-checkbox input{width:auto;}
+#leave-type-apply-docs .method-row{display:flex;gap:16px;}
+#leave-type-apply-docs label{display:flex;align-items:center;gap:6px;font-size:12px;}
+#leave-type-apply-docs label input{width:auto;}
+#leave-type-apply-docs input[type="text"]:disabled{background:var(--surface-2);color:var(--text-3);}
 .formula{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:10px 12px;border-radius:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;line-height:1.7;white-space:pre-line;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
@@ -1920,61 +1922,74 @@ function renderLeaveTypeApplyDocs(documents){
     container.innerHTML = '<p class="muted fs-12 mt-0">必要書類　なし</p>';
     return;
   }
-  container.innerHTML = documents.map(name=>`
-    <div class="leave-type-apply-doc-item" data-doc-name="${name}">
-      <div class="doc-name">${name}</div>
-      <label><input type="checkbox" class="doc-can-submit" checked> 提出できます</label>
-      <input type="text" class="doc-cannot-reason is-hidden mt-6" placeholder="例：市役所に申請したが間に合わない等" style="width:100%;box-sizing:border-box;">
-      <div class="method-row mt-6">
-        <label><input type="checkbox" class="doc-method-mail"> 郵送</label>
-        <label><input type="checkbox" class="doc-method-hand" checked> 手渡し</label>
-      </div>
-      <label class="mt-6"><input type="checkbox" class="doc-submitted"> 提出済み</label>
-      <input type="date" class="doc-submitted-date is-hidden mt-6">
-    </div>
+  const checklistHtml = documents.map(name=>`
+    <label class="leave-type-apply-doc-checkbox"><input type="checkbox" class="doc-have-checkbox" data-doc-name="${name}" checked> ${name}</label>
   `).join('');
-  container.querySelectorAll('.leave-type-apply-doc-item').forEach(item=>{
-    const canSubmit = item.querySelector('.doc-can-submit');
-    const reasonInput = item.querySelector('.doc-cannot-reason');
-    canSubmit.addEventListener('change', ()=>{
-      reasonInput.classList.toggle('is-hidden', canSubmit.checked);
-    });
-    const mailCb = item.querySelector('.doc-method-mail');
-    const handCb = item.querySelector('.doc-method-hand');
-    mailCb.addEventListener('change', ()=>{ handCb.checked = !mailCb.checked; });
-    handCb.addEventListener('change', ()=>{ mailCb.checked = !handCb.checked; });
-    const submittedCb = item.querySelector('.doc-submitted');
-    const dateInput = item.querySelector('.doc-submitted-date');
-    submittedCb.addEventListener('change', ()=>{
-      dateInput.classList.toggle('is-hidden', !submittedCb.checked);
-    });
+  container.innerHTML = `
+    <div class="leave-type-apply-doc-checklist">${checklistHtml}</div>
+    <div class="method-row mt-8">
+      <label><input type="checkbox" class="docs-method-mail"> 郵送</label>
+      <label><input type="checkbox" class="docs-method-hand" checked> 手渡し</label>
+    </div>
+    <label class="mt-6"><input type="checkbox" class="docs-submitted"> <span class="docs-submitted-label">提出済み</span></label>
+    <input type="date" class="docs-submitted-date is-hidden mt-6">
+    <input type="text" class="docs-cannot-reason mt-8" placeholder="提出できない理由：〇〇だから" style="width:100%;box-sizing:border-box;" disabled>
+  `;
+  const mailCb = container.querySelector('.docs-method-mail');
+  const handCb = container.querySelector('.docs-method-hand');
+  const submittedCb = container.querySelector('.docs-submitted');
+  const dateInput = container.querySelector('.docs-submitted-date');
+  const submittedLabel = container.querySelector('.docs-submitted-label');
+  function updateSubmittedLabel(){
+    if(submittedCb.checked && dateInput.value){
+      const method = mailCb.checked ? '郵送済み' : '提出済み';
+      submittedLabel.textContent = `${isoToDisplay(dateInput.value)}に${method}`;
+    }else{
+      submittedLabel.textContent = '提出済み';
+    }
+  }
+  mailCb.addEventListener('change', ()=>{ handCb.checked = !mailCb.checked; updateSubmittedLabel(); });
+  handCb.addEventListener('change', ()=>{ mailCb.checked = !handCb.checked; updateSubmittedLabel(); });
+  submittedCb.addEventListener('change', ()=>{
+    dateInput.classList.toggle('is-hidden', !submittedCb.checked);
+    updateSubmittedLabel();
   });
+  dateInput.addEventListener('change', updateSubmittedLabel);
+
+  const reasonInput = container.querySelector('.docs-cannot-reason');
+  const haveCheckboxes = container.querySelectorAll('.doc-have-checkbox');
+  function updateReasonEnabled(){
+    const allChecked = Array.from(haveCheckboxes).every(cb=>cb.checked);
+    reasonInput.disabled = allChecked;
+    if(allChecked) reasonInput.value = '';
+  }
+  haveCheckboxes.forEach(cb=>cb.addEventListener('change', updateReasonEnabled));
+  updateReasonEnabled();
 }
 function collectLeaveTypeApplyDocsSummary(documents){
   if(!documents || !documents.length) return { summary: 'なし', ok: true };
-  const items = document.querySelectorAll('#leave-type-apply-docs .leave-type-apply-doc-item');
-  const lines = [];
-  let ok = true;
-  items.forEach(item=>{
-    const name = item.dataset.docName;
-    const canSubmit = item.querySelector('.doc-can-submit').checked;
-    const method = item.querySelector('.doc-method-mail').checked ? '郵送' : '手渡し';
-    if(!canSubmit){
-      const reason = item.querySelector('.doc-cannot-reason').value.trim();
-      if(!reason){ ok = false; }
-      lines.push(`${name}：提出不可（理由：${reason || '未入力'}）`);
-      return;
-    }
-    const submitted = item.querySelector('.doc-submitted').checked;
-    const date = item.querySelector('.doc-submitted-date').value;
-    if(submitted){
-      const label = method === '郵送' ? '郵送済み' : '提出済み';
-      lines.push(`${name}：${method}・${date ? isoToDisplay(date)+'に' : ''}${label}`);
-    }else{
-      lines.push(`${name}：${method}予定・未提出`);
-    }
+  const container = document.getElementById('leave-type-apply-docs');
+  const haveCheckboxes = container.querySelectorAll('.doc-have-checkbox');
+  const haveNames = [], missingNames = [];
+  haveCheckboxes.forEach(cb=>{
+    if(cb.checked) haveNames.push(cb.dataset.docName);
+    else missingNames.push(cb.dataset.docName);
   });
-  return { summary: lines.join('\n'), ok };
+  const method = container.querySelector('.docs-method-mail').checked ? '郵送' : '手渡し';
+  const submitted = container.querySelector('.docs-submitted').checked;
+  const date = container.querySelector('.docs-submitted-date').value;
+  const statusLine = submitted
+    ? `${date ? isoToDisplay(date)+'に' : ''}${method === '郵送' ? '郵送済み' : '提出済み'}`
+    : `${method}予定・未提出`;
+  let ok = true;
+  let reasonLine = '';
+  if(missingNames.length > 0){
+    const reason = container.querySelector('.docs-cannot-reason').value.trim();
+    if(!reason) ok = false;
+    reasonLine = `\n提出できない書類：${missingNames.join('、')}\n理由：${reason || '未入力'}`;
+  }
+  const summary = `提出：${haveNames.length ? haveNames.join('、') : 'なし'}（${method}・${statusLine}）${reasonLine}`;
+  return { summary, ok };
 }
 function showLeaveTypeApplyModal(name, documents){
   return new Promise(resolve=>{
