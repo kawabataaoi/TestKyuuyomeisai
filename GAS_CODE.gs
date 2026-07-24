@@ -58,6 +58,12 @@ function getTransportEmail() {
   return v || DEFAULT_TRANSPORT_EMAIL;
 }
 
+var DEFAULT_LEAVE_TYPE_EMAIL = 'a_aoyama@dsbz.jp';
+function getLeaveTypeEmail() {
+  var v = PropertiesService.getScriptProperties().getProperty('LEAVE_TYPE_EMAIL');
+  return v || DEFAULT_LEAVE_TYPE_EMAIL;
+}
+
 // ============================================================
 // 交通費申請
 // ============================================================
@@ -327,16 +333,16 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
 var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
 
 // 「休暇制度」シートのヘッダーと、国が定める法定休暇のデフォルト行
-// URL・必要書類は会社ごとに異なる／変わりうるため、デフォルトでは空欄にしておき管理者に入力してもらう
+// URL・必要書類は暫定値（会社の実情に合わせて管理画面から修正してください）
 var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可', 'URL', '必要書類'];
 var DEFAULT_LEAVE_TYPES = [
-  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1'],
-  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1'],
-  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1'],
-  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1'],
-  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1'],
-  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1'],
-  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1']
+  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1', 'https://www.mhlw.go.jp/bosei/', '母子健康手帳（写し）|診断書'],
+  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kodomo/shokuba_kosodate/ikuji/index.html', '母子健康手帳（写し）'],
+  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/kaigo/index.html', '介護保険被保険者証（写し）|診断書'],
+  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kodomo/shokuba_kosodate/ikuji/index.html', '母子健康手帳（写し）'],
+  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/kaigo/index.html', '介護保険被保険者証（写し）'],
+  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/index.html', ''],
+  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/index.html', '']
 ];
 
 // 「休暇制度」シートを取得し、なければ作成して法定休暇のデフォルト行を登録する
@@ -347,7 +353,20 @@ function getOrCreateLeaveTypesSheet(ss) {
   appendRowAsText(sheet, LEAVE_TYPES_HEADER);
   var baseTime = new Date().getTime();
   DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
-    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], '', '']);
+    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], row[4] || '', row[5] || '']);
+  });
+  return sheet;
+}
+
+// 「必要書類リスト」シート：休暇申請時の必要書類ドロップダウンの選択肢を管理
+var DEFAULT_REQUIRED_DOCUMENTS = ['住民票（写し）', 'マイナンバーカード（両面コピー）', '母子健康手帳（写し）', '診断書', '医師の意見書', '介護保険被保険者証（写し）', '戸籍謄本', '在職証明書'];
+function getOrCreateRequiredDocumentsSheet(ss) {
+  var sheet = ss.getSheetByName('必要書類リスト');
+  if (sheet) return sheet;
+  sheet = ss.insertSheet('必要書類リスト');
+  appendRowAsText(sheet, ['書類名']);
+  DEFAULT_REQUIRED_DOCUMENTS.forEach(function (name) {
+    appendRowAsText(sheet, [name]);
   });
   return sheet;
 }
@@ -729,6 +748,16 @@ function doGet(e) {
         out = { error: 'メールアドレスを入力してください' };
       } else {
         PropertiesService.getScriptProperties().setProperty('TRANSPORT_EMAIL', newTransportEmail);
+        out = { success: true };
+      }
+    } else if (action === 'getLeaveTypeContact') {
+      out = { success: true, email: getLeaveTypeEmail() };
+    } else if (action === 'updateLeaveTypeContact') {
+      var newLeaveTypeEmail = (e.parameter.newEmail || '').trim();
+      if (!newLeaveTypeEmail) {
+        out = { error: 'メールアドレスを入力してください' };
+      } else {
+        PropertiesService.getScriptProperties().setProperty('LEAVE_TYPE_EMAIL', newLeaveTypeEmail);
         out = { success: true };
       }
     } else if (action === 'companySettings') {
@@ -1456,6 +1485,37 @@ function doGet(e) {
           sheetLD.deleteRow(rowIdxLD);
           out = { success: true };
         }
+      }
+    } else if (action === 'getRequiredDocumentOptions') {
+      var ssRD = openMasterSpreadsheet();
+      if (!ssRD) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        getOrCreateRequiredDocumentsSheet(ssRD);
+        var dataRD = getSheetData(ssRD, '必要書類リスト');
+        var optionsRD = dataRD.rows.map(function (row) { return row[0]; }).filter(function (v) { return v; });
+        out = { success: true, options: optionsRD };
+      }
+    } else if (action === 'applyLeaveType') {
+      var empIdAL = (e.parameter.empId || '').trim();
+      var empNameAL = (e.parameter.empName || '').trim();
+      var nameAL = (e.parameter.name || '').trim();
+      var fromAL = (e.parameter.from || '').trim();
+      var toAL = (e.parameter.to || '').trim();
+      var reasonAL = (e.parameter.reason || '').trim();
+      var docsSummaryAL = (e.parameter.docsSummary || '').trim();
+      if (!nameAL || !fromAL) {
+        out = { error: '休暇名・開始日は必須です' };
+      } else {
+        var periodAL = toAL ? (fromAL + '〜' + toAL) : (fromAL + '〜（終了日未定）');
+        var bodyAL = '休暇制度の申請がありました。\n\n'
+          + '休暇名：' + nameAL + '\n'
+          + '申請者：' + empIdAL + '：' + empNameAL + '\n'
+          + '期間：' + periodAL + '\n'
+          + (reasonAL ? ('理由・備考：' + reasonAL + '\n') : '')
+          + '\n必要書類：' + (docsSummaryAL || 'なし');
+        MailApp.sendEmail(getLeaveTypeEmail(), '【給与台帳】休暇制度の申請：' + nameAL, bodyAL);
+        out = { success: true };
       }
     } else if (action === 'updateMasterFolderId') {
       var newFolderId = (e.parameter.newFolderId || '').trim();

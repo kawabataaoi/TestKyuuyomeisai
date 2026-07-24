@@ -132,17 +132,25 @@ nav.tabbar button svg{width:20px;height:20px;}
 .filter-chip{font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;}
 .filter-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
 .news-bulk-checkbox{width:16px;height:16px;flex-shrink:0;cursor:pointer;}
-.leave-type-row{display:grid;grid-template-columns:1.3fr 0.55fr 1.7fr 0.85fr;gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.leave-type-row{display:grid;grid-template-columns:1.15fr 0.5fr 1.35fr 0.9fr;gap:4px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.leave-type-row>*{min-width:0;}
 .leave-type-row.header{font-weight:700;color:var(--text-2);font-size:11px;padding-top:0;}
 .leave-type-row .col-pay{text-align:center;}
-.leave-type-row .col-apply{text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
+.leave-type-row .col-apply{text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;min-width:0;}
+.leave-type-row.header .col-apply{gap:2px;}
+.leave-type-row.header .col-apply span:last-child{font-size:10px;font-weight:500;color:var(--text-3);}
 .leave-type-docs{font-size:11px;color:var(--text-2);padding:0 0 9px;border-bottom:1px solid var(--border);}
-.leave-type-detail-btn{width:auto;padding:4px 10px;font-size:11px;}
+.leave-type-detail-btn{width:auto;padding:3px 8px;font-size:10px;background:#DCEEFB;color:#2E7DAF;border:1px solid #9CC7E8;border-radius:20px;font-weight:500;display:inline-block;}
 .leave-type-detail-btn.disabled{opacity:.4;pointer-events:none;}
 .leave-type-doc-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
 .leave-type-doc-row select{flex:1;}
 .leave-type-doc-row input{flex:1;}
 .leave-type-doc-row .x-btn{font-size:16px;}
+.leave-type-apply-doc-item{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
+.leave-type-apply-doc-item .doc-name{font-weight:700;font-size:13px;margin-bottom:6px;}
+.leave-type-apply-doc-item label{display:flex;align-items:center;gap:6px;font-size:12px;}
+.leave-type-apply-doc-item label input{width:auto;}
+.leave-type-apply-doc-item .method-row{display:flex;gap:16px;}
 .formula{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:10px 12px;border-radius:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;line-height:1.7;white-space:pre-line;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
@@ -440,6 +448,9 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
     <p class="muted fs-11 mt-0">終了日が未定の場合は空欄のままでOKです。</p>
     <label class="field">理由・備考（任意）</label>
     <textarea id="leave-type-apply-reason" rows="3" class="contact-textarea mt-6" style="width:100%;box-sizing:border-box;"></textarea>
+    <div class="divider-16"></div>
+    <div class="section-title fs-13">必要書類</div>
+    <div id="leave-type-apply-docs"></div>
     <p class="muted mt-6" id="leave-type-apply-status"></p>
     <div class="confirm-actions mt-14">
       <button class="btn ghost" id="leave-type-apply-cancel">キャンセル</button>
@@ -862,6 +873,12 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="email" id="admin-transport-email" placeholder="a_aoyama@dsbz.jp">
       <button class="btn ghost small mt-6 w-full" id="btn-save-transport-contact">受信先を変更</button>
       <p class="muted mt-6" id="admin-transport-contact-status"></p>
+      <div class="divider-16"></div>
+      <label class="field mt-0">休暇制度申請メールの受信先</label>
+      <input type="email" id="admin-leave-type-email" placeholder="a_aoyama@dsbz.jp">
+      <p class="muted fs-11 mt-0">休暇制度確認からの申請内容はプライバシーに関わるため、お知らせ一覧には表示せずこの宛先にメールでのみ送信されます。</p>
+      <button class="btn ghost small mt-6 w-full" id="btn-save-leave-type-contact">受信先を変更</button>
+      <p class="muted mt-6" id="admin-leave-type-contact-status"></p>
       <div class="divider-16"></div>
       <label class="field mt-0">共通フォルダID（社員一覧の場所）</label>
       <input type="text" id="admin-master-folder" placeholder="1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
@@ -1859,12 +1876,13 @@ document.getElementById('btn-news-bulk-execute').addEventListener('click', async
 });
 
 function renderLeaveTypesList(types){
+  window.__leaveTypesCache = types;
   const listEl = document.getElementById('leave-types-list');
   if(!types.length){ listEl.innerHTML = '<div class="empty">登録されていません。</div>'; return; }
-  const header = `<div class="leave-type-row header"><span>休暇名</span><span class="col-pay">給与</span><span>条件</span><span class="col-apply">申請</span></div>`;
+  const header = `<div class="leave-type-row header"><span>休暇名</span><span class="col-pay">給与</span><span>条件</span><span class="col-apply"><span>申請</span><span>詳細</span></span></div>`;
   const rows = types.map(t=>{
     const applyCell = t.applyEnabled
-      ? `<button type="button" class="btn ghost small leave-type-apply-btn" data-id="${t.id}" data-name="${t.name}" style="width:auto;padding:5px 12px;font-size:11px;">申請</button>`
+      ? `<button type="button" class="btn ghost small leave-type-apply-btn" data-id="${t.id}" style="width:auto;padding:5px 12px;font-size:11px;">申請</button>`
       : '<span class="muted">—</span>';
     const detailCell = t.url
       ? `<a class="btn ghost small leave-type-detail-btn" href="${t.url}" target="_blank" rel="noopener noreferrer">詳細</a>`
@@ -1881,7 +1899,10 @@ function renderLeaveTypesList(types){
   }).join('');
   listEl.innerHTML = header + rows;
   listEl.querySelectorAll('.leave-type-apply-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>applyForLeaveType(btn.dataset.id, btn.dataset.name));
+    btn.addEventListener('click', ()=>{
+      const t = (window.__leaveTypesCache||[]).find(x=>x.id===btn.dataset.id);
+      if(t) applyForLeaveType(t);
+    });
   });
 }
 async function openLeaveTypesModal(){
@@ -1896,7 +1917,69 @@ async function openLeaveTypesModal(){
     listEl.innerHTML = `<div class="empty">取得に失敗しました：${e.message}</div>`;
   }
 }
-function showLeaveTypeApplyModal(name){
+function renderLeaveTypeApplyDocs(documents){
+  const container = document.getElementById('leave-type-apply-docs');
+  if(!documents || !documents.length){
+    container.innerHTML = '<p class="muted fs-12 mt-0">必要書類　なし</p>';
+    return;
+  }
+  container.innerHTML = documents.map(name=>`
+    <div class="leave-type-apply-doc-item" data-doc-name="${name}">
+      <div class="doc-name">${name}</div>
+      <label><input type="checkbox" class="doc-can-submit" checked> 提出できます</label>
+      <input type="text" class="doc-cannot-reason is-hidden mt-6" placeholder="例：市役所に申請したが間に合わない等" style="width:100%;box-sizing:border-box;">
+      <div class="method-row mt-6">
+        <label><input type="checkbox" class="doc-method-mail"> 郵送</label>
+        <label><input type="checkbox" class="doc-method-hand" checked> 手渡し</label>
+      </div>
+      <label class="mt-6"><input type="checkbox" class="doc-submitted"> 提出済み</label>
+      <input type="date" class="doc-submitted-date is-hidden mt-6">
+    </div>
+  `).join('');
+  container.querySelectorAll('.leave-type-apply-doc-item').forEach(item=>{
+    const canSubmit = item.querySelector('.doc-can-submit');
+    const reasonInput = item.querySelector('.doc-cannot-reason');
+    canSubmit.addEventListener('change', ()=>{
+      reasonInput.classList.toggle('is-hidden', canSubmit.checked);
+    });
+    const mailCb = item.querySelector('.doc-method-mail');
+    const handCb = item.querySelector('.doc-method-hand');
+    mailCb.addEventListener('change', ()=>{ handCb.checked = !mailCb.checked; });
+    handCb.addEventListener('change', ()=>{ mailCb.checked = !handCb.checked; });
+    const submittedCb = item.querySelector('.doc-submitted');
+    const dateInput = item.querySelector('.doc-submitted-date');
+    submittedCb.addEventListener('change', ()=>{
+      dateInput.classList.toggle('is-hidden', !submittedCb.checked);
+    });
+  });
+}
+function collectLeaveTypeApplyDocsSummary(documents){
+  if(!documents || !documents.length) return { summary: 'なし', ok: true };
+  const items = document.querySelectorAll('#leave-type-apply-docs .leave-type-apply-doc-item');
+  const lines = [];
+  let ok = true;
+  items.forEach(item=>{
+    const name = item.dataset.docName;
+    const canSubmit = item.querySelector('.doc-can-submit').checked;
+    const method = item.querySelector('.doc-method-mail').checked ? '郵送' : '手渡し';
+    if(!canSubmit){
+      const reason = item.querySelector('.doc-cannot-reason').value.trim();
+      if(!reason){ ok = false; }
+      lines.push(`${name}：提出不可（理由：${reason || '未入力'}）`);
+      return;
+    }
+    const submitted = item.querySelector('.doc-submitted').checked;
+    const date = item.querySelector('.doc-submitted-date').value;
+    if(submitted){
+      const label = method === '郵送' ? '郵送済み' : '提出済み';
+      lines.push(`${name}：${method}・${date ? isoToDisplay(date)+'に' : ''}${label}`);
+    }else{
+      lines.push(`${name}：${method}予定・未提出`);
+    }
+  });
+  return { summary: lines.join('\n'), ok };
+}
+function showLeaveTypeApplyModal(name, documents){
   return new Promise(resolve=>{
     const overlay = document.getElementById('leave-type-apply-modal');
     document.getElementById('leave-type-apply-message').textContent = `「${name}」の申請内容を入力してください。`;
@@ -1904,6 +1987,7 @@ function showLeaveTypeApplyModal(name){
     document.getElementById('leave-type-apply-to').value = '';
     document.getElementById('leave-type-apply-reason').value = '';
     document.getElementById('leave-type-apply-status').textContent = '';
+    renderLeaveTypeApplyDocs(documents);
     overlay.classList.remove('hidden');
     const okBtn = document.getElementById('leave-type-apply-ok');
     const cancelBtn = document.getElementById('leave-type-apply-cancel');
@@ -1922,23 +2006,29 @@ function showLeaveTypeApplyModal(name){
       }
       const to = document.getElementById('leave-type-apply-to').value;
       const reason = document.getElementById('leave-type-apply-reason').value.trim();
-      cleanup({from, to, reason});
+      const docsResult = collectLeaveTypeApplyDocsSummary(documents);
+      if(!docsResult.ok){
+        document.getElementById('leave-type-apply-status').textContent = '提出できない書類の理由を入力してください。';
+        return;
+      }
+      cleanup({from, to, reason, docsSummary: docsResult.summary});
     }
     function onCancel(){ cleanup(null); }
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
   });
 }
-async function applyForLeaveType(id, name){
-  const result = await showLeaveTypeApplyModal(name);
+async function applyForLeaveType(t){
+  const result = await showLeaveTypeApplyModal(t.name, t.documents);
   if(!result) return;
   const period = result.to ? `${isoToDisplay(result.from)}〜${isoToDisplay(result.to)}` : `${isoToDisplay(result.from)}〜（終了日未定）`;
   try{
     const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
-    const msg = `${empLabel} が「${name}」を申請しました。\n期間：${period}${result.reason ? `\n備考：${result.reason}` : ''}`;
-    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&priority=critical&title=${encodeURIComponent(name+'の申請')}&message=${encodeURIComponent(msg)}`);
+    const url = `${COMPANY_SCRIPT_URL}?action=applyLeaveType&empId=${encodeURIComponent(currentEmployeeId||'')}&empName=${encodeURIComponent(currentEmployeeName||'')}&name=${encodeURIComponent(t.name)}&from=${encodeURIComponent(result.from)}&to=${encodeURIComponent(result.to)}&reason=${encodeURIComponent(result.reason)}&docsSummary=${encodeURIComponent(result.docsSummary)}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ await showAlertModal(data.error); return; }
     await showAlertModal('申請を送信しました。管理者からの連絡をお待ちください。');
-    logEvent('leave_type_apply', `${name}を申請（期間：${period}）`);
+    logEvent('leave_type_apply', `${t.name}を申請（期間：${period}）`);
   }catch(e){
     await showAlertModal('送信に失敗しました：' + e.message);
   }
@@ -1948,7 +2038,15 @@ document.getElementById('leave-types-modal-close').addEventListener('click', ()=
   document.getElementById('leave-types-modal').classList.add('hidden');
 });
 
-const LEAVE_TYPE_DOC_OPTIONS = ['住民票（写し）','マイナンバーカード（両面コピー）','母子健康手帳（写し）','診断書','医師の意見書','介護保険被保険者証（写し）','戸籍謄本','在職証明書','その他'];
+let LEAVE_TYPE_DOC_OPTIONS = ['なし','その他'];
+async function loadLeaveTypeDocOptions(){
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getRequiredDocumentOptions`);
+    if(data && data.success && data.options){
+      LEAVE_TYPE_DOC_OPTIONS = ['なし', ...data.options, 'その他'];
+    }
+  }catch(e){ /* 取得失敗時はデフォルト（なし・その他のみ）のまま */ }
+}
 function createLeaveTypeDocRow(selectedValue){
   const row = document.createElement('div');
   row.className = 'leave-type-doc-row';
@@ -1983,6 +2081,8 @@ function createLeaveTypeDocRow(selectedValue){
       customInput.classList.remove('is-hidden');
       customInput.value = selectedValue;
     }
+  }else{
+    select.value = 'なし';
   }
   row.appendChild(select);
   row.appendChild(customInput);
@@ -2007,13 +2107,14 @@ function collectLeaveTypeDocs(){
   rows.forEach(row=>{
     const select = row.querySelector('.leave-type-doc-select');
     const custom = row.querySelector('.leave-type-doc-custom');
+    if(select.value === 'なし') return;
     const v = select.value === 'その他' ? custom.value.trim() : select.value;
     if(v) docs.push(v);
   });
   return docs;
 }
 document.getElementById('btn-admin-leave-type-doc-add').addEventListener('click', ()=>addLeaveTypeDocRow());
-resetLeaveTypeDocRows();
+loadLeaveTypeDocOptions().then(()=>resetLeaveTypeDocRows());
 
 let editingLeaveTypeId = null;
 function resetLeaveTypeForm(){
@@ -2051,19 +2152,30 @@ async function loadAdminLeaveTypes(){
     if(data.error){ listEl.innerHTML = `<div class="empty">${data.error}</div>`; return; }
     const types = data.types || [];
     window.__adminLeaveTypesCache = types;
-    listEl.innerHTML = types.length ? types.map(t=>`
-      <div class="log-item">
-        <div>
-          <span>${t.name}　${t.pay}　${t.condition}${t.applyEnabled ? '' : '（申請ボタンなし）'}</span>
-          ${t.url ? `<div class="muted fs-11">URL：${t.url}</div>` : ''}
-          ${t.documents && t.documents.length ? `<div class="muted fs-11">必要書類：${t.documents.join('、')}</div>` : ''}
-        </div>
-        <div class="row-noshrink-8">
-          <button class="btn ghost small" style="width:auto;padding:4px 10px;font-size:11px;" data-edit-leave-type="${t.id}">編集</button>
-          <button class="x-btn" style="font-size:16px;" data-del-leave-type="${t.id}">×</button>
-        </div>
-      </div>
-    `).join('') : '<div class="empty">登録されていません。</div>';
+    if(!types.length){
+      listEl.innerHTML = '<div class="empty">登録されていません。</div>';
+    }else{
+      const header = `<div class="leave-type-row header"><span>休暇名</span><span class="col-pay">給与</span><span>条件</span><span class="col-apply"><span>編集</span><span>削除</span></span></div>`;
+      const rows = types.map(t=>{
+        const extra = [
+          t.applyEnabled ? '' : '申請ボタンなし',
+          t.url ? 'URLあり' : 'URLなし',
+        ].filter(Boolean).join('・');
+        const docsLine = t.documents && t.documents.length
+          ? `<div class="leave-type-docs">必要書類：${t.documents.join('、')}</div>`
+          : '';
+        return `<div class="leave-type-row">
+          <span>${t.name}</span>
+          <span class="col-pay">${t.pay || '—'}</span>
+          <span>${t.condition || ''}${extra ? `<div class="muted fs-11">${extra}</div>` : ''}</span>
+          <span class="col-apply">
+            <button type="button" class="btn ghost small leave-type-detail-btn" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);" data-edit-leave-type="${t.id}">編集</button>
+            <button type="button" class="btn ghost small leave-type-detail-btn" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);" data-del-leave-type="${t.id}">削除</button>
+          </span>
+        </div>${docsLine}`;
+      }).join('');
+      listEl.innerHTML = header + rows;
+    }
     listEl.querySelectorAll('[data-edit-leave-type]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const t = (window.__adminLeaveTypesCache||[]).find(x=>x.id===btn.dataset.editLeaveType);
@@ -2216,7 +2328,7 @@ function applyAdminVisibility(isAdmin){
   if(usersCard) usersCard.style.display = isAdmin ? 'block' : 'none';
   if(specialPeriodsCard) specialPeriodsCard.style.display = isAdmin ? 'block' : 'none';
   if(maintTab) maintTab.style.display = isAdmin ? 'flex' : 'none';
-  if(isAdmin){ loadInquiryContactForAdmin(); loadTransportContactForAdmin(); loadRetentionDaysForAdmin(); refreshTransportRequestsAdmin(); renderAdminSpecialPeriodLists(); }
+  if(isAdmin){ loadInquiryContactForAdmin(); loadTransportContactForAdmin(); loadLeaveTypeContactForAdmin(); loadRetentionDaysForAdmin(); refreshTransportRequestsAdmin(); renderAdminSpecialPeriodLists(); }
 }
 
 async function doEmployeeLogin(id, password){
@@ -3329,6 +3441,30 @@ async function loadTransportContactForAdmin(){
   }catch(e){ /* 取得失敗は無視 */ }
 }
 
+document.getElementById('btn-save-leave-type-contact').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-leave-type-contact-status');
+  const newEmail = document.getElementById('admin-leave-type-email').value.trim();
+  if(!newEmail){ status.textContent = 'メールアドレスを入力してください。'; return; }
+  status.textContent = '変更しています…';
+  try{
+    const url = `${COMPANY_SCRIPT_URL}?action=updateLeaveTypeContact&newEmail=${encodeURIComponent(newEmail)}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ status.textContent = data.error; return; }
+    status.textContent = '変更しました。';
+    logEvent('admin_change', `休暇制度申請受信先を変更：${newEmail}`);
+  }catch(e){
+    status.textContent = '変更に失敗しました：' + e.message;
+  }
+});
+async function loadLeaveTypeContactForAdmin(){
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getLeaveTypeContact`);
+    if(data && !data.error){
+      document.getElementById('admin-leave-type-email').value = data.email || '';
+    }
+  }catch(e){ /* 取得失敗は無視 */ }
+}
+
 // ============================================================
 // 交通費申請
 // ============================================================
@@ -3989,6 +4125,12 @@ function getTransportEmail() {
   return v || DEFAULT_TRANSPORT_EMAIL;
 }
 
+var DEFAULT_LEAVE_TYPE_EMAIL = 'a_aoyama@dsbz.jp';
+function getLeaveTypeEmail() {
+  var v = PropertiesService.getScriptProperties().getProperty('LEAVE_TYPE_EMAIL');
+  return v || DEFAULT_LEAVE_TYPE_EMAIL;
+}
+
 // ============================================================
 // 交通費申請
 // ============================================================
@@ -4258,16 +4400,16 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
 var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
 
 // 「休暇制度」シートのヘッダーと、国が定める法定休暇のデフォルト行
-// URL・必要書類は会社ごとに異なる／変わりうるため、デフォルトでは空欄にしておき管理者に入力してもらう
+// URL・必要書類は暫定値（会社の実情に合わせて管理画面から修正してください）
 var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可', 'URL', '必要書類'];
 var DEFAULT_LEAVE_TYPES = [
-  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1'],
-  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1'],
-  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1'],
-  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1'],
-  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1'],
-  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1'],
-  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1']
+  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1', 'https://www.mhlw.go.jp/bosei/', '母子健康手帳（写し）|診断書'],
+  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kodomo/shokuba_kosodate/ikuji/index.html', '母子健康手帳（写し）'],
+  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/kaigo/index.html', '介護保険被保険者証（写し）|診断書'],
+  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kodomo/shokuba_kosodate/ikuji/index.html', '母子健康手帳（写し）'],
+  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/kaigo/index.html', '介護保険被保険者証（写し）'],
+  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/index.html', ''],
+  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1', 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/index.html', '']
 ];
 
 // 「休暇制度」シートを取得し、なければ作成して法定休暇のデフォルト行を登録する
@@ -4278,7 +4420,20 @@ function getOrCreateLeaveTypesSheet(ss) {
   appendRowAsText(sheet, LEAVE_TYPES_HEADER);
   var baseTime = new Date().getTime();
   DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
-    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], '', '']);
+    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], row[4] || '', row[5] || '']);
+  });
+  return sheet;
+}
+
+// 「必要書類リスト」シート：休暇申請時の必要書類ドロップダウンの選択肢を管理
+var DEFAULT_REQUIRED_DOCUMENTS = ['住民票（写し）', 'マイナンバーカード（両面コピー）', '母子健康手帳（写し）', '診断書', '医師の意見書', '介護保険被保険者証（写し）', '戸籍謄本', '在職証明書'];
+function getOrCreateRequiredDocumentsSheet(ss) {
+  var sheet = ss.getSheetByName('必要書類リスト');
+  if (sheet) return sheet;
+  sheet = ss.insertSheet('必要書類リスト');
+  appendRowAsText(sheet, ['書類名']);
+  DEFAULT_REQUIRED_DOCUMENTS.forEach(function (name) {
+    appendRowAsText(sheet, [name]);
   });
   return sheet;
 }
@@ -4660,6 +4815,16 @@ function doGet(e) {
         out = { error: 'メールアドレスを入力してください' };
       } else {
         PropertiesService.getScriptProperties().setProperty('TRANSPORT_EMAIL', newTransportEmail);
+        out = { success: true };
+      }
+    } else if (action === 'getLeaveTypeContact') {
+      out = { success: true, email: getLeaveTypeEmail() };
+    } else if (action === 'updateLeaveTypeContact') {
+      var newLeaveTypeEmail = (e.parameter.newEmail || '').trim();
+      if (!newLeaveTypeEmail) {
+        out = { error: 'メールアドレスを入力してください' };
+      } else {
+        PropertiesService.getScriptProperties().setProperty('LEAVE_TYPE_EMAIL', newLeaveTypeEmail);
         out = { success: true };
       }
     } else if (action === 'companySettings') {
@@ -5387,6 +5552,37 @@ function doGet(e) {
           sheetLD.deleteRow(rowIdxLD);
           out = { success: true };
         }
+      }
+    } else if (action === 'getRequiredDocumentOptions') {
+      var ssRD = openMasterSpreadsheet();
+      if (!ssRD) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        getOrCreateRequiredDocumentsSheet(ssRD);
+        var dataRD = getSheetData(ssRD, '必要書類リスト');
+        var optionsRD = dataRD.rows.map(function (row) { return row[0]; }).filter(function (v) { return v; });
+        out = { success: true, options: optionsRD };
+      }
+    } else if (action === 'applyLeaveType') {
+      var empIdAL = (e.parameter.empId || '').trim();
+      var empNameAL = (e.parameter.empName || '').trim();
+      var nameAL = (e.parameter.name || '').trim();
+      var fromAL = (e.parameter.from || '').trim();
+      var toAL = (e.parameter.to || '').trim();
+      var reasonAL = (e.parameter.reason || '').trim();
+      var docsSummaryAL = (e.parameter.docsSummary || '').trim();
+      if (!nameAL || !fromAL) {
+        out = { error: '休暇名・開始日は必須です' };
+      } else {
+        var periodAL = toAL ? (fromAL + '〜' + toAL) : (fromAL + '〜（終了日未定）');
+        var bodyAL = '休暇制度の申請がありました。\\n\\n'
+          + '休暇名：' + nameAL + '\\n'
+          + '申請者：' + empIdAL + '：' + empNameAL + '\\n'
+          + '期間：' + periodAL + '\\n'
+          + (reasonAL ? ('理由・備考：' + reasonAL + '\\n') : '')
+          + '\\n必要書類：' + (docsSummaryAL || 'なし');
+        MailApp.sendEmail(getLeaveTypeEmail(), '【給与台帳】休暇制度の申請：' + nameAL, bodyAL);
+        out = { success: true };
       }
     } else if (action === 'updateMasterFolderId') {
       var newFolderId = (e.parameter.newFolderId || '').trim();
