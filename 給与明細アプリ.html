@@ -118,9 +118,9 @@ nav.tabbar button svg{width:20px;height:20px;}
 .log-item .d{color:var(--text-3);font-size:11px;}
 .plusminus{display:flex;gap:8px;margin-top:10px;}
 .plusminus button{flex:1;}
-.modal-overlay{position:fixed;inset:0;background:rgba(23,26,23,.55);display:flex;align-items:center;justify-content:center;z-index:250;padding:0;box-sizing:border-box;}
+.modal-overlay{position:fixed;inset:0;background:rgba(23,26,23,.55);display:flex;align-items:center;justify-content:center;z-index:250;padding:0;box-sizing:border-box;overscroll-behavior:contain;}
 .modal-overlay.hidden{display:none;}
-.modal-sheet{background:var(--surface);width:100%;max-width:480px;height:100%;max-height:100%;border-radius:0;display:flex;flex-direction:column;overflow-y:auto;}
+.modal-sheet{background:var(--surface);width:100%;max-width:480px;height:100%;max-height:100%;border-radius:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;}
 .modal-sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;flex-shrink:0;}
 .modal-sheet header h3{margin:0;font-size:14px;font-weight:700;}
 .modal-sheet .frame{background:#2b2c2a;}
@@ -166,7 +166,7 @@ nav.tabbar button svg{width:20px;height:20px;}
 
 /* --- component classes (extracted from inline style attributes) --- */
 .input-icon-pad{padding-right:44px!important;}
-.modal-body{padding:16px 18px!important;overflow-y:auto!important;}
+.modal-body{padding:16px 18px!important;overflow-y:auto!important;overscroll-behavior:contain!important;}
 .modal-sheet-80vh{max-height:80vh!important;}
 .modal-sheet-92vh{max-height:92vh!important;}
 .divider-16{border-top:1px dashed var(--border)!important;margin:16px 0!important;}
@@ -214,7 +214,7 @@ nav.tabbar button svg{width:20px;height:20px;}
 
 /* --- confirm/alert replacement modal --- */
 #confirm-modal{padding:24px;}
-.confirm-card{background:var(--surface);width:100%;max-width:340px;border-radius:16px;padding:22px 20px;box-sizing:border-box;}
+.confirm-card{background:var(--surface);width:100%;max-width:340px;border-radius:16px;padding:22px 20px;box-sizing:border-box;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;}
 .confirm-message{font-size:14px;line-height:1.6;color:var(--text);margin:0 0 22px;white-space:pre-wrap;}
 .confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
 .confirm-actions .btn{width:auto;padding:10px 20px;}
