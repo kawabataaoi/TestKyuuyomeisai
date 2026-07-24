@@ -140,8 +140,10 @@ nav.tabbar button svg{width:20px;height:20px;}
 .leave-type-row.header .col-apply{gap:2px;}
 .leave-type-row.header .col-apply span:last-child{font-size:10px;font-weight:500;color:var(--text-3);}
 .leave-type-docs{font-size:11px;color:var(--text-2);padding:0 0 9px;border-bottom:1px solid var(--border);}
-.leave-type-detail-btn{width:auto;padding:3px 8px;font-size:10px;background:#DCEEFB;color:#2E7DAF;border:1px solid #9CC7E8;border-radius:20px;font-weight:500;display:inline-block;}
+.leave-type-detail-btn{width:auto!important;padding:3px 8px!important;font-size:10px!important;background:#DCEEFB!important;color:#2E7DAF!important;border:1px solid #9CC7E8!important;border-radius:20px;font-weight:500;display:inline-block;}
 .leave-type-detail-btn.disabled{opacity:.4;pointer-events:none;}
+.leave-type-detail-btn.edit{background:var(--accent-soft)!important;color:var(--accent)!important;border:1px solid var(--accent-soft)!important;}
+.leave-type-detail-btn.delete{background:var(--danger-soft)!important;color:var(--danger)!important;border:1px solid var(--danger-soft)!important;}
 .leave-type-doc-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
 .leave-type-doc-row select{flex:1;}
 .leave-type-doc-row input{flex:1;}
@@ -896,11 +898,6 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <button class="btn ghost small mt-6 w-full" id="btn-save-retention-days">保存期間を変更</button>
       <p class="muted mt-6" id="admin-retention-status"></p>
       <div class="helptext">初期値は1826日（5年）です。法令に基づいた正しい期間は、社労士等にご確認の上、必要であれば変更してください。ユーザー削除後、この日数が経過すると自動的に完全削除されます。</div>
-      <div class="divider-16"></div>
-      <label class="field mt-0">ユーザー情報の管理方法</label>
-      <button class="btn ghost small w-full" id="btn-migrate-spreadsheet" style="border-color:var(--danger);color:var(--danger);">社員一覧・ユーザー情報をスプレッドシートへ移行</button>
-      <p class="muted mt-6" id="admin-migrate-status"></p>
-      <div class="helptext">現在ドキュメントで管理している社員一覧・会社共通設定・ユーザー情報を、新しいスプレッドシートにコピーします。元のドキュメントは削除せずバックアップとして残ります。一度移行すると、以後はスプレッドシートが優先して使われます。1回のみ実行してください。</div>
       </div>
     </div>
     <div class="card" id="card-drive-sync" style="display:none;">
@@ -2169,8 +2166,8 @@ async function loadAdminLeaveTypes(){
           <span class="col-pay">${t.pay || '—'}</span>
           <span>${t.condition || ''}${extra ? `<div class="muted fs-11">${extra}</div>` : ''}</span>
           <span class="col-apply">
-            <button type="button" class="btn ghost small leave-type-detail-btn" style="background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);" data-edit-leave-type="${t.id}">編集</button>
-            <button type="button" class="btn ghost small leave-type-detail-btn" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);" data-del-leave-type="${t.id}">削除</button>
+            <button type="button" class="btn ghost small leave-type-detail-btn edit" data-edit-leave-type="${t.id}">編集</button>
+            <button type="button" class="btn ghost small leave-type-detail-btn delete" data-del-leave-type="${t.id}">削除</button>
           </span>
         </div>${docsLine}`;
       }).join('');
@@ -2276,6 +2273,16 @@ function resetAdminPanels(){
   if(availIdsPanel) availIdsPanel.classList.add('is-hidden');
   availableIdsPages = [];
   availableIdsPageIndex = -1;
+  const leaveTypesCard = document.getElementById('card-admin-leave-types');
+  if(leaveTypesCard){
+    const leaveTypesBody = leaveTypesCard.querySelector('.collapsible-body');
+    const leaveTypesToggle = leaveTypesCard.querySelector('.collapsible-toggle');
+    if(leaveTypesBody) leaveTypesBody.classList.add('is-hidden');
+    if(leaveTypesToggle) leaveTypesToggle.textContent = '開く';
+  }
+  const leaveTypesListEl = document.getElementById('admin-leave-types-list');
+  if(leaveTypesListEl) leaveTypesListEl.innerHTML = '<div class="empty">読み込んでいません。</div>';
+  if(typeof resetLeaveTypeForm === 'function') resetLeaveTypeForm();
 }
 applyAdminVisibilitySafe();
 function applyAdminVisibilitySafe(){
@@ -3062,26 +3069,6 @@ document.getElementById('btn-save-retention-days').addEventListener('click', asy
   }
 });
 
-document.getElementById('btn-migrate-spreadsheet').addEventListener('click', async ()=>{
-  const status = document.getElementById('admin-migrate-status');
-  const ok = await showConfirmModal('社員一覧・ユーザー情報・会社共通設定・給料日特例を、新しいスプレッドシートへコピーします。\n元のドキュメントは削除されずバックアップとして残ります。\n既に移行済みの場合は失敗します。\n\n実行しますか？');
-  if(!ok) return;
-  const btn = document.getElementById('btn-migrate-spreadsheet');
-  setButtonLoading(btn, '移行しています…');
-  status.textContent = '';
-  try{
-    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=migrateToSpreadsheet`);
-    if(data.error){ status.textContent = data.error; return; }
-    status.textContent = `移行が完了しました（社員${data.employeeCount}件、ユーザー情報${data.userInfoCount}件）。`;
-    logEvent('admin_change', `管理情報をスプレッドシートへ移行（社員${data.employeeCount}件）`);
-    await showAlertModal('移行が完了しました。今後は自動的にスプレッドシートが優先して使われます。念のため、しばらくは元のログイン・各種操作に問題がないか確認してください。');
-  }catch(e){
-    status.textContent = '移行に失敗しました：' + e.message;
-  }finally{
-    clearButtonLoading(btn);
-  }
-});
-
 async function loadRetentionDaysForAdmin(){
   try{
     const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getRetentionDays`);
@@ -3105,6 +3092,9 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   toggleBtn.addEventListener('click', ()=>{
     const nowHidden = body.classList.toggle('is-hidden');
     toggleBtn.textContent = nowHidden ? '開く' : '閉じる';
+    if(cardId === 'card-admin-leave-types' && !nowHidden){
+      loadLeaveTypeDocOptions().then(()=>resetLeaveTypeDocRows());
+    }
   });
 });
 
@@ -5624,78 +5614,6 @@ function doGet(e) {
         bDoc.getBody().editAsText().setText(newUrl);
         bDoc.saveAndClose();
         out = { success: true };
-      }
-    } else if (action === 'migrateToSpreadsheet') {
-      var existingSSFile = findMasterSpreadsheetFile();
-      if (existingSSFile) {
-        out = { error: 'すでに「管理情報」スプレッドシートが存在します（移行済みの可能性があります）。' };
-      } else {
-        var oldListFile = findMasterListFile();
-        if (!oldListFile) {
-          out = { error: '移行元の「管理情報」ドキュメントが見つかりません。' };
-        } else {
-          var oldDoc = DocumentApp.openById(oldListFile.getId());
-          var mainTextOld = oldDoc.getTabs()[0].asDocumentTab().getBody().getText();
-          var companySettingsOld = parseCompanySettingsFromText(mainTextOld);
-          var paydayOverridesOld = parsePaydayOverrides(mainTextOld);
-
-          // 社員一覧（区分:社員ID:パスワード:フォルダID:氏名）を抽出。
-          // 区分は必ず0か1のため、これを手がかりに設定値や特例行と区別する。
-          var empRowsOld = [];
-          var rowsOld = mainTextOld.split('\\n');
-          for (var roi = 0; roi < rowsOld.length; roi++) {
-            var rowOld = rowsOld[roi].trim();
-            if (!rowOld) continue;
-            var colsOld = rowOld.replace(/：/g, ':').split(':');
-            if (colsOld.length < 4) continue;
-            if (colsOld[0].trim() !== '0' && colsOld[0].trim() !== '1') continue;
-            empRowsOld.push([colsOld[0].trim(), colsOld[1].trim(), colsOld[2].trim(), colsOld[3].trim(), colsOld[4] ? colsOld[4].trim() : '']);
-          }
-          var userBodyOld = getTabBodyByTitle(oldDoc, 'ユーザー情報');
-          var userRecordsOld = userBodyOld ? parseUserRecords(userBodyOld.getText()) : [];
-
-          var masterFolderMig = DriveApp.getFolderById(MASTER_FOLDER_ID);
-          var newSS = SpreadsheetApp.create('管理情報');
-          var newSSFile = DriveApp.getFileById(newSS.getId());
-          masterFolderMig.addFile(newSSFile);
-          DriveApp.getRootFolder().removeFile(newSSFile);
-
-          var sheetEmp = newSS.getSheets()[0];
-          sheetEmp.setName('社員一覧');
-          sheetEmp.getRange('A:E').setNumberFormat('@'); // ID・パスワード等は常にテキスト扱いにする（列全体への保険）
-          appendRowAsText(sheetEmp, ['区分', '社員ID', 'パスワード', 'フォルダID', '氏名']);
-          if (empRowsOld.length > 0) setRangeAsText(sheetEmp, 2, 1, empRowsOld.length, 5, empRowsOld);
-
-          var sheetUser = newSS.insertSheet('ユーザー情報');
-          sheetUser.getRange('A:M').setNumberFormat('@'); // 生年月日・削除日などが日付として自動変換されるのを防ぐ（列全体への保険）
-          appendRowAsText(sheetUser, USER_INFO_HEADER);
-          if (userRecordsOld.length > 0) {
-            var userRowsOld = userRecordsOld.map(function (r) {
-              return USER_INFO_HEADER.map(function (k) { return r[k] !== undefined ? r[k] : ''; });
-            });
-            setRangeAsText(sheetUser, 2, 1, userRowsOld.length, USER_INFO_HEADER.length, userRowsOld);
-          }
-
-          var sheetCompany = newSS.insertSheet('会社共通設定');
-          sheetCompany.getRange('A:B').setNumberFormat('@');
-          appendRowAsText(sheetCompany, ['設定項目', '値']);
-          COMPANY_SETTING_KEYS.forEach(function (k) {
-            if (companySettingsOld[k] !== undefined) appendRowAsText(sheetCompany, [k, companySettingsOld[k]]);
-          });
-
-          var sheetPayday = newSS.insertSheet('給料日特例');
-          sheetPayday.getRange('A:B').setNumberFormat('@');
-          appendRowAsText(sheetPayday, ['対象年月', '給料日']);
-          Object.keys(paydayOverridesOld).forEach(function (ym) {
-            appendRowAsText(sheetPayday, [ym, paydayOverridesOld[ym]]);
-          });
-
-          // 旧ドキュメントは削除せず、バックアップとして名前を変えて残す（非破壊的な移行）
-          try { oldListFile.setName('管理情報（旧・ドキュメント版バックアップ）'); } catch (renameErr) { /* リネーム失敗は無視 */ }
-
-          logSystemEvent('migrate_to_spreadsheet', '管理情報をスプレッドシートに移行しました（社員' + empRowsOld.length + '件、ユーザー情報' + userRecordsOld.length + '件）');
-          out = { success: true, employeeCount: empRowsOld.length, userInfoCount: userRecordsOld.length, spreadsheetId: newSS.getId() };
-        }
       }
     } else if (action === 'submitTransportRequest') {
       var tEmpId = (e.parameter.empId || '').trim();
