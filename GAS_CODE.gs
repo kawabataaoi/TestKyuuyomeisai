@@ -327,7 +327,8 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
 var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
 
 // 「休暇制度」シートのヘッダーと、国が定める法定休暇のデフォルト行
-var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可'];
+// URL・必要書類は会社ごとに異なる／変わりうるため、デフォルトでは空欄にしておき管理者に入力してもらう
+var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可', 'URL', '必要書類'];
 var DEFAULT_LEAVE_TYPES = [
   ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1'],
   ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1'],
@@ -346,7 +347,7 @@ function getOrCreateLeaveTypesSheet(ss) {
   appendRowAsText(sheet, LEAVE_TYPES_HEADER);
   var baseTime = new Date().getTime();
   DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
-    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3]]);
+    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], '', '']);
   });
   return sheet;
 }
@@ -1394,11 +1395,15 @@ function doGet(e) {
         var sheetLT = getOrCreateLeaveTypesSheet(ssLT);
         var dataLT = getSheetData(ssLT, '休暇制度');
         var typesLT = dataLT.rows.map(function (row) {
-          return { id: String(row[0]), name: row[1] || '', pay: row[2] || '', condition: row[3] || '', applyEnabled: String(row[4]) === '1' };
+          return {
+            id: String(row[0]), name: row[1] || '', pay: row[2] || '', condition: row[3] || '',
+            applyEnabled: String(row[4]) === '1', url: row[5] || '',
+            documents: row[6] ? String(row[6]).split('|').filter(function (d) { return d; }) : []
+          };
         });
         out = { success: true, types: typesLT };
       }
-    } else if (action === 'adminAddLeaveType') {
+    } else if (action === 'adminAddLeaveType' || action === 'adminUpdateLeaveType') {
       var ssLA = openMasterSpreadsheet();
       if (!ssLA) {
         out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
@@ -1407,13 +1412,30 @@ function doGet(e) {
         var payLA = (e.parameter.pay || '').trim();
         var conditionLA = (e.parameter.condition || '').trim();
         var applyEnabledLA = e.parameter.applyEnabled === '1' ? '1' : '0';
+        var urlLA = (e.parameter.url || '').trim();
+        var documentsLA = (e.parameter.documents || '').trim();
         if (!nameLA) {
           out = { error: '休暇名を入力してください' };
         } else {
           var sheetLA = getOrCreateLeaveTypesSheet(ssLA);
-          var idLA = String(new Date().getTime());
-          appendRowAsText(sheetLA, [idLA, nameLA, payLA, conditionLA, applyEnabledLA]);
-          out = { success: true, id: idLA };
+          if (action === 'adminAddLeaveType') {
+            var idLA = String(new Date().getTime());
+            appendRowAsText(sheetLA, [idLA, nameLA, payLA, conditionLA, applyEnabledLA, urlLA, documentsLA]);
+            out = { success: true, id: idLA };
+          } else {
+            var idLU = (e.parameter.id || '').trim();
+            var dataLU = getSheetData(ssLA, '休暇制度');
+            var rowIdxLU = -1;
+            for (var lui = 0; lui < dataLU.rows.length; lui++) {
+              if (String(dataLU.rows[lui][0]) === idLU) { rowIdxLU = lui + 2; break; }
+            }
+            if (rowIdxLU === -1) {
+              out = { error: '対象の休暇制度が見つかりませんでした' };
+            } else {
+              setRangeAsText(sheetLA, rowIdxLU, 2, 1, 6, [[nameLA, payLA, conditionLA, applyEnabledLA, urlLA, documentsLA]]);
+              out = { success: true, id: idLU };
+            }
+          }
         }
       }
     } else if (action === 'adminDeleteLeaveType') {
