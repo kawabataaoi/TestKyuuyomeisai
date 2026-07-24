@@ -346,14 +346,34 @@ var DEFAULT_LEAVE_TYPES = [
 ];
 
 // 「休暇制度」シートを取得し、なければ作成して法定休暇のデフォルト行を登録する
+// 既存シートがURL・必要書類列を追加する前のバージョンで作られていた場合は、列を補完し
+// 法定休暇のデフォルト行にはURL・必要書類のデフォルト値を後から補完する（自己修復）
 function getOrCreateLeaveTypesSheet(ss) {
   var sheet = ss.getSheetByName('休暇制度');
-  if (sheet) return sheet;
-  sheet = ss.insertSheet('休暇制度');
-  appendRowAsText(sheet, LEAVE_TYPES_HEADER);
-  var baseTime = new Date().getTime();
-  DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
-    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], row[4] || '', row[5] || '']);
+  if (!sheet) {
+    sheet = ss.insertSheet('休暇制度');
+    appendRowAsText(sheet, LEAVE_TYPES_HEADER);
+    var baseTime = new Date().getTime();
+    DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
+      appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3], row[4] || '', row[5] || '']);
+    });
+    return sheet;
+  }
+  var lastCol = sheet.getLastColumn();
+  if (lastCol < LEAVE_TYPES_HEADER.length) {
+    setRangeAsText(sheet, 1, lastCol + 1, 1, LEAVE_TYPES_HEADER.length - lastCol, [LEAVE_TYPES_HEADER.slice(lastCol)]);
+  }
+  var data = getSheetData(ss, '休暇制度');
+  var defaultsByName = {};
+  DEFAULT_LEAVE_TYPES.forEach(function (row) { defaultsByName[row[0]] = row; });
+  data.rows.forEach(function (row, i) {
+    var def = defaultsByName[row[1]];
+    if (!def) return;
+    var currentUrl = row[5] || '';
+    var currentDocs = row[6] || '';
+    if (!currentUrl && !currentDocs && (def[4] || def[5])) {
+      setRangeAsText(sheet, i + 2, 6, 1, 2, [[def[4] || '', def[5] || '']]);
+    }
   });
   return sheet;
 }
