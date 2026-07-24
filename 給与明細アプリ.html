@@ -132,6 +132,10 @@ nav.tabbar button svg{width:20px;height:20px;}
 .filter-chip{font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;}
 .filter-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700;}
 .news-bulk-checkbox{width:16px;height:16px;flex-shrink:0;cursor:pointer;}
+.leave-type-row{display:grid;grid-template-columns:1.3fr 0.55fr 1.7fr 0.85fr;gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.leave-type-row.header{font-weight:700;color:var(--text-2);font-size:11px;padding-top:0;}
+.leave-type-row .col-pay{text-align:center;}
+.leave-type-row .col-apply{text-align:right;}
 .formula{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:10px 12px;border-radius:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;line-height:1.7;white-space:pre-line;}
 .notice{font-size:11px;color:var(--text-2);line-height:1.6;margin-top:8px;}
 .helptext{font-size:11px;color:var(--text-2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
@@ -406,6 +410,19 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="leave-types-modal">
+  <div class="modal-sheet modal-sheet-80vh">
+    <header>
+      <h3>休暇制度確認</h3>
+      <button class="x-btn" id="leave-types-modal-close">×</button>
+    </header>
+    <div class="modal-body">
+      <p class="muted fs-12 mt-0">年次有給休暇以外に利用できる休暇制度です。「申請」ボタンから管理者に相談・申請できます。</p>
+      <div id="leave-types-list"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="news-detail-modal">
   <div class="modal-sheet modal-sheet-80vh">
     <header>
@@ -632,7 +649,10 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
   <!-- 有給タブ -->
   <section class="view" id="view-yukyu">
     <div class="card">
-      <div class="section-title">有給残日数</div>
+      <div class="row mb-2">
+        <div class="section-title mb-0">有給残日数</div>
+        <button class="btn ghost small" id="btn-leave-types-open" style="width:auto;">休暇制度確認</button>
+      </div>
       <div class="row">
         <div>
           <span class="big-num mono" id="yukyu-balance">0.0</span>
@@ -1093,6 +1113,31 @@ nav.tabbar button:not(.active):hover{background:var(--surface-2);color:var(--acc
       <input type="date" id="admin-encourage-day">
       <button class="btn ghost small mt-6 w-full" id="btn-admin-encourage-day-add">追加</button>
       <p class="muted mt-6" id="admin-encourage-day-status"></p>
+      </div>
+    </div>
+    <div class="card" id="card-admin-leave-types">
+      <div class="row mb-2">
+        <div class="section-title mb-0">休暇制度の管理（管理者用）</div>
+        <button class="btn ghost small collapsible-toggle">開く</button>
+      </div>
+      <div class="collapsible-body is-hidden">
+      <p class="muted mt-0">「有給」タブの「休暇制度確認」に表示される一覧です。国が定める法定休暇は初期状態で登録されています。</p>
+      <div id="admin-leave-types-list" class="mb-2"><div class="empty">読み込んでいません。</div></div>
+      <button class="btn ghost small w-full" id="btn-admin-leave-types-load">一覧を読み込む</button>
+      <div class="divider-16"></div>
+      <div class="section-title fs-13">休暇制度を追加</div>
+      <label class="field mt-0">休暇名</label>
+      <input type="text" id="admin-leave-type-name" placeholder="例：生理休暇">
+      <label class="field">給与</label>
+      <input type="text" id="admin-leave-type-pay" placeholder="例：×（無給）">
+      <label class="field">条件</label>
+      <input type="text" id="admin-leave-type-condition" placeholder="例：生理日の就業が著しく困難なとき">
+      <label class="field inline-row-8">
+        <input class="w-auto" type="checkbox" id="admin-leave-type-apply-enabled" checked>
+        「申請」ボタンを表示する
+      </label>
+      <button class="btn ghost small mt-8 w-full" id="btn-admin-leave-type-add">追加</button>
+      <p class="muted mt-6" id="admin-leave-type-status"></p>
       </div>
     </div>
   </section>
@@ -1780,6 +1825,112 @@ document.getElementById('btn-news-bulk-execute').addEventListener('click', async
     await showAlertModal('削除に失敗しました：' + e.message);
   }
 });
+
+function renderLeaveTypesList(types){
+  const listEl = document.getElementById('leave-types-list');
+  if(!types.length){ listEl.innerHTML = '<div class="empty">登録されていません。</div>'; return; }
+  const header = `<div class="leave-type-row header"><span>休暇名</span><span class="col-pay">給与</span><span>条件</span><span class="col-apply">申請</span></div>`;
+  const rows = types.map(t=>{
+    const applyCell = t.applyEnabled
+      ? `<button type="button" class="btn ghost small leave-type-apply-btn" data-id="${t.id}" data-name="${t.name}" style="width:auto;padding:5px 12px;font-size:11px;">申請</button>`
+      : '<span class="muted">—</span>';
+    return `<div class="leave-type-row">
+      <span>${t.name}</span>
+      <span class="col-pay">${t.pay || '—'}</span>
+      <span>${t.condition || ''}</span>
+      <span class="col-apply">${applyCell}</span>
+    </div>`;
+  }).join('');
+  listEl.innerHTML = header + rows;
+  listEl.querySelectorAll('.leave-type-apply-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>applyForLeaveType(btn.dataset.id, btn.dataset.name));
+  });
+}
+async function openLeaveTypesModal(){
+  document.getElementById('leave-types-modal').classList.remove('hidden');
+  const listEl = document.getElementById('leave-types-list');
+  listEl.innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><p class="muted" style="margin-top:10px;">読み込んでいます…</p></div>';
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getLeaveTypes`);
+    if(data.error){ listEl.innerHTML = `<div class="empty">${data.error}</div>`; return; }
+    renderLeaveTypesList(data.types || []);
+  }catch(e){
+    listEl.innerHTML = `<div class="empty">取得に失敗しました：${e.message}</div>`;
+  }
+}
+async function applyForLeaveType(id, name){
+  const reason = await showReasonModal(`「${name}」の申請理由・希望時期などを入力してください。`);
+  if(reason === null) return;
+  try{
+    const empLabel = currentEmployeeId ? `${currentEmployeeId}:${currentEmployeeName||''}` : '';
+    await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=postNews&scope=admin&priority=critical&title=${encodeURIComponent(name+'の申請')}&message=${encodeURIComponent(`${empLabel} が「${name}」を申請しました。\n内容：${reason}`)}`);
+    await showAlertModal('申請を送信しました。管理者からの連絡をお待ちください。');
+    logEvent('leave_type_apply', `${name}を申請（内容：${reason}）`);
+  }catch(e){
+    await showAlertModal('送信に失敗しました：' + e.message);
+  }
+}
+document.getElementById('btn-leave-types-open').addEventListener('click', openLeaveTypesModal);
+document.getElementById('leave-types-modal-close').addEventListener('click', ()=>{
+  document.getElementById('leave-types-modal').classList.add('hidden');
+});
+
+async function loadAdminLeaveTypes(){
+  const listEl = document.getElementById('admin-leave-types-list');
+  listEl.innerHTML = '<div style="text-align:center;padding:16px 0;"><div class="spinner"></div></div>';
+  try{
+    const data = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=getLeaveTypes`);
+    if(data.error){ listEl.innerHTML = `<div class="empty">${data.error}</div>`; return; }
+    const types = data.types || [];
+    listEl.innerHTML = types.length ? types.map(t=>`
+      <div class="log-item">
+        <span>${t.name}　${t.pay}　${t.condition}${t.applyEnabled ? '' : '（申請ボタンなし）'}</span>
+        <button class="x-btn" style="font-size:16px;" data-del-leave-type="${t.id}">×</button>
+      </div>
+    `).join('') : '<div class="empty">登録されていません。</div>';
+    listEl.querySelectorAll('[data-del-leave-type]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!(await showConfirmModal('この休暇制度を削除しますか？'))) return;
+        const status = document.getElementById('admin-leave-type-status');
+        try{
+          const delData = await jsonpRequest(`${COMPANY_SCRIPT_URL}?action=adminDeleteLeaveType&id=${encodeURIComponent(btn.dataset.delLeaveType)}`);
+          if(delData.error){ status.textContent = delData.error; return; }
+          logEvent('admin_change', '休暇制度を削除');
+          loadAdminLeaveTypes();
+        }catch(e){
+          status.textContent = '削除に失敗しました：' + e.message;
+        }
+      });
+    });
+  }catch(e){
+    listEl.innerHTML = `<div class="empty">取得に失敗しました：${e.message}</div>`;
+  }
+}
+document.getElementById('btn-admin-leave-types-load').addEventListener('click', loadAdminLeaveTypes);
+document.getElementById('btn-admin-leave-type-add').addEventListener('click', async ()=>{
+  const status = document.getElementById('admin-leave-type-status');
+  const name = document.getElementById('admin-leave-type-name').value.trim();
+  const pay = document.getElementById('admin-leave-type-pay').value.trim();
+  const condition = document.getElementById('admin-leave-type-condition').value.trim();
+  const applyEnabled = document.getElementById('admin-leave-type-apply-enabled').checked ? '1' : '0';
+  if(!name){ status.textContent = '休暇名を入力してください。'; return; }
+  status.textContent = '追加しています…';
+  try{
+    const url = `${COMPANY_SCRIPT_URL}?action=adminAddLeaveType&name=${encodeURIComponent(name)}&pay=${encodeURIComponent(pay)}&condition=${encodeURIComponent(condition)}&applyEnabled=${encodeURIComponent(applyEnabled)}`;
+    const data = await jsonpRequest(url);
+    if(data.error){ status.textContent = data.error; return; }
+    status.textContent = `「${name}」を追加しました。`;
+    document.getElementById('admin-leave-type-name').value = '';
+    document.getElementById('admin-leave-type-pay').value = '';
+    document.getElementById('admin-leave-type-condition').value = '';
+    document.getElementById('admin-leave-type-apply-enabled').checked = true;
+    logEvent('admin_change', `休暇制度「${name}」を追加`);
+    loadAdminLeaveTypes();
+  }catch(e){
+    status.textContent = '追加に失敗しました：' + e.message;
+  }
+});
+
 document.getElementById('news-detail-keep-unread').addEventListener('click', ()=>{
   if(currentDetailNews) markNewsUnread([currentDetailNews.id]);
   document.getElementById('news-detail-modal').classList.add('hidden');
@@ -2648,7 +2799,7 @@ document.getElementById('btn-new-user-toggle').addEventListener('click', ()=>{
   document.getElementById('btn-new-user-toggle').textContent = showing ? '追加' : '閉じる';
 });
 
-['card-admin-system','card-pay-rules','card-transport-admin-summary','card-admin-special-periods'].forEach(cardId=>{
+['card-admin-system','card-pay-rules','card-transport-admin-summary','card-admin-special-periods','card-admin-leave-types'].forEach(cardId=>{
   const card = document.getElementById(cardId);
   if(!card) return;
   const toggleBtn = card.querySelector('.collapsible-toggle');
@@ -3921,6 +4072,31 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
 // ============================================================
 var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
 
+// 「休暇制度」シートのヘッダーと、国が定める法定休暇のデフォルト行
+var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可'];
+var DEFAULT_LEAVE_TYPES = [
+  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1'],
+  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1'],
+  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1'],
+  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1'],
+  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1'],
+  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1'],
+  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1']
+];
+
+// 「休暇制度」シートを取得し、なければ作成して法定休暇のデフォルト行を登録する
+function getOrCreateLeaveTypesSheet(ss) {
+  var sheet = ss.getSheetByName('休暇制度');
+  if (sheet) return sheet;
+  sheet = ss.insertSheet('休暇制度');
+  appendRowAsText(sheet, LEAVE_TYPES_HEADER);
+  var baseTime = new Date().getTime();
+  DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
+    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3]]);
+  });
+  return sheet;
+}
+
 function findMasterSpreadsheetFile() {
   var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
   // Driveへ.xlsxをアップロードしてGoogleスプレッドシートへ自動変換した場合、
@@ -4955,6 +5131,55 @@ function doGet(e) {
       } else {
         PropertiesService.getScriptProperties().setProperty('RETENTION_DAYS', String(newDaysR));
         out = { success: true };
+      }
+    } else if (action === 'getLeaveTypes') {
+      var ssLT = openMasterSpreadsheet();
+      if (!ssLT) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var sheetLT = getOrCreateLeaveTypesSheet(ssLT);
+        var dataLT = getSheetData(ssLT, '休暇制度');
+        var typesLT = dataLT.rows.map(function (row) {
+          return { id: String(row[0]), name: row[1] || '', pay: row[2] || '', condition: row[3] || '', applyEnabled: String(row[4]) === '1' };
+        });
+        out = { success: true, types: typesLT };
+      }
+    } else if (action === 'adminAddLeaveType') {
+      var ssLA = openMasterSpreadsheet();
+      if (!ssLA) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var nameLA = (e.parameter.name || '').trim();
+        var payLA = (e.parameter.pay || '').trim();
+        var conditionLA = (e.parameter.condition || '').trim();
+        var applyEnabledLA = e.parameter.applyEnabled === '1' ? '1' : '0';
+        if (!nameLA) {
+          out = { error: '休暇名を入力してください' };
+        } else {
+          var sheetLA = getOrCreateLeaveTypesSheet(ssLA);
+          var idLA = String(new Date().getTime());
+          appendRowAsText(sheetLA, [idLA, nameLA, payLA, conditionLA, applyEnabledLA]);
+          out = { success: true, id: idLA };
+        }
+      }
+    } else if (action === 'adminDeleteLeaveType') {
+      var ssLD = openMasterSpreadsheet();
+      if (!ssLD) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var idLD = (e.parameter.id || '').trim();
+        var sheetLD = getOrCreateLeaveTypesSheet(ssLD);
+        var dataLD = getSheetData(ssLD, '休暇制度');
+        var rowIdxLD = -1;
+        for (var ldi = 0; ldi < dataLD.rows.length; ldi++) {
+          if (String(dataLD.rows[ldi][0]) === idLD) { rowIdxLD = ldi + 2; break; }
+        }
+        if (rowIdxLD === -1) {
+          out = { error: '対象の休暇制度が見つかりませんでした' };
+        } else {
+          sheetLD.deleteRow(rowIdxLD);
+          out = { success: true };
+        }
       }
     } else if (action === 'updateMasterFolderId') {
       var newFolderId = (e.parameter.newFolderId || '').trim();

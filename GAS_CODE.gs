@@ -326,6 +326,31 @@ function buildUserDetails(docS, mainTextS, targetIdS) {
 // ============================================================
 var USER_INFO_HEADER = ['ユーザーID', '苗字', '名前', 'みょうじ', 'なまえ', '生年月日', '管理者権限', '役員フラグ', '削除フラグ', '削除日', '削除予定日', '削除理由', '告知済み'];
 
+// 「休暇制度」シートのヘッダーと、国が定める法定休暇のデフォルト行
+var LEAVE_TYPES_HEADER = ['ID', '休暇名', '給与', '条件', '申請可'];
+var DEFAULT_LEAVE_TYPES = [
+  ['産前産後休業', '×', '出産予定日の6週間前（多胎妊娠は14週間前）〜出産後8週間', '1'],
+  ['育児休業', '×', '原則として子が1歳になるまで（要件を満たせば延長可）', '1'],
+  ['介護休業', '×', '対象家族1人につき通算93日まで（3回を上限に分割可）', '1'],
+  ['子の看護休暇', '×', '小学校就学前の子の世話・通院等、年5日（対象の子が2人以上は年10日）', '1'],
+  ['介護休暇', '×', '要介護状態の家族の世話等、年5日（対象家族が2人以上は年10日）', '1'],
+  ['生理休暇', '×', '生理日の就業が著しく困難なとき', '1'],
+  ['公民権行使の休暇', '×', '選挙権の行使・裁判員など公の職務を執行するとき', '1']
+];
+
+// 「休暇制度」シートを取得し、なければ作成して法定休暇のデフォルト行を登録する
+function getOrCreateLeaveTypesSheet(ss) {
+  var sheet = ss.getSheetByName('休暇制度');
+  if (sheet) return sheet;
+  sheet = ss.insertSheet('休暇制度');
+  appendRowAsText(sheet, LEAVE_TYPES_HEADER);
+  var baseTime = new Date().getTime();
+  DEFAULT_LEAVE_TYPES.forEach(function (row, i) {
+    appendRowAsText(sheet, [String(baseTime + i), row[0], row[1], row[2], row[3]]);
+  });
+  return sheet;
+}
+
 function findMasterSpreadsheetFile() {
   var masterFolder = DriveApp.getFolderById(MASTER_FOLDER_ID);
   // Driveへ.xlsxをアップロードしてGoogleスプレッドシートへ自動変換した場合、
@@ -1360,6 +1385,55 @@ function doGet(e) {
       } else {
         PropertiesService.getScriptProperties().setProperty('RETENTION_DAYS', String(newDaysR));
         out = { success: true };
+      }
+    } else if (action === 'getLeaveTypes') {
+      var ssLT = openMasterSpreadsheet();
+      if (!ssLT) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var sheetLT = getOrCreateLeaveTypesSheet(ssLT);
+        var dataLT = getSheetData(ssLT, '休暇制度');
+        var typesLT = dataLT.rows.map(function (row) {
+          return { id: String(row[0]), name: row[1] || '', pay: row[2] || '', condition: row[3] || '', applyEnabled: String(row[4]) === '1' };
+        });
+        out = { success: true, types: typesLT };
+      }
+    } else if (action === 'adminAddLeaveType') {
+      var ssLA = openMasterSpreadsheet();
+      if (!ssLA) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var nameLA = (e.parameter.name || '').trim();
+        var payLA = (e.parameter.pay || '').trim();
+        var conditionLA = (e.parameter.condition || '').trim();
+        var applyEnabledLA = e.parameter.applyEnabled === '1' ? '1' : '0';
+        if (!nameLA) {
+          out = { error: '休暇名を入力してください' };
+        } else {
+          var sheetLA = getOrCreateLeaveTypesSheet(ssLA);
+          var idLA = String(new Date().getTime());
+          appendRowAsText(sheetLA, [idLA, nameLA, payLA, conditionLA, applyEnabledLA]);
+          out = { success: true, id: idLA };
+        }
+      }
+    } else if (action === 'adminDeleteLeaveType') {
+      var ssLD = openMasterSpreadsheet();
+      if (!ssLD) {
+        out = {error: '「管理情報」スプレッドシートが見つかりません（管理者は先に移行処理を実行してください）'};
+      } else {
+        var idLD = (e.parameter.id || '').trim();
+        var sheetLD = getOrCreateLeaveTypesSheet(ssLD);
+        var dataLD = getSheetData(ssLD, '休暇制度');
+        var rowIdxLD = -1;
+        for (var ldi = 0; ldi < dataLD.rows.length; ldi++) {
+          if (String(dataLD.rows[ldi][0]) === idLD) { rowIdxLD = ldi + 2; break; }
+        }
+        if (rowIdxLD === -1) {
+          out = { error: '対象の休暇制度が見つかりませんでした' };
+        } else {
+          sheetLD.deleteRow(rowIdxLD);
+          out = { success: true };
+        }
       }
     } else if (action === 'updateMasterFolderId') {
       var newFolderId = (e.parameter.newFolderId || '').trim();
